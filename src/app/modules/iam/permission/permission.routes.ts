@@ -1,0 +1,41 @@
+import { Router } from 'express';
+import auth from '../../middlewares/auth.js';
+import { authorize } from '../../middlewares/authorize.js';
+import { PermissionActionObj, PermissionSourceObj } from './permission.constant.js';
+import { USER_ROLE } from '../user/user.constant.js';
+import {
+  getAllPermissions,
+  getPermissionById,
+  getUserPermissions,
+  checkUserPermission
+} from './permission.controller.js';
+
+const router = Router();
+
+// Get all permissions - Admin only
+router.get('/',
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  authorize(PermissionSourceObj.system, PermissionActionObj.view),
+  getAllPermissions
+);
+
+// Get single permission
+router.get('/:id',
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  authorize(PermissionSourceObj.system, PermissionActionObj.read),
+  getPermissionById
+);
+
+// Get permissions for a specific user
+router.get('/user/:userId',
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  getUserPermissions
+);
+
+// Check if user has specific permission
+router.post('/check',
+  auth(),
+  checkUserPermission
+);
+
+export const permissionRoutes = router;

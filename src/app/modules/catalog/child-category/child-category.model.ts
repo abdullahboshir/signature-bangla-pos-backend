@@ -1,0 +1,58 @@
+import { Schema, model} from "mongoose";
+import type { IChildCategory } from "./child-category.interface.js";
+import { makeSlug } from "../../utils/utils.common.js";
+
+const ChildCategorySchema = new Schema<IChildCategory>(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+      index: true,
+      maxlength: 50,
+    },
+    slug: {
+      type: String,
+      unique: true,
+      index: true,
+      trim: true,
+      maxlength: 60,
+    },
+    department: {
+      type: Schema.Types.ObjectId,
+      ref: "Dpartment",
+      required: true,
+    },
+    subCategory: {
+      type: Schema.Types.ObjectId,
+      ref: "SubCategory",
+      required: true,
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: 200,
+    },
+    image: {
+      type: String,
+      default: "",
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  { timestamps: true }
+);
+
+
+
+ChildCategorySchema.pre('save', function (next) {
+  if (this.isModified('name')) {
+    this.slug = makeSlug(this.name);
+  }
+  next();
+});
+
+export const ChildCategory = model('ChildCategory', ChildCategorySchema);

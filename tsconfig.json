@@ -1,0 +1,50 @@
+{
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    "module": "NodeNext",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+
+    "moduleResolution": "NodeNext",
+    "types": ["node"],
+
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    // Strict Type Checking
+    "strict": true,
+    "noEmit": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": true,
+
+    // ESM behavior
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+
+    // ⭐ IMPORTANT FIXES FOR AUTO IMPORT ⭐
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@core/*": ["src/core/*"],
+      "@app/*": ["src/app/*"],
+      "@shared/*": ["src/shared/*"]
+    },
+    "baseUrl": "."
+  },
+
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
