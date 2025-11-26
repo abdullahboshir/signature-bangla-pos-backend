@@ -1,4 +1,4 @@
-export const STORE_STATUS = {
+export const BUSINESS_UNIT_STATUS = {
   DRAFT: "draft",
   UNDER_REVIEW: "under_review",
   PUBLISHED: "published",
@@ -6,13 +6,13 @@ export const STORE_STATUS = {
   ARCHIVED: "archived",
 } as const;
 
-export const STORE_VISIBILITY = {
+export const BUSINESS_UNIT_VISIBILITY = {
   PUBLIC: "public",
   PRIVATE: "private",
   UNLISTED: "unlisted",
 } as const;
 
-export const STORE_TYPE = {
+export const BUSINESS_UNIT_TYPE = {
   GENERAL: "general",
   BOUTIQUE: "boutique",
   BRAND: "brand",
@@ -20,12 +20,12 @@ export const STORE_TYPE = {
   SPECIALTY: "specialty",
 } as const;
 
-export const STORE_CURRENCY = {
+export const BUSINESS_UNIT_CURRENCY = {
   BDT: "BDT",
   USD: "USD",
 } as const;
 
-export const STORE_LANGUAGE = {
+export const BUSINESS_UNIT_LANGUAGE = {
   ENGLISH: "en",
   BANGLA: "bn",
 } as const;
@@ -69,7 +69,7 @@ export const SHIPPING_CALCULATION = {
 export const TAX_BASED_ON = {
   SHIPPING: "shipping",
   BILLING: "billing",
-  STORE: "store",
+  BUSINESS_UNIT: "BUSINESS_UNIT",
 } as const;
 
 export const SORT_OPTIONS = {

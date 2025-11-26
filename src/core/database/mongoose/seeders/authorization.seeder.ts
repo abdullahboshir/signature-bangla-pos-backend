@@ -96,58 +96,58 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
       name: USER_ROLE.SUPER_ADMIN,
       permissions: allPermissionIds,
       permissionGroups: [fullGroupId],
-      hierarchyLevel: 10,
+      hierarchyLevel: 100,
       isDefault: false
     },
     {
       name: USER_ROLE.ADMIN,
       permissions: allPermissionIds,
       permissionGroups: [fullGroupId],
-      hierarchyLevel: 10,
+      hierarchyLevel: 90,
       isDefault: false
     },
-    {
-      name: USER_ROLE.MANAGER,
-      permissions: allPermissions.filter(p => ["order", "customer", "product", "report"].includes(p.resource)).map(p => p._id),
-      permissionGroups: [],
-      hierarchyLevel: 8,
-      isDefault: false
-    },
-    {
-      name: USER_ROLE.VENDOR,
-      permissions: allPermissions.filter(p => ["product", "order", "promotion"].includes(p.resource)).map(p => p._id),
-      permissionGroups: [],
-      hierarchyLevel: 7,
-      isDefault: false
-    },
+    // {
+    //   name: USER_ROLE.MANAGER,
+    //   permissions: allPermissions.filter(p => ["order", "customer", "product", "report"].includes(p.resource)).map(p => p._id),
+    //   permissionGroups: [],
+    //   hierarchyLevel: 8,
+    //   isDefault: false
+    // },
+    // {
+    //   name: USER_ROLE.VENDOR,
+    //   permissions: allPermissions.filter(p => ["product", "order", "promotion"].includes(p.resource)).map(p => p._id),
+    //   permissionGroups: [],
+    //   hierarchyLevel: 7,
+    //   isDefault: false
+    // },
     {
       name: USER_ROLE.CUSTOMER,
       permissions: allPermissions.filter(p => ["product", "review"].includes(p.resource)).map(p => p._id),
       permissionGroups: [],
-      hierarchyLevel: 1,
+      hierarchyLevel: 20,
       isDefault: true
     },
-    {
-      name: USER_ROLE.DELIVERY_MAN,
-      permissions: allPermissions.filter(p => ["order", "delivery", "shipping"].includes(p.resource)).map(p => p._id),
-      permissionGroups: [],
-      hierarchyLevel: 6,
-      isDefault: false
-    },
+    // {
+    //   name: USER_ROLE.DELIVERY_MAN,
+    //   permissions: allPermissions.filter(p => ["order", "delivery", "shipping"].includes(p.resource)).map(p => p._id),
+    //   permissionGroups: [],
+    //   hierarchyLevel: 6,
+    //   isDefault: false
+    // },
     {
       name: USER_ROLE.SUPPORT_AGENT,
       permissions: allPermissions.filter(p => ["ticket", "customer", "order"].includes(p.resource)).map(p => p._id),
       permissionGroups: [],
-      hierarchyLevel: 5,
+      hierarchyLevel: 30,
       isDefault: false
     },
-    {
-      name: USER_ROLE.GUEST,
-      permissions: [],
-      permissionGroups: [],
-      hierarchyLevel: 1,
-      isDefault: false
-    }
+    // {
+    //   name: USER_ROLE.GUEST,
+    //   permissions: [],
+    //   permissionGroups: [],
+    //   hierarchyLevel: 1,
+    //   isDefault: false
+    // }
   ];
 
   let rolesCreated = 0;

@@ -1,5 +1,6 @@
+import client from '@shared/config/redis.config.ts';
 import { createHash } from 'crypto';
-import client from '../config/redis.config.js';
+
 
 // Version key helper
 const versionKey = (entity: string) => `cache:ver:${entity}`;

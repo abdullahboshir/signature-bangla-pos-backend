@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { validateRequest } from "../../middlewares/validateRequest.js";
+
 import { loginZodSchema } from "./auth.validation.js";
 import { loginController } from "./auth.controller.js";
 import type { AnyZodObject } from "zod/v3";
+import { validateRequest } from "@core/middleware/validateRequest.ts";
 
 
 const router = Router();

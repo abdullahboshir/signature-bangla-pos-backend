@@ -1,4 +1,4 @@
-export interface IStoreBranding {
+export interface IBusinessUnitBranding {
   name: string;
   description: string;
   descriptionBangla?: string;
@@ -13,7 +13,7 @@ export interface IStoreBranding {
   };
 }
 
-export interface IStoreContact {
+export interface IBusinessUnitContact {
   email: string;
   phone: string;
   supportHours: string;
@@ -27,7 +27,7 @@ export interface IStoreContact {
   };
 }
 
-export interface IStoreLocation {
+export interface IBusinessUnitLocation {
   address: string;
   city: string;
   state: string;
@@ -40,7 +40,7 @@ export interface IStoreLocation {
   timezone: string;
 }
 
-export interface IStoreSeo {
+export interface IBusinessUnitSeo {
   metaTitle: string;
   metaDescription: string;
   keywords: string[];
@@ -49,7 +49,7 @@ export interface IStoreSeo {
   structuredData?: any;
 }
 
-export interface IStorePolicy {
+export interface IBusinessUnitPolicy {
   returnPolicy: string;
   shippingPolicy: string;
   privacyPolicy: string;
@@ -58,7 +58,7 @@ export interface IStorePolicy {
   refundPolicy?: string;
 }
 
-export interface IStorePerformance {
+export interface IBusinessUnitPerformance {
   responseRate: number;
   fulfillmentRate: number;
   onTimeDeliveryRate: number;

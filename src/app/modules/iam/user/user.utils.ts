@@ -1,4 +1,5 @@
-import { generateIncreament } from "../../utils/utils.common.js";
+
+import { generateIncreament } from "@core/utils/utils.common.ts";
 import { USER_ROLE } from "./user.constant.js";
 import { User } from "./user.model.js";
 

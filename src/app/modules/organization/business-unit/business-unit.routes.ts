@@ -1,20 +1,21 @@
+import { PermissionActionObj, PermissionSourceObj } from '@app/modules/iam/permission/permission.constant.ts';
+import { USER_ROLE } from '@app/modules/iam/user/user.constant.ts';
+import auth from '@core/middleware/auth.ts';
+import { authorize } from '@core/middleware/authorize.ts';
+import { validateRequest } from '@core/middleware/validateRequest.ts';
+import { upload } from '@core/utils/file-upload.ts';
 import {Router, type Request, type Response, type NextFunction} from 'express';
-import auth from '../../../middlewares/auth.js';
-import { authorize } from '../../../middlewares/authorize.js';
-import { USER_ROLE } from '../../user/user.constant.js';
-import { PermissionActionObj, PermissionSourceObj } from '../../permission/permission.constant.js';
-import { upload } from '../../../utils/IMGUploader.js';
-import { validateRequest } from '../../../middlewares/validateRequest.js';
+
 import type { AnyZodObject } from 'zod/v3';
-import { createStoreValidationSchema } from './business-unit.validation.js';
-import { createStoreController } from './store-core.controller.js';
+import { createStoreValidationSchema } from './business-unit.validation.ts';
+import { createStoreController } from './business-unit.controller.ts';
 
 const router = Router();
 
 router.post(
-  '/create-store',
+  '/create-business-unit',
    auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.VENDOR),
-   authorize(PermissionSourceObj.store, PermissionActionObj.create),
+   authorize(PermissionSourceObj.business_unit, PermissionActionObj.create),
   upload.single('file'),
   (req: Request, _res: Response, next: NextFunction) => {
     req.body = JSON.parse(req.body.data)
@@ -25,4 +26,4 @@ router.post(
 );
 
 
-export const storeRoutes = router;
+export const businessUnitRoutes = router;

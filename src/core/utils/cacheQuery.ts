@@ -1,7 +1,8 @@
 // src/utils/cacheQuery.ts
 
 import { Query, Document, Schema } from 'mongoose';
-import { CacheManager } from '../caching/cache-manager.js';
+import { CacheManager } from './caching/cache-manager.ts';
+
 
 
 const cacheActiveQueries = new Map<string, { key: string; ttlSeconds?: number | undefined }>();

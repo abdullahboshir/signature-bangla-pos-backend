@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import auth from '../../middlewares/auth.js';
-import { authorize } from '../../middlewares/authorize.js';
+
 import { PermissionActionObj, PermissionSourceObj } from './permission.constant.js';
 import { USER_ROLE } from '../user/user.constant.js';
 import {
@@ -9,6 +8,8 @@ import {
   getUserPermissions,
   checkUserPermission
 } from './permission.controller.js';
+import auth from '@core/middleware/auth.ts';
+import { authorize } from '@core/middleware/authorize.ts';
 
 const router = Router();
 

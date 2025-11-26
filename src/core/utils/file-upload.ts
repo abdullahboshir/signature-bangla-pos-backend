@@ -1,14 +1,15 @@
+import appConfig from '@shared/config/app.config.ts'
 import { v2 as cloudinary } from 'cloudinary'
 import fs from 'fs'
 import multer from 'multer'
-import config from '../config/app.config.js'
+
 
 
 // Configuration
 cloudinary.config({
-  cloud_name: config.cloud_name,
-  api_key: config.cloud_api_key,
-  api_secret: config.cloud_api_secret,
+  cloud_name: appConfig.cloud_name,
+  api_key: appConfig.cloud_api_key,
+  api_secret: appConfig.cloud_api_secret,
 })
 
 export const sendImageToCloudinary = async (imgName: string, path: string) => {

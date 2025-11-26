@@ -3,15 +3,16 @@ import {type Request, type Response } from 'express';
 import status from 'http-status';
 import { z } from 'zod';
 
-import catchAsync from '../../utils/catchAsync.js';
-import sendResponse, { type MetaData } from '../../utils/sendResponse.js';
-import AppError from '../../errors/AppError.js';
+
 
 
 import { Permission } from './permission.model.js';
 import { User } from '../user/user.model.js';
 import { permissionService } from './permission.service.js';
 import { buildContextFromRequest } from './permission.utils.js';
+import catchAsync from '@core/utils/catchAsync.ts';
+import { ApiResponse } from '@core/utils/api-response.ts';
+import AppError from '@shared/errors/app-error.ts';
 
 /* -------------------------------------------------------------------------- */
 /* 1️⃣  Validation schemas (zod)                                            */
@@ -82,7 +83,7 @@ export const getAllPermissions = catchAsync(
     ]);
 
     /* --------- Response --------- */
-    sendResponse(res, {
+    ApiResponse.success(res, {
       statusCode: status.OK,
       success: true,
       message: 'Permissions retrieved successfully',
@@ -92,7 +93,7 @@ export const getAllPermissions = catchAsync(
         page: pg,
         limit: lt,
         totalPages: Math.ceil(total / lt),
-      } as MetaData,
+      } as DecoratorMetadata,
     });
   }
 );
@@ -114,7 +115,7 @@ export const getPermissionById = catchAsync(
       throw new AppError(status.NOT_FOUND, `Permission ${id} not found`);
     }
 
-    sendResponse(res, {
+    ApiResponse.success(res, {
       statusCode: status.OK,
       success: true,
       message: 'Permission retrieved successfully',
@@ -154,7 +155,7 @@ export const getUserPermissions = catchAsync(
       return acc;
     }, {});
 
-    sendResponse(res, {
+    ApiResponse.success(res, {
       statusCode: status.OK,
       success: true,
       message: 'User permissions retrieved successfully',
@@ -209,7 +210,7 @@ export const checkUserPermission = catchAsync(
       context
     );
 
-    sendResponse(res, {
+    ApiResponse.success(res, {
       statusCode: status.OK,
       success: true,
       message: result.allowed ? 'Permission granted' : 'Permission denied',

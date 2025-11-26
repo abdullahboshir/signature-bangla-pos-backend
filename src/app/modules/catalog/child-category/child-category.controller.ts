@@ -1,15 +1,15 @@
 
 import status from 'http-status'
-import catchAsync from '../../utils/catchAsync.js'
 import { createChildCategoryService, getChildCategoriesService } from './child-category.service.js'
-import sendResponse from '../../utils/sendResponse.js'
 import mongoose from 'mongoose'
+import { ApiResponse } from '@core/utils/api-response.ts'
+import catchAsync from '@core/utils/catchAsync.ts'
 
 
 export const createChildCategoryController = catchAsync(async (req, res) => {
   const data = await createChildCategoryService(req.body)
 
-  sendResponse(res, {
+  ApiResponse.success(res, {
     success: true,
     statusCode: status.OK,
     message: 'Sub Category has been Created Successfully',
@@ -22,7 +22,7 @@ export const getChildCategoriesController = catchAsync(async (req, res) => {
     const { subCategoryId } = req.params;
 
   if (!subCategoryId) {
-    return sendResponse(res, {
+    return ApiResponse.success(res, {
       success: false,
       statusCode: status.BAD_REQUEST,
       message: "Child-Category ID is required",
@@ -34,7 +34,7 @@ export const getChildCategoriesController = catchAsync(async (req, res) => {
   const data = await getChildCategoriesService(objectId)
 
 
-  sendResponse(res, {
+  ApiResponse.success(res, {
     success: true,
     statusCode: status.OK,
     message: ' Child Category has been retrieved Successfully',

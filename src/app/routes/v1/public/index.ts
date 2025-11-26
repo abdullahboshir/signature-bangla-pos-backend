@@ -15,4 +15,4 @@ router.use("/search", searchRoutes);
 // router.use("/flash-sales", flashSalesRoutes);
 // router.use("/recommendations", recommendationsRoutes);
 
-export default router;
+export const publicGroupRoutes = router;

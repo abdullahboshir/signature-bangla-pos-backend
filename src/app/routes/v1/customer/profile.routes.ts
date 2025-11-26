@@ -1,5 +1,6 @@
+import { customerRoutes } from "@app/modules/customer/customer.routes.ts";
 import { Router } from "express";
-import { customerRoutes } from "../../../app/modules/customer/customer.routes.js";
+
 
 
 

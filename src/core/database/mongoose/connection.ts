@@ -1,13 +1,15 @@
-import mongoose from "mongoose";
-import appConfig from "../../../shared/config/app.config.js";
+import appConfig from '@shared/config/app.config.ts';
+import mongoose from 'mongoose';
 
 
-export const connectDB = async () => {
-  if (!appConfig.db_url) {
-    throw new Error("Database URL missing");
+export const connectDB = async (): Promise<void> => {
+  try {
+    await mongoose.connect(appConfig.db_url as string);
+    console.log('✅ MongoDB connected successfully');
+  } catch (error) {
+    console.error('❌ MongoDB connection error:', error);
+    process.exit(1);
   }
-
-  return mongoose.connect(appConfig.db_url);
 };
 
 export const disconnectDB = async () => {

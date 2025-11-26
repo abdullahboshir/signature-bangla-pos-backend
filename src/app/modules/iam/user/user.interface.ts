@@ -1,7 +1,8 @@
 import type { Model, Types } from "mongoose";
-import type { TName } from "../../interface/common.interface.js";
+
 import type { IPermission } from "../permission/permission.interface.js";
 import type { USER_STATUS } from "./user.constant.js";
+import type { TName } from "@core/types/common.types.ts";
 
 export type TUserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
 
@@ -12,6 +13,7 @@ export interface IUser {
   email: string;
   phone?: string;
   password: string;
+  businessUnitId?: Types.ObjectId[];
   roles: Types.ObjectId[];
   departments: string[];
   branches?: string[];

@@ -1,7 +1,8 @@
 import { model, Schema, Types } from "mongoose";
 import type { IRole } from "./role.interface.js";
-import { cachingMiddleware } from "../../utils/cacheQuery.js";
-import { bumpVersion } from "../../utils/cacheKeys.js";
+import { cachingMiddleware } from "@core/utils/cacheQuery.ts";
+import { bumpVersion } from "@core/utils/cacheKeys.ts";
+
 
 
 const RoleSchema = new Schema<IRole>(
@@ -59,7 +60,7 @@ const RoleSchema = new Schema<IRole>(
       type: Number,
       required: [true, 'Hierarchy level is required'],
       min: [1, 'Hierarchy level must be at least 1'],
-      max: [10, 'Hierarchy level cannot exceed 10'],
+      max: [100, 'Hierarchy level cannot exceed 100'],
       default: 1
     },
     maxDataAccess: {

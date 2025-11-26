@@ -1,10 +1,10 @@
 import { Schema, Types, model } from "mongoose";
 import type {
-  IStoreCoreDocument,
-  IStoreCoreModel,
+  IBusinessUnitCoreDocument,
+  IBusinessUnitCoreModel,
 } from "./business-unit.interface.js";
 
-const storeCoreSchema = new Schema<IStoreCoreDocument, IStoreCoreModel>(
+const businessUnitCoreSchema = new Schema<IBusinessUnitCoreDocument, IBusinessUnitCoreModel>(
   {
     id: {
       type: String,
@@ -13,7 +13,7 @@ const storeCoreSchema = new Schema<IStoreCoreDocument, IStoreCoreModel>(
       index: true,
       trim: true,
     },
-    publicStoreId: {
+    publicBusinessUnitId: {
       type: String,
       required: true,
       unique: true, 
@@ -48,7 +48,7 @@ const storeCoreSchema = new Schema<IStoreCoreDocument, IStoreCoreModel>(
     },
     tags: [{ type: String, trim: true }],
     specialties: [{ type: String, trim: true }],
-    storeType: {
+    businessUnitType: {
       type: String,
       enum: ["general", "boutique", "brand", "marketplace", "specialty"],
       default: "general",
@@ -94,7 +94,7 @@ const storeCoreSchema = new Schema<IStoreCoreDocument, IStoreCoreModel>(
       },
     ],
 
-    // Store Configuration
+    // BusinessUnit Configuration
     settings: {
       currency: { type: String, enum: ["BDT", "USD"], default: "BDT" },
       language: { type: String, enum: ["en", "bn"], default: "en" },
@@ -189,49 +189,49 @@ const storeCoreSchema = new Schema<IStoreCoreDocument, IStoreCoreModel>(
 );
 
 // ==================== INDEXES ====================
-storeCoreSchema.index({ vendor: 1 });
-storeCoreSchema.index({ slug: 1 });
-storeCoreSchema.index({ status: 1, visibility: 1 });
-storeCoreSchema.index({ categories: 1 });
-storeCoreSchema.index({ primaryCategory: 1 });
-storeCoreSchema.index({ isFeatured: 1 });
-storeCoreSchema.index({
+businessUnitCoreSchema.index({ vendor: 1 });
+businessUnitCoreSchema.index({ slug: 1 });
+businessUnitCoreSchema.index({ status: 1, visibility: 1 });
+businessUnitCoreSchema.index({ categories: 1 });
+businessUnitCoreSchema.index({ primaryCategory: 1 });
+businessUnitCoreSchema.index({ isFeatured: 1 });
+businessUnitCoreSchema.index({
   "branding.name": "text",
   "branding.description": "text",
   tags: "text",
 });
-storeCoreSchema.index({ createdAt: -1 });
-storeCoreSchema.index({ "ratings.average": -1 });
-storeCoreSchema.index({ "statistics.totalRevenue": -1 });
+businessUnitCoreSchema.index({ createdAt: -1 });
+businessUnitCoreSchema.index({ "ratings.average": -1 });
+businessUnitCoreSchema.index({ "statistics.totalRevenue": -1 });
 
 // ==================== VIRTUAL PROPERTIES ====================
-storeCoreSchema.virtual("isActive").get(function () {
+businessUnitCoreSchema.virtual("isActive").get(function () {
   return this.status === "published" && this.visibility === "public";
 });
 
-storeCoreSchema.virtual("isPublished").get(function () {
+businessUnitCoreSchema.virtual("isPublished").get(function () {
   return this.status === "published";
 });
 
-storeCoreSchema.virtual("isSuspended").get(function () {
+businessUnitCoreSchema.virtual("isSuspended").get(function () {
   return this.status === "suspended";
 });
 
-storeCoreSchema.virtual("performanceScore").get(function () {
+businessUnitCoreSchema.virtual("performanceScore").get(function () {
   return this.performance.overallScore;
 });
 
-storeCoreSchema.virtual("totalEarnings").get(function () {
+businessUnitCoreSchema.virtual("totalEarnings").get(function () {
   return this.statistics.totalRevenue;
 });
 
-storeCoreSchema.virtual("daysSinceCreation").get(function () {
+businessUnitCoreSchema.virtual("daysSinceCreation").get(function () {
   const diffTime = Math.abs(new Date().getTime() - this.createdAt.getTime());
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 });
 
 // ==================== INSTANCE METHODS ====================
-storeCoreSchema.methods.updatePerformanceMetrics =
+businessUnitCoreSchema.methods.updatePerformanceMetrics =
   async function (): Promise<void> {
     // This would typically calculate performance based on actual data
     const overallScore =
@@ -246,36 +246,36 @@ storeCoreSchema.methods.updatePerformanceMetrics =
     await this.save();
   };
 
-storeCoreSchema.methods.updateStatistics = async function (): Promise<void> {
+businessUnitCoreSchema.methods.updateStatistics = async function (): Promise<void> {
   // This would update statistics from actual order and product data
   // For now, we'll keep it simple
   await this.save();
 };
 
-storeCoreSchema.methods.publish = async function (): Promise<void> {
+businessUnitCoreSchema.methods.publish = async function (): Promise<void> {
   this.status = "published";
   this.publishedAt = new Date();
   await this.save();
 };
 
-storeCoreSchema.methods.unpublish = async function (): Promise<void> {
+businessUnitCoreSchema.methods.unpublish = async function (): Promise<void> {
   this.status = "draft";
   await this.save();
 };
 
-storeCoreSchema.methods.suspend = async function (
+businessUnitCoreSchema.methods.suspend = async function (
   reason: string
 ): Promise<void> {
   this.status = "suspended";
   await this.save();
 };
 
-storeCoreSchema.methods.activate = async function (): Promise<void> {
+businessUnitCoreSchema.methods.activate = async function (): Promise<void> {
   this.status = "published";
   await this.save();
 };
 
-storeCoreSchema.methods.addProduct = async function (
+businessUnitCoreSchema.methods.addProduct = async function (
   productId: Types.ObjectId
 ): Promise<void> {
   // This would typically increment product count
@@ -284,7 +284,7 @@ storeCoreSchema.methods.addProduct = async function (
   await this.save();
 };
 
-storeCoreSchema.methods.removeProduct = async function (
+businessUnitCoreSchema.methods.removeProduct = async function (
   productId: Types.ObjectId
 ): Promise<void> {
   this.statistics.totalProducts = Math.max(
@@ -298,12 +298,12 @@ storeCoreSchema.methods.removeProduct = async function (
   await this.save();
 };
 
-storeCoreSchema.methods.calculateStoreCommission = function (): number {
+businessUnitCoreSchema.methods.calculateBusinessUnitCommission = function (): number {
   // Default commission calculation - would vary by platform
   return this.statistics.totalRevenue * 0.1; // 10% commission
 };
 
-storeCoreSchema.methods.getProductStats = async function (): Promise<any> {
+businessUnitCoreSchema.methods.getProductStats = async function (): Promise<any> {
   // This would aggregate product statistics
   return {
     total: this.statistics.totalProducts,
@@ -312,7 +312,7 @@ storeCoreSchema.methods.getProductStats = async function (): Promise<any> {
   };
 };
 
-storeCoreSchema.methods.getOrderStats = async function (
+businessUnitCoreSchema.methods.getOrderStats = async function (
   timeframe: "daily" | "weekly" | "monthly" | "yearly"
 ): Promise<any> {
   // This would aggregate order statistics based on timeframe
@@ -325,9 +325,9 @@ storeCoreSchema.methods.getOrderStats = async function (
 };
 
 // ==================== STATIC METHODS ====================
-storeCoreSchema.statics.findFeaturedStores = function (
+businessUnitCoreSchema.statics.findFeaturedBusinessUnits = function (
   limit: number = 12
-): Promise<IStoreCoreDocument[]> {
+): Promise<IBusinessUnitCoreDocument[]> {
   return this.find({
     isFeatured: true,
     status: "published",
@@ -343,9 +343,9 @@ storeCoreSchema.statics.findFeaturedStores = function (
     .sort({ "ratings.average": -1, "statistics.totalRevenue": -1 });
 };
 
-storeCoreSchema.statics.findStoresByCategory = function (
+businessUnitCoreSchema.statics.findBusinessUnitsByCategory = function (
   categoryId: Types.ObjectId
-): Promise<IStoreCoreDocument[]> {
+): Promise<IBusinessUnitCoreDocument[]> {
   return this.find({
     categories: categoryId,
     status: "published",
@@ -356,18 +356,18 @@ storeCoreSchema.statics.findStoresByCategory = function (
     .sort({ "ratings.average": -1, "statistics.totalRevenue": -1 });
 };
 
-storeCoreSchema.statics.findStoresByVendor = function (
+businessUnitCoreSchema.statics.findBusinessUnitsByVendor = function (
   vendorId: Types.ObjectId
-): Promise<IStoreCoreDocument[]> {
+): Promise<IBusinessUnitCoreDocument[]> {
   return this.find({ vendor: vendorId })
     .populate("primaryCategory", "name slug")
     .sort({ createdAt: -1 });
 };
 
-storeCoreSchema.statics.searchStores = function (
+businessUnitCoreSchema.statics.searchBusinessUnits = function (
   query: string,
   filters: any = {}
-): Promise<IStoreCoreDocument[]> {
+): Promise<IBusinessUnitCoreDocument[]> {
   const searchFilter: any = {
     $text: { $search: query },
     status: "published",
@@ -375,7 +375,7 @@ storeCoreSchema.statics.searchStores = function (
   };
 
   if (filters.categories) searchFilter.categories = { $in: filters.categories };
-  if (filters.storeType) searchFilter.storeType = filters.storeType;
+  if (filters.businessUnitType) searchFilter.businessUnitType = filters.businessUnitType;
   if (filters.minRating)
     searchFilter["ratings.average"] = { $gte: filters.minRating };
 
@@ -386,9 +386,9 @@ storeCoreSchema.statics.searchStores = function (
     .limit(filters.limit || 20);
 };
 
-storeCoreSchema.statics.findTopPerformingStores = function (
+businessUnitCoreSchema.statics.findTopPerformingBusinessUnits = function (
   limit: number = 10
-): Promise<IStoreCoreDocument[]> {
+): Promise<IBusinessUnitCoreDocument[]> {
   return this.find({
     status: "published",
     visibility: "public",
@@ -400,9 +400,9 @@ storeCoreSchema.statics.findTopPerformingStores = function (
     .sort({ "performance.overallScore": -1, "statistics.totalRevenue": -1 });
 };
 
-storeCoreSchema.statics.findNewStores = function (
+businessUnitCoreSchema.statics.findNewBusinessUnits = function (
   limit: number = 10
-): Promise<IStoreCoreDocument[]> {
+): Promise<IBusinessUnitCoreDocument[]> {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -417,14 +417,14 @@ storeCoreSchema.statics.findNewStores = function (
     .sort({ createdAt: -1 });
 };
 
-storeCoreSchema.statics.getStoreStats = async function (
-  storeId: Types.ObjectId
+businessUnitCoreSchema.statics.getBusinessUnitStats = async function (
+  businessUnitId: Types.ObjectId
 ): Promise<any> {
   return this.aggregate([
-    { $match: { _id: storeId } },
+    { $match: { _id: businessUnitId } },
     {
       $project: {
-        storeName: "$branding.name",
+        businessUnitName: "$branding.name",
         vendor: 1,
         status: 1,
         totalProducts: "$statistics.totalProducts",
@@ -444,7 +444,7 @@ storeCoreSchema.statics.getStoreStats = async function (
   ]);
 };
 
-storeCoreSchema.statics.getCategoryStoreStats = async function (
+businessUnitCoreSchema.statics.getCategoryBusinessUnitStats = async function (
   categoryId: Types.ObjectId
 ): Promise<any> {
   return this.aggregate([
@@ -452,7 +452,7 @@ storeCoreSchema.statics.getCategoryStoreStats = async function (
     {
       $group: {
         _id: "$primaryCategory",
-        totalStores: { $sum: 1 },
+        totalBusinessUnits: { $sum: 1 },
         averageRating: { $avg: "$ratings.average" },
         totalProducts: { $sum: "$statistics.totalProducts" },
         totalRevenue: { $sum: "$statistics.totalRevenue" },
@@ -461,7 +461,7 @@ storeCoreSchema.statics.getCategoryStoreStats = async function (
   ]);
 };
 
-storeCoreSchema.statics.getVendorStoreStats = async function (
+businessUnitCoreSchema.statics.getVendorBusinessUnitStats = async function (
   vendorId: Types.ObjectId
 ): Promise<any> {
   return this.aggregate([
@@ -469,7 +469,7 @@ storeCoreSchema.statics.getVendorStoreStats = async function (
     {
       $group: {
         _id: "$status",
-        storeCount: { $sum: 1 },
+        businessUnitCount: { $sum: 1 },
         totalProducts: { $sum: "$statistics.totalProducts" },
         totalRevenue: { $sum: "$statistics.totalRevenue" },
         averageRating: { $avg: "$ratings.average" },
@@ -478,16 +478,16 @@ storeCoreSchema.statics.getVendorStoreStats = async function (
   ]);
 };
 
-storeCoreSchema.statics.getPlatformStoreStats =
+businessUnitCoreSchema.statics.getPlatformBusinessUnitStats =
   async function (): Promise<any> {
     return this.aggregate([
       { $match: { status: "published" } },
       {
         $group: {
           _id: null,
-          totalStores: { $sum: 1 },
-          featuredStores: { $sum: { $cond: ["$isFeatured", 1, 0] } },
-          verifiedStores: { $sum: { $cond: ["$isVerified", 1, 0] } },
+          totalBusinessUnits: { $sum: 1 },
+          featuredBusinessUnits: { $sum: { $cond: ["$isFeatured", 1, 0] } },
+          verifiedBusinessUnits: { $sum: { $cond: ["$isVerified", 1, 0] } },
           averageRating: { $avg: "$ratings.average" },
           totalProducts: { $sum: "$statistics.totalProducts" },
           totalRevenue: { $sum: "$statistics.totalRevenue" },
@@ -496,8 +496,8 @@ storeCoreSchema.statics.getPlatformStoreStats =
     ]);
   };
 
-storeCoreSchema.statics.findStoresNeedingAttention = function (): Promise<
-  IStoreCoreDocument[]
+businessUnitCoreSchema.statics.findBusinessUnitsNeedingAttention = function (): Promise<
+  IBusinessUnitCoreDocument[]
 > {
   return this.find({
     status: "published",
@@ -515,7 +515,7 @@ storeCoreSchema.statics.findStoresNeedingAttention = function (): Promise<
     .limit(50);
 };
 
-storeCoreSchema.statics.calculateStoreGrowthMetrics =
+businessUnitCoreSchema.statics.calculateBusinessUnitGrowthMetrics =
   async function (): Promise<any> {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -532,7 +532,7 @@ storeCoreSchema.statics.calculateStoreGrowthMetrics =
           _id: {
             $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
           },
-          newStores: { $sum: 1 },
+          newBusinessUnits: { $sum: 1 },
           totalRevenue: { $sum: "$statistics.totalRevenue" },
         },
       },
@@ -540,7 +540,7 @@ storeCoreSchema.statics.calculateStoreGrowthMetrics =
     ]);
   };
 
-export const StoreCore = model<IStoreCoreDocument, IStoreCoreModel>(
-  "Store",
-  storeCoreSchema
+export const BusinessUnitCore = model<IBusinessUnitCoreDocument, IBusinessUnitCoreModel>(
+  "BusinessUnit",
+  businessUnitCoreSchema
 );

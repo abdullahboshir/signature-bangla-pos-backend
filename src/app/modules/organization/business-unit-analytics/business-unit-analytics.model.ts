@@ -1,13 +1,10 @@
 import { Schema, model } from "mongoose";
-import type { 
-  IStoreAnalyticsDocument, 
-  IStoreAnalyticsSummaryDocument, 
-  IStoreAnalyticsSummaryModel 
-} from "./store-analytics.interface.js";
+import type { IBusinessUnitAnalyticsDocument, IBusinessUnitAnalyticsSummaryDocument, IBusinessUnitAnalyticsSummaryModel } from "./business-unit-analytics.interface.ts";
+
 
 // ==================== STORE ANALYTICS MODEL ====================
-const storeAnalyticsSchema = new Schema<IStoreAnalyticsDocument>({
-  store: { type: Schema.Types.ObjectId, ref: 'Store', required: true },
+const businessUnitAnalyticsSchema = new Schema<IBusinessUnitAnalyticsDocument>({
+  businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true },
   date: { type: Date, required: true, default: Date.now },
   period: { 
     type: String, 
@@ -111,15 +108,15 @@ const storeAnalyticsSchema = new Schema<IStoreAnalyticsDocument>({
 });
 
 // Indexes
-storeAnalyticsSchema.index({ store: 1, date: 1, period: 1 }, { unique: true });
-storeAnalyticsSchema.index({ date: 1 });
-storeAnalyticsSchema.index({ period: 1 });
+businessUnitAnalyticsSchema.index({ businessUnit: 1, date: 1, period: 1 }, { unique: true });
+businessUnitAnalyticsSchema.index({ date: 1 });
+businessUnitAnalyticsSchema.index({ period: 1 });
 
-export const StoreAnalytics = model<IStoreAnalyticsDocument>('StoreAnalytics', storeAnalyticsSchema);
+export const BusinessUnitAnalytics = model<IBusinessUnitAnalyticsDocument>('BusinessUnitAnalytics', businessUnitAnalyticsSchema);
 
 // ==================== STORE ANALYTICS SUMMARY MODEL ====================
-const storeAnalyticsSummarySchema = new Schema<IStoreAnalyticsSummaryDocument, IStoreAnalyticsSummaryModel>({
-  store: { type: Schema.Types.ObjectId, ref: 'Store', required: true },
+const businessUnitAnalyticsSummarySchema = new Schema<IBusinessUnitAnalyticsSummaryDocument, IBusinessUnitAnalyticsSummaryModel>({
+  businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true },
   period: { 
     type: String, 
     enum: ["weekly", "monthly", "quarterly", "yearly"],
@@ -188,15 +185,15 @@ const storeAnalyticsSummarySchema = new Schema<IStoreAnalyticsSummaryDocument, I
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  toObject: { virtuals: true } 
 });
 
 // Indexes
-storeAnalyticsSummarySchema.index({ store: 1, period: 1, startDate: 1 }, { unique: true });
-storeAnalyticsSummarySchema.index({ period: 1, startDate: 1 });
+businessUnitAnalyticsSummarySchema.index({ businessUnit: 1, period: 1, startDate: 1 }, { unique: true });
+businessUnitAnalyticsSummarySchema.index({ period: 1, startDate: 1 });
 
 // Instance Methods
-storeAnalyticsSummarySchema.methods.calculateGrowthMetrics = async function(previousPeriod: any): Promise<void> {
+businessUnitAnalyticsSummarySchema.methods.calculateGrowthMetrics = async function(previousPeriod: any): Promise<void> {
   if (previousPeriod) {
     this.growth.revenueGrowth = previousPeriod.performance.totalRevenue > 0 
       ? ((this.performance.totalRevenue - previousPeriod.performance.totalRevenue) / previousPeriod.performance.totalRevenue) * 100 
@@ -213,7 +210,7 @@ storeAnalyticsSummarySchema.methods.calculateGrowthMetrics = async function(prev
   await this.save();
 };
 
-storeAnalyticsSummarySchema.methods.generateBusinessInsights = async function(): Promise<void> {
+businessUnitAnalyticsSummarySchema.methods.generateBusinessInsights = async function(): Promise<void> {
   // This would analyze the data to generate business insights
   // For now, we'll set some placeholder values
   this.businessInsights.bestSellingTime = "14:00-16:00";
@@ -223,7 +220,7 @@ storeAnalyticsSummarySchema.methods.generateBusinessInsights = async function():
   await this.save();
 };
 
-storeAnalyticsSummarySchema.methods.getPerformanceScore = function(): number {
+businessUnitAnalyticsSummarySchema.methods.getPerformanceScore = function(): number {
   const factors = {
     conversionRate: this.performance.conversionRate * 0.3,
     customerRetention: this.performance.customerRetentionRate * 0.25,
@@ -235,10 +232,10 @@ storeAnalyticsSummarySchema.methods.getPerformanceScore = function(): number {
 };
 
 // Static Methods
-storeAnalyticsSummarySchema.statics.generateStoreReport = async function(
-  storeId: Types.ObjectId, 
+businessUnitAnalyticsSummarySchema.statics.generateBusinessUnitReport = async function(
+  businessUnitId: Types.ObjectId, 
   period: string
-): Promise<IStoreAnalyticsSummaryDocument> {
+): Promise<IBusinessUnitAnalyticsSummaryDocument> {
   const endDate = new Date();
   let startDate = new Date();
   
@@ -257,11 +254,11 @@ storeAnalyticsSummarySchema.statics.generateStoreReport = async function(
       break;
   }
   
-  // Aggregate data from StoreAnalytics
-  const analyticsData = await StoreAnalytics.aggregate([
+  // Aggregate data from BusinessUnitAnalytics
+  const analyticsData = await BusinessUnitAnalytics.aggregate([
     {
       $match: {
-        store: storeId,
+        businessUnit: businessUnitId,
         date: { $gte: startDate, $lte: endDate },
         period: 'daily'
       }
@@ -287,9 +284,9 @@ storeAnalyticsSummarySchema.statics.generateStoreReport = async function(
   };
   
   const summary = await this.findOneAndUpdate(
-    { store: storeId, period, startDate },
+    { businessUnit: businessUnitId, period, startDate },
     {
-      store: storeId,
+      businessUnit: businessUnitId,
       period,
       startDate,
       endDate,
@@ -308,10 +305,10 @@ storeAnalyticsSummarySchema.statics.generateStoreReport = async function(
   return summary;
 };
 
-storeAnalyticsSummarySchema.statics.getStoreBenchmarks = async function(storeId: Types.ObjectId): Promise<any> {
+businessUnitAnalyticsSummarySchema.statics.getBusinessUnitBenchmarks = async function(businessUnitId: Types.ObjectId): Promise<any> {
   return this.aggregate([
     {
-      $match: { store: storeId }
+      $match: { businessUnit: businessUnitId }
     },
     {
       $group: {
@@ -325,4 +322,4 @@ storeAnalyticsSummarySchema.statics.getStoreBenchmarks = async function(storeId:
   ]);
 };
 
-export const StoreAnalyticsSummary = model<IStoreAnalyticsSummaryDocument, IStoreAnalyticsSummaryModel>('StoreAnalyticsSummary', storeAnalyticsSummarySchema);
+export const BusinessUnitAnalyticsSummary = model<IBusinessUnitAnalyticsSummaryDocument, IBusinessUnitAnalyticsSummaryModel>('BusinessUnitAnalyticsSummary', businessUnitAnalyticsSummarySchema);

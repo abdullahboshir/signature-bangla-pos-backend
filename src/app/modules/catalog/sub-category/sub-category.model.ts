@@ -1,6 +1,7 @@
 import { Schema, model } from "mongoose";
 import type { ISubCategory } from "./sub-category.interface.js"; // adjust path
-import { makeSlug } from "../../utils/utils.common.js";
+import { makeSlug } from "@core/utils/utils.common.ts";
+
 
 const SubCategorySchema = new Schema<ISubCategory>(
   {
@@ -46,7 +47,7 @@ const SubCategorySchema = new Schema<ISubCategory>(
   { timestamps: true }
 );
 
-SubCategorySchema.pre("save", function (next) {
+SubCategorySchema.pre("save", function (next) { 
   if (this.isModified("name")) {
     this.slug = makeSlug(this.name);
   }

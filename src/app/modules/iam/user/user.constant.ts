@@ -1,17 +1,17 @@
 export const USER_ROLE = {
-  SUPER_ADMIN: 'super_admin',
+  SUPER_ADMIN: 'super-admin',
   ADMIN: 'admin',
   MANAGER: 'manager',
   VENDOR: 'vendor',
   CUSTOMER: 'customer',
-  DELIVERY_MAN: 'delivery_man',
-  SUPPORT_AGENT: 'support_agent',
+  DELIVERY_MAN: 'delivery-man',
+  SUPPORT_AGENT: 'support-agent',
   GUEST: 'guest'
 } as const;
 
 export const USER_STATUS = {
   ACTIVE: 'active',
-  INACTIVE: 'inactive',
+  INACTIVE: 'inactive', 
   SUSPENDED: 'suspended',
   PENDING: 'pending',
   BLOCKED: 'blocked',

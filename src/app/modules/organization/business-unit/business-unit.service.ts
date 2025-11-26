@@ -1,13 +1,15 @@
 import { startSession } from "mongoose";
-import AppError from "../../../errors/AppError.js";
-import type { IStoreCore } from "./business-unit.interface.js";
-import { StoreCore } from "./store-core.model.js";
-import { generateIncreament, makeSlug } from "../../../utils/utils.common.js";
-import { sendImageToCloudinary } from "../../../utils/IMGUploader.js";
-import { ULIDGenerator } from "../../../utils/generateULID.js";
+
+import { generateIncreament, makeSlug } from "@core/utils/utils.common.ts";
+import { ULIDGenerator } from "@core/utils/generateULID.ts";
+import { sendImageToCloudinary } from "@core/utils/file-upload.ts";
+import AppError from "@shared/errors/app-error.ts";
+import { BusinessUnitCore } from "./business-unit.model.ts";
+import type { IBusinessUnitCore } from "./business-unit.interface.ts";
+
 
 export const createStoreService = async (
-  storeData: IStoreCore,
+  storeData: IBusinessUnitCore,
   file: Express.Multer.File | undefined
 ) => {
   const session = await startSession();
@@ -18,13 +20,13 @@ export const createStoreService = async (
 
     // Check if Store already exists
     console.log('dddddddddddddddddddd', storeData)
-    const isStoreAlreadyExists = await StoreCore.findOne({
+    const isStoreAlreadyExists = await BusinessUnitCore.findOne({
       vendor: storeData.vendor,
       slug: storeData.branding.name,
     }).session(session);
 
     if (isStoreAlreadyExists) {
-      const findRelatedSlug = await StoreCore.find({
+      const findRelatedSlug = await BusinessUnitCore.find({
         branding: storeData.branding.name,
       })
         .sort({ createdAt: -1 })
@@ -62,7 +64,7 @@ export const createStoreService = async (
 
 storeData.id = storeId
     // Create Customer
-    const newStore: any = await StoreCore.create([storeData], { session });
+    const newStore: any = await BusinessUnitCore.create([storeData], { session });
 
     if (!newStore || !newStore.length) {
       throw new AppError(500, "Failed to create customer profile!");

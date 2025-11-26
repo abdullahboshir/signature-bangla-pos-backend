@@ -50,6 +50,7 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
   
   // Origin & Manufacturing
   productmodel: { type: String },
+  origine: { type: String },
   
   // Tax & Compliance
   tax: { type: TaxConfigurationSchema, required: true },

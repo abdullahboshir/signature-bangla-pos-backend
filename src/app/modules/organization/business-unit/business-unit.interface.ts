@@ -1,29 +1,23 @@
 import type { Document, Model, Types } from "mongoose";
-import type {
-  IStoreBranding,
-  IStoreContact,
-  IStoreLocation,
-  IStoreSeo,
-  IStorePolicy,
-  IStorePerformance,
-} from "../store-shared/store.shared.interface.js";
+import type { IBusinessUnitBranding, IBusinessUnitContact, IBusinessUnitLocation, IBusinessUnitPerformance, IBusinessUnitPolicy, IBusinessUnitSeo } from "../business-unit-shared/business-unit-shared.interface.ts";
 
-export interface IStoreCore {
+
+export interface IBusinessUnitCore {
   id: string;
-  publicStoreId: string;
+  publicBusinessUnitId: string;
   vendor: Types.ObjectId;
-  branding: IStoreBranding;
+  branding: IBusinessUnitBranding;
   slug: string;
   categories: Types.ObjectId[];
   primaryCategory: Types.ObjectId;
   tags: string[];
   specialties: string[];
-  storeType: "general" | "boutique" | "brand" | "marketplace" | "specialty";
-  contact: IStoreContact;
-  location: IStoreLocation;
-  multipleLocations?: IStoreLocation[];
+  BusinessUnitType: "general" | "boutique" | "brand" | "marketplace" | "specialty";
+  contact: IBusinessUnitContact;
+  location: IBusinessUnitLocation;
+  multipleLocations?: IBusinessUnitLocation[];
 
-  // ==================== STORE CONFIGURATION ====================
+  // ==================== BusinessUnit CONFIGURATION ====================
   settings: {
     currency: "BDT" | "USD";
     language: "en" | "bn";
@@ -36,11 +30,11 @@ export interface IStoreCore {
   };
 
   // ==================== POLICIES & SEO ====================
-  policies: IStorePolicy;
-  seo: IStoreSeo;
+  policies: IBusinessUnitPolicy;
+  seo: IBusinessUnitSeo;
 
   // ==================== PERFORMANCE & RATINGS ====================
-  performance: IStorePerformance;
+  performance: IBusinessUnitPerformance;
   ratings: {
     average: number;
     count: number;
@@ -84,7 +78,7 @@ export interface IStoreCore {
   lastReviewAt?: Date;
 }
 
-export type IStoreCoreDocument = IStoreCore &
+export type IBusinessUnitCoreDocument = IBusinessUnitCore &
   Document & {
     // Computed Properties
     isActive: boolean;
@@ -105,29 +99,29 @@ export type IStoreCoreDocument = IStoreCore &
     activate(): Promise<void>;
     addProduct(productId: Types.ObjectId): Promise<void>;
     removeProduct(productId: Types.ObjectId): Promise<void>;
-    calculateStoreCommission(): number;
+    calculateBusinessUnitCommission(): number;
     getProductStats(): Promise<any>;
     getOrderStats(
       timeframe: "daily" | "weekly" | "monthly" | "yearly"
     ): Promise<any>;
   };
 
-export interface IStoreCoreModel extends Model<IStoreCoreDocument> {
+export interface IBusinessUnitCoreModel extends Model<IBusinessUnitCoreDocument> {
   // Static Methods
-  findFeaturedStores(limit?: number): Promise<IStoreCoreDocument[]>;
-  findStoresByCategory(
+  findFeaturedBusinessUnit(limit?: number): Promise<IBusinessUnitCoreDocument[]>;
+  findBusinessUnitByCategory(
     categoryId: Types.ObjectId
-  ): Promise<IStoreCoreDocument[]>;
-  findStoresByVendor(vendorId: Types.ObjectId): Promise<IStoreCoreDocument[]>;
-  searchStores(query: string, filters?: any): Promise<IStoreCoreDocument[]>;
-  findTopPerformingStores(limit?: number): Promise<IStoreCoreDocument[]>;
-  findNewStores(limit?: number): Promise<IStoreCoreDocument[]>;
-  getStoreStats(storeId: Types.ObjectId): Promise<any>;
+  ): Promise<IBusinessUnitCoreDocument[]>;
+  findBusinessUnitByVendor(vendorId: Types.ObjectId): Promise<IBusinessUnitCoreDocument[]>;
+  searchBusinessUnit(query: string, filters?: any): Promise<IBusinessUnitCoreDocument[]>;
+  findTopPerformingBusinessUnit(limit?: number): Promise<IBusinessUnitCoreDocument[]>;
+  findNewBusinessUnit(limit?: number): Promise<IBusinessUnitCoreDocument[]>;
+  getBusinessUnittats(BusinessUnitId: Types.ObjectId): Promise<any>;
 
   // Aggregation Methods
-  getCategoryStoreStats(categoryId: Types.ObjectId): Promise<any>;
-  getVendorStoreStats(vendorId: Types.ObjectId): Promise<any>;
-  getPlatformStoreStats(): Promise<any>;
-  findStoresNeedingAttention(): Promise<IStoreCoreDocument[]>;
-  calculateStoreGrowthMetrics(): Promise<any>;
+  getCategoryBusinessUnittats(categoryId: Types.ObjectId): Promise<any>;
+  getVendorBusinessUnittats(vendorId: Types.ObjectId): Promise<any>;
+  getPlatformBusinessUnittats(): Promise<any>;
+  findBusinessUnitNeedingAttention(): Promise<IBusinessUnitCoreDocument[]>;
+  calculateBusinessUnitGrowthMetrics(): Promise<any>;
 }

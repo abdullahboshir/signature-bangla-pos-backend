@@ -1,13 +1,14 @@
-import catchAsync from '../../utils/catchAsync.js';
-import sendResponse from '../../utils/sendResponse.js';
+
 import status from 'http-status';
 import { roleService } from './role.service.js';
+import catchAsync from '@core/utils/catchAsync.ts';
+import { ApiResponse } from '@core/utils/api-response.ts';
 
 // Get all roles
 export const getAllRoles = catchAsync(async (req, res) => {
   const result = await roleService.getAllRoles(req.query);
 
-  sendResponse(res, {
+  ApiResponse.success(res, {
     statusCode: status.OK,
     success: true,
     message: 'Roles retrieved successfully',
@@ -20,7 +21,7 @@ export const getRoleById = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await roleService.getRoleById(id as string);
 
-  sendResponse(res, {
+  ApiResponse.success(res, {
     statusCode: status.OK,
     success: true,
     message: 'Role retrieved successfully',
@@ -32,7 +33,7 @@ export const getRoleById = catchAsync(async (req, res) => {
 export const createRole = catchAsync(async (req, res) => {
   const result = await roleService.createRole(req.body, req.user);
 
-  sendResponse(res, {
+  ApiResponse.success(res, {
     statusCode: status.CREATED,
     success: true,
     message: 'Role created successfully',
@@ -45,7 +46,7 @@ export const updateRole = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await roleService.updateRole(id as string, req.body, req.user);
 
-  sendResponse(res, {
+  ApiResponse.success(res, {
     statusCode: status.OK,
     success: true,
     message: 'Role updated successfully',
@@ -58,7 +59,7 @@ export const deleteRole = catchAsync(async (req, res) => {
   const { id } = req.params;
   await roleService.deleteRole(id as string);
 
-  sendResponse(res, {
+  ApiResponse.success(res, {
     statusCode: status.OK,
     success: true,
     message: 'Role deleted successfully',
@@ -73,7 +74,7 @@ export const assignPermissionsToRole = catchAsync(async (req, res) => {
   
   const result = await roleService.assignPermissions(id as string, permissionIds, req.user);
 
-  sendResponse(res, {
+  ApiResponse.success(res, {
     statusCode: status.OK,
     success: true,
     message: 'Permissions assigned successfully',
@@ -88,7 +89,7 @@ export const removePermissionsFromRole = catchAsync(async (req, res) => {
   
   const result = await roleService.removePermissions(id as string, permissionIds, req.user);
 
-  sendResponse(res, {
+  ApiResponse.success(res, {
     statusCode: status.OK,
     success: true,
     message: 'Permissions removed successfully',

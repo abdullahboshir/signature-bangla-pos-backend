@@ -1,6 +1,6 @@
-
 import { Permission } from "@app/modules/iam/permission/permission.model.ts";
 import { Role } from "@app/modules/iam/role/role.model.ts";
+import { USER_ROLE } from "@app/modules/iam/user/user.constant.ts";
 import { User } from "@app/modules/iam/user/user.model.ts";
 import appConfig from "@shared/config/app.config.ts";
 import mongoose from "mongoose";
@@ -27,7 +27,7 @@ export const seedSuperAdmin = async () => {
 
     if (missingConfig.length > 0) {
       throw new Error(
-        `Missing required configuration: ${missingConfig.join(", ")}`
+        `Missing required configuration: ${missingConfig.join(", ")}` 
       );
     }
 
@@ -66,7 +66,7 @@ export const seedSuperAdmin = async () => {
 
     // 5. Validate dependencies
     const [role, allPermissions] = await Promise.all([
-      Role.findOne({ name: "super_admin" }).session(session),
+      Role.findOne({ name: USER_ROLE.SUPER_ADMIN }).session(session), 
       Permission.find({}).session(session),
     ]);
 
@@ -92,20 +92,20 @@ export const seedSuperAdmin = async () => {
 
     // 7. Create super admin
     const superAdminData = {
-      id: "super_admin",
+      id: "super-admin",
       email: appConfig.super_admin_email.toLowerCase(),
       phone: "01800000000",
       password: appConfig.super_admin_pass,
-      name: "Super Admin",
+      name: { firstName: "Super", lastName: "Admin" },
       nameBangla: "সুপার অ্যাডমিন",
       description: "Full system access with all permissions",
       descriptionBangla: "সম্পূর্ণ সিস্টেমে অ্যাক্সেস",
       isActive: true,
       isEmailVerified: true,
       isPhoneVerified: true,
-      hierarchyLevel: 1,
+      hierarchyLevel: 100,
       isDefault: false,
-      isSystemRole: true, // Changed to true for system roles
+      isSystemRole: true,
       maxDataAccess: {
         products: -1, // -1 for unlimited access
         orders: -1,
@@ -117,8 +117,8 @@ export const seedSuperAdmin = async () => {
       directPermissions: allPermissions.map((p) => p._id),
       inheritedRoles: [],
       lastLogin: new Date(),
-      createdBy: "system_seeder",
-      updatedBy: "system_seeder",
+      createdBy: null,
+      updatedBy: null,
       metadata: {
         seededAt: new Date(),
         seederVersion: "1.0",
@@ -176,7 +176,7 @@ function isValidEmail(email: string) {
 }
 
 async function getSuperAdminRoleId() {
-  const role = await Role.findOne({ name: "super_admin" });
+  const role = await Role.findOne({ name: "SUPER_ADMIN" });
   return role ? role._id : null;
 }
 

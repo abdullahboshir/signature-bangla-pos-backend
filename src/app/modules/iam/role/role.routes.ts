@@ -1,9 +1,7 @@
 import { Router } from 'express';
-import auth from '../../middlewares/auth.js';
-import { authorize } from '../../middlewares/authorize.js';
+
 import { PermissionActionObj, PermissionSourceObj } from '../permission/permission.constant.js';
 import { USER_ROLE } from '../user/user.constant.js';
-import { validateRequest } from '../../middlewares/validateRequest.js';
 import {
   createRole,
   getAllRoles,
@@ -15,6 +13,9 @@ import {
 } from './role.controller.js';
 import { createRoleValidation, updateRoleValidation } from './role.validation.js';
 import type { AnyZodObject } from 'zod/v3';
+import auth from '@core/middleware/auth.ts';
+import { authorize } from '@core/middleware/authorize.ts';
+import { validateRequest } from '@core/middleware/validateRequest.ts';
 
 const router = Router();
 

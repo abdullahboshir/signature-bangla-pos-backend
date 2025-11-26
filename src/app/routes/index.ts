@@ -1,6 +1,7 @@
 import { Router } from "express";
-import v1Routes from "./v1/index.js";
+
 import status from "http-status";
+import { v1Routes } from "./v1/index.ts";
 
 
 const router = Router();

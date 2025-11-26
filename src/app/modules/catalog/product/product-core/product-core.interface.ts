@@ -31,7 +31,7 @@ export interface IProductCore {
   shipping: Types.ObjectId;
   warranty: Types.ObjectId;
   details: Types.ObjectId;
-  hasVariants: boolean;
+  origine: string;
   variantTemplate?: Types.ObjectId;
   isBundle: boolean;
   bundleProducts: BundleProduct[];

@@ -1,17 +1,60 @@
 import status from 'http-status'
-import catchAsync from '../../utils/catchAsync.js'
-import { loginService } from './auth.service.js'
-import sendResponse from '../../utils/sendResponse.js'
+
+import { loginService, refreshTokenAuthService } from './auth.service.js'
+import catchAsync from '@core/utils/catchAsync.ts'
+import { ApiResponse } from '@core/utils/api-response.ts'
+import appConfig from '@shared/config/app.config.ts'
+
 
 
 export const loginController = catchAsync(async (req, res) => {
   const { email, password } = req.body
   const data = await loginService(email, password)
 
-  sendResponse(res, {
+     const { accessToken, refreshToken, needsPasswordChange, user } = data
+
+      res.cookie("refreshToken", refreshToken, {
+  // httpOnly: true,         
+  secure: appConfig.NODE_ENV === 'production',           
+  sameSite: "strict",     
+  path: "/",
+  maxAge: 7 * 24 * 60 * 60 * 1000 
+});
+
+
+  ApiResponse.success(res, {
     success: true,
     statusCode: status.OK,
     message: 'User Login has been Successfully',
-    data,
+    data: { accessToken, needsPasswordChange, user},
   })
 })
+
+
+
+
+
+
+export const refreshTokenController = catchAsync(
+  async (req, res) => {
+    const { refreshToken } = req.cookies
+
+    const result = await refreshTokenAuthService(refreshToken)
+
+      res.cookie("refreshToken", refreshToken, {
+  // httpOnly: true,         
+  secure: appConfig.NODE_ENV === 'production',           
+  sameSite: "strict",     
+  path: "/",
+  maxAge: 7 * 24 * 60 * 60 * 1000 
+});
+
+
+      ApiResponse.success(res, {
+    success: true,
+    statusCode: status.OK,
+   message: 'Access Token has been retrieved successfully',
+    data: result,
+  })
+  },
+)

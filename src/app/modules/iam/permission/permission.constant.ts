@@ -7,6 +7,7 @@ export const PermissionResourceType = [
   "customer",
   "category",
   "brand",
+  "business-unit",
   "vendor",
   "store",
   "supplier",

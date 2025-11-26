@@ -1,4 +1,5 @@
-import AppError from "../../../errors/AppError.js";
+
+import AppError from "@shared/errors/app-error.ts";
 import { Category } from "../../category/category.model.js";
 import type { IProductCore } from "./product-core.interface.js";
 
@@ -16,7 +17,7 @@ export const createProductService = async (payload: IProductCore) => {
   }
 
 
-  const productSku = await generateProductCode(category?.name? category?.name : 'others', payload?.origin);
+  const productSku = await generateProductCode(category?.name? category?.name : 'others', payload?.origine);
 
   payload.sku = productSku;
 

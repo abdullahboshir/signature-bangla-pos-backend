@@ -2,7 +2,8 @@ import { model, Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import type { IUser, UserStatic } from "./user.interface.js";
 import { USER_STATUS } from "./user.constant.js";
-import { cachingMiddleware } from "../../utils/cacheQuery.js";
+import { cachingMiddleware } from "@core/utils/cacheQuery.ts";
+
 
 
 
@@ -15,7 +16,6 @@ const NameSchema = new Schema({
   },
   lastName: {
     type: String,
-    required: true,
     trim: true,
     maxlength: 50
   }
@@ -165,17 +165,19 @@ const UserSchema = new Schema<IUser, UserStatic>({
   loginHistory: [LoginHistorySchema],
   createdBy: {
     type: Schema.Types.ObjectId,
-    ref: 'User'
+    ref: 'User',
+    default: null
   },
   updatedBy: {
     type: Schema.Types.ObjectId,
-    ref: 'User'
+    ref: 'User',
+    default: null
   }
 }, {
   timestamps: true,
   toJSON: {
     virtuals: true,
-    transform: function(doc, ret: any ) {
+    transform: function(_doc, ret: any ) {
       delete ret?.password;
       return ret;
     }
@@ -226,7 +228,7 @@ UserSchema.pre('save', function(next) {
 
 // Static method: Check if user exists by email
 UserSchema.statics["isUserExists"] = async function(email: string): Promise<IUser> {
-  const user = await this["findOne"]({ email, isDeleted: false, isActive: true })
+  const user = await this["findOne"]({ email, isDeleted: false, isActive: true }).populate('roles')
     .select('+password');
   
   if (!user) {

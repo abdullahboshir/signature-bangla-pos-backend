@@ -1,10 +1,11 @@
-import AppError from '../../errors/AppError.js';
+
 import status from 'http-status';
 import { Role } from './role.model.js';
 import type { IRole } from './role.interface.js';
 import { Permission } from '../permission/permission.model.js';
-import { bumpVersion } from '../../utils/cacheKeys.js';
 import type { JwtPayload } from 'jsonwebtoken';
+import AppError from '@shared/errors/app-error.ts';
+import { bumpVersion } from '@core/utils/cacheKeys.ts';
 
 class RoleService {
   // Get all roles

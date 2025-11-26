@@ -1,7 +1,8 @@
+import { categoryRoutes } from "@app/modules/catalog/category/category.routes.ts";
+import { childCategoryRoutes } from "@app/modules/catalog/child-category/child-category.routes.ts";
+import { subCategoryRoutes } from "@app/modules/catalog/sub-category/sub-category.routes.ts";
 import { Router } from "express";
-import { categoryRoutes } from "../../../modules/category/category.routes.js";
-import { subCategoryRoutes } from "../../../modules/sub-category/sub-category.routes.js";
-import { childCategoryRoutes } from "../../../modules/child-category/child-category.routes.js";
+
 
 
 const router = Router();

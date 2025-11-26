@@ -1,4 +1,5 @@
 // src/modules/Permission/permission.service.ts
+import { buildUserPermissionsKey } from '@core/utils/cacheKeys.ts';
 import type { IUser } from '../user/user.interface.js';
 import type {
   IPermission,
@@ -6,11 +7,11 @@ import type {
   IPermissionContext,
   IPermissionResult,
 } from './permission.interface.js';
+import { CacheManager } from '@core/utils/caching/cache-manager.ts';
+import logger from '@core/utils/logger.ts';
+import { Role } from '../role/role.model.ts';
 
-import { CacheManager } from '../../caching/cache-manager.js';
-import { buildUserPermissionsKey } from '../../utils/cacheKeys.js';
-import { Role } from '../role/role.model.js';
-import logger from '../../utils/logger.js';
+
 
 const MAX_ROLE_HIERARCHY_DEPTH = 15;         
 const CACHE_TTL_SECONDS = 3600;               

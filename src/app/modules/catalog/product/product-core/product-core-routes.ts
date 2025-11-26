@@ -1,13 +1,14 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
-import auth from "../../../middlewares/auth.js";
-import { USER_ROLE } from "../../user/user.constant.js";
-import { PermissionActionObj, PermissionSourceObj } from "../../permission/permission.constant.js";
-import { validateRequest } from "../../../middlewares/validateRequest.js";
+
 import { productZodSchema } from "./product-core-validation.js";
 import { createProductController } from "./product-core-controller.js";
 import type { AnyZodObject } from "zod/v3";
-import { authorize } from "../../../middlewares/authorize.js";
-import { upload } from "../../../utils/IMGUploader.js";
+import auth from "@core/middleware/auth.ts";
+import { USER_ROLE } from "@app/modules/iam/user/user.constant.ts";
+import { PermissionActionObj, PermissionSourceObj } from "@app/modules/iam/permission/permission.constant.ts";
+import { authorize } from "@core/middleware/authorize.ts";
+import { upload } from "@core/utils/file-upload.ts";
+import { validateRequest } from "@core/middleware/validateRequest.ts";
 
 
 

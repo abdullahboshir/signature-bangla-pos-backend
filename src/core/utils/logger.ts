@@ -1,10 +1,11 @@
+import appConfig from "@shared/config/app.config.ts";
 
 
-import config from "../config/app.config.js";
+
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-const isProd = config.NODE_ENV === 'production';
+const isProd = appConfig.NODE_ENV === 'production';
 
 const LEVEL_VALUE: Record<LogLevel, number> = {
   debug: 0,
@@ -109,3 +110,62 @@ export default {
   warn:  log.warn,
   error: log.error,
 };
+
+
+
+
+// improvement version 
+// src/core/utils/logger.ts
+
+// import fs from 'fs';
+// import path from 'path';
+
+// const logDir = path.join(process.cwd(), 'logs');
+
+// // Create logs directory if it doesn't exist
+// if (!fs.existsSync(logDir)) {
+//   fs.mkdirSync(logDir, { recursive: true });
+// }
+
+// export class Logger {
+//   private getTimestamp(): string {
+//     return new Date().toISOString();
+//   }
+
+//   private formatMessage(level: string, message: string, meta?: any): string {
+//     const timestamp = this.getTimestamp();
+//     const metaString = meta ? ` | ${JSON.stringify(meta)}` : '';
+//     return `[${timestamp}] [${level}] ${message}${metaString}`;
+//   }
+
+//   private writeLog(level: string, message: string, meta?: any): void {
+//     const formatted = this.formatMessage(level, message, meta);
+//     const logFile = path.join(logDir, `${level.toLowerCase()}.log`);
+
+//     fs.appendFileSync(logFile, formatted + '\n');
+//   }
+
+//   info(message: string, meta?: any): void {
+//     console.log(`✓ ${message}`, meta || '');
+//     this.writeLog('INFO', message, meta);
+//   }
+
+//   error(message: string, error?: any): void {
+//     console.error(`✗ ${message}`, error || '');
+//     this.writeLog('ERROR', message, error);
+//   }
+
+//   warn(message: string, meta?: any): void {
+//     console.warn(`⚠ ${message}`, meta || '');
+//     this.writeLog('WARN', message, meta);
+//   }
+
+//   debug(message: string, meta?: any): void {
+//     if (process.env.DEBUG) {
+//       console.log(`🐛 ${message}`, meta || '');
+//       this.writeLog('DEBUG', message, meta);
+//     }
+//   }
+// }
+
+// export const logger = new Logger();

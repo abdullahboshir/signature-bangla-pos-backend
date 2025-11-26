@@ -1,6 +1,7 @@
 import { Schema, model} from "mongoose";
 import type { IChildCategory } from "./child-category.interface.js";
-import { makeSlug } from "../../utils/utils.common.js";
+import { makeSlug } from "@core/utils/utils.common.ts";
+
 
 const ChildCategorySchema = new Schema<IChildCategory>(
   {

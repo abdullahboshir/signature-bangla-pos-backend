@@ -1,5 +1,6 @@
+import { productRoutes } from "@app/modules/catalog/product/product-core/product-core-routes.ts";
 import { Router } from "express";
-import { productRoutes } from "../../../modules/product/product-core/product-core-routes.js";
+
 
 
 const router = Router();

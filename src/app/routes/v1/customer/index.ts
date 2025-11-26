@@ -10,7 +10,7 @@ import profileRoutes from "./profile.routes.js";
 
 const router = Router();
 
-router.use("/profile", profileRoutes);
+router.use("/customer-profile", profileRoutes);
 // router.use("/orders", ordersRoutes);
 // router.use("/cart", cartRoutes);
 // router.use("/wishlist", wishlistRoutes);
@@ -19,4 +19,4 @@ router.use("/profile", profileRoutes);
 // router.use("/reviews", reviewsRoutes);
 // router.use("/tracking", trackingRoutes);
 
-export default router;
+export const customerGroupRoutes = router;

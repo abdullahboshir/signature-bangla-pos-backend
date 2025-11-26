@@ -1,21 +1,19 @@
 import { Router } from "express";
 
-import superAdminRoutes from "./admin";
-import businessAdminRoutes from "./vendor";
-import vendorRoutes from "./vendor";
-import customerRoutes from "./customer";
-import publicRoutes from "./public";
-import webhookRoutes from "./webhook";
-import authRoutes from "./auth/auth.routes";
+// import businessAdminRoutes from "./vendor";
+
+import { authGroupRoutes } from "./auth/auth.routes.ts";
+import { adminGroupRoutes } from "./super-admin/index.ts";
+import { customerGroupRoutes } from "./customer/index.ts";
+import { publicGroupRoutes } from "./public/index.ts";
 
 const router = Router();
 
-router.use("/super-admin", superAdminRoutes);
-router.use("/business-admin", businessAdminRoutes);
-router.use("/vendor", vendorRoutes);
-router.use("/customer", customerRoutes);
-router.use("/public", publicRoutes);
-router.use("/webhook", webhookRoutes);
-router.use("/auth", authRoutes);
+router.use("/super-admin", adminGroupRoutes);
+// router.use("/business-admin", businessAdminRoutes);
+router.use("/customer", customerGroupRoutes);
+router.use("/public", publicGroupRoutes);
+// router.use("/webhook", webhookRoutes);
+router.use("/auth", authGroupRoutes);
 
-export default router;
+export const v1Routes = router;

@@ -1,7 +1,7 @@
 import type { Document, Model, Types } from "mongoose";
 
-export interface IStoreAnalytics {
-  store: Types.ObjectId;
+export interface IBusinessUnitAnalytics {
+  businessUnit: Types.ObjectId;
   date: Date;
   period: "hourly" | "daily" | "weekly" | "monthly";
   
@@ -101,7 +101,7 @@ export interface IStoreAnalytics {
   updatedAt: Date;
 }
 
-export interface IStoreAnalyticsSummary {
+export interface IBusinessUnitAnalyticsSummary {
   store: Types.ObjectId;
   period: "weekly" | "monthly" | "quarterly" | "yearly";
   startDate: Date;
@@ -165,14 +165,14 @@ export interface IStoreAnalyticsSummary {
   updatedAt: Date;
 }
 
-export type IStoreAnalyticsDocument = IStoreAnalytics & Document;
-export type IStoreAnalyticsSummaryDocument = IStoreAnalyticsSummary & Document & {
+export type IBusinessUnitAnalyticsDocument = IBusinessUnitAnalytics & Document;
+export type IBusinessUnitAnalyticsSummaryDocument = IBusinessUnitAnalyticsSummary & Document & {
   calculateGrowthMetrics(previousPeriod: any): Promise<void>;
   generateBusinessInsights(): Promise<void>;
   getPerformanceScore(): number;
 };
 
-export interface IStoreAnalyticsSummaryModel extends Model<IStoreAnalyticsSummaryDocument> {
-  generateStoreReport(storeId: Types.ObjectId, period: string): Promise<IStoreAnalyticsSummaryDocument>;
-  getStoreBenchmarks(storeId: Types.ObjectId): Promise<any>;
+export interface IBusinessUnitAnalyticsSummaryModel extends Model<IBusinessUnitAnalyticsSummaryDocument> {
+  generateBusinessUnitReport(storeId: Types.ObjectId, period: string): Promise<IBusinessUnitAnalyticsSummaryDocument>;
+  getBusinessUnitBenchmarks(storeId: Types.ObjectId): Promise<any>;
 }
