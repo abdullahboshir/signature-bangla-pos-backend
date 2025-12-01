@@ -115,9 +115,11 @@ const UserSchema = new Schema<IUser, UserStatic>({
   branches: [{
     type: String
   }],
-  vendorId: {
-    type: String
-  },
+   businessUnits: [{
+    type: Schema.Types.ObjectId,
+    ref: 'BusinessUnit',
+    required: true
+  }],
   region: {
     type: String
   },
@@ -227,8 +229,26 @@ UserSchema.pre('save', function(next) {
 });
 
 // Static method: Check if user exists by email
+// Assuming IUser and UserSchema are defined and imported
+// Note: 'this' inside a static method refers to the Model.
+
 UserSchema.statics["isUserExists"] = async function(email: string): Promise<IUser> {
-  const user = await this["findOne"]({ email, isDeleted: false, isActive: true }).populate('roles')
+  const user = await this["findOne"]({ email, isDeleted: false, isActive: true })
+    .populate([
+      {
+        path: 'roles', // Step 1: Populate the Role document(s)
+        // Nested population for permissions array inside the Role document
+        populate: {
+          path: 'permissions', // Step 2: Path to the array of permission IDs within the Role document
+          // CRITICAL: Ensure 'Permission' is the EXACT registered name of your Permission Model
+          // as defined in mongoose.model('Permission', ...). This guarantees Mongoose finds the collection.
+          model: 'Permission' 
+        }
+      }, 
+      { 
+        path: 'businessUnits' // Keep existing population
+      }
+    ])
     .select('+password');
   
   if (!user) {

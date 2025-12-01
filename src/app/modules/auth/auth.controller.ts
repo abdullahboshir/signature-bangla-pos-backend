@@ -1,9 +1,10 @@
 import status from 'http-status'
 
-import { loginService, refreshTokenAuthService } from './auth.service.js'
+import { authMeService, loginService, refreshTokenAuthService } from './auth.service.js'
 import catchAsync from '@core/utils/catchAsync.ts'
 import { ApiResponse } from '@core/utils/api-response.ts'
 import appConfig from '@shared/config/app.config.ts'
+import log from '@core/utils/logger.ts'
 
 
 
@@ -14,7 +15,7 @@ export const loginController = catchAsync(async (req, res) => {
      const { accessToken, refreshToken, needsPasswordChange, user } = data
 
       res.cookie("refreshToken", refreshToken, {
-  // httpOnly: true,         
+  httpOnly: true,         
   secure: appConfig.NODE_ENV === 'production',           
   sameSite: "strict",     
   path: "/",
@@ -42,13 +43,30 @@ export const refreshTokenController = catchAsync(
     const result = await refreshTokenAuthService(refreshToken)
 
       res.cookie("refreshToken", refreshToken, {
-  // httpOnly: true,         
+  httpOnly: true,         
   secure: appConfig.NODE_ENV === 'production',           
   sameSite: "strict",     
   path: "/",
   maxAge: 7 * 24 * 60 * 60 * 1000 
 });
 
+
+      ApiResponse.success(res, {
+    success: true,
+    statusCode: status.OK,
+   message: 'Access Token has been retrieved successfully',
+    data: result,
+  })
+  },
+)
+
+
+export const authMeController = catchAsync(
+  async (req, res) => {
+
+ const userInfo = req.user;
+
+    const result = await authMeService(userInfo)
 
       ApiResponse.success(res, {
     success: true,

@@ -1,5 +1,6 @@
 import type { IPermissionContext } from "@app/modules/iam/permission/permission.interface.ts";
 import { permissionService } from "@app/modules/iam/permission/permission.service.ts";
+import { USER_ROLE } from "@app/modules/iam/user/user.constant.ts";
 import { User } from "@app/modules/iam/user/user.model.ts";
 import catchAsync from "@core/utils/catchAsync.ts";
 import AppError from "@shared/errors/app-error.ts";
@@ -27,12 +28,20 @@ export const authorize = (resource: string, action: string) => {
         })
         .select('+directPermissions');
 
-
-    
-      if (!userWithRoles) {
-        throw new AppError(status.NOT_FOUND, 'User not found');
-      }
         
+        
+        if (!userWithRoles) {
+          throw new AppError(status.NOT_FOUND, 'User not found');
+        }
+
+        const roles = userWithRoles?.roles.map((role: any) => role?.name);
+        // console.log('USERRRRRRRRRR', roles)
+
+        if(roles.includes(USER_ROLE.SUPER_ADMIN)){
+          return next()
+        }
+    
+           console.log('USERRRRRRRRRR from req.body', req.params.userId)
       // Build permission context with correct resource info
       const context: IPermissionContext = {
         user: {
@@ -45,10 +54,9 @@ export const authorize = (resource: string, action: string) => {
         },
         resource: {
           id: req.params.id || req.params.resourceId,
-          ownerId: req.body?.ownerId || req.params.userId || req.params.ownerId,
-          vendorId: req.body?.vendorId || req.params.vendorId || req.user?.vendorId,
-          category: req.body?.category || req.params.category || req.query?.category,
-          region: req.body?.region || req.params.region || req.user?.region
+          ownerId: user?.userId || req.params.userId || req.params.ownerId,
+          category: user?.category || req.params.category || req.query?.category,
+          region: user?.region || req.params.region || req.user?.region
         },
         environment: {
           ip: req.ip,
@@ -57,13 +65,7 @@ export const authorize = (resource: string, action: string) => {
         }
       };
       
-      console.log("[AUTHORIZE MIDDLEWARE] Checking permission:", {
-        resource,
-        action,
-        userId: userWithRoles.id,
-        roles: context.user.roles
-      });
-
+    console.log('permission context', context)
       // Check permission using RBAC/ABAC system
       const result = await permissionService.checkPermission(
         userWithRoles,

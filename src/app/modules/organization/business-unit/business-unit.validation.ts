@@ -8,12 +8,12 @@ const objectIdSchema = z.string().refine((val) => mongoose.Types.ObjectId.isVali
 
 const urlSchema = z.string().url().optional().or(z.literal(''));
 
-// Main store validation schema
-export const createStoreValidationSchema = z.object({
+// Main BusinessUnit validation schema
+export const createBusinessUnitValidationSchema = z.object({
   vendor: objectIdSchema,
   
   branding: z.object({
-    name: z.string().min(1, "Store name is required").max(100, "Store name too long"),
+    name: z.string().min(1, "BusinessUnit name is required").max(100, "BusinessUnit name too long"),
     description: z.string().min(10, "Description must be at least 10 characters").max(500, "Description too long"),
     descriptionBangla: z.string().max(500, "Description too long").optional(),
     logo: urlSchema,
@@ -36,7 +36,7 @@ export const createStoreValidationSchema = z.object({
   primaryCategory: objectIdSchema,
   tags: z.array(z.string().max(30, "Tag too long")).optional(),
   specialties: z.array(z.string().max(50, "Specialty too long")).optional(),
-  storeType: z.enum(["general", "boutique", "brand", "marketplace", "specialty"]).optional(),
+  businessUnitType: z.enum(["general", "boutique", "brand", "marketplace", "specialty"]).optional(),
   
   contact: z.object({
     email: z.string().email("Invalid email address"),
@@ -117,7 +117,7 @@ export const createStoreValidationSchema = z.object({
   path: ["primaryCategory"],
 });
 
-export const updateStoreSchema = createStoreValidationSchema.partial();
+export const updateBusinessUnitSchema = createBusinessUnitValidationSchema.partial();
 
-export type CreateStoreInput = z.infer<typeof createStoreValidationSchema>;
-export type UpdateStoreInput = z.infer<typeof updateStoreSchema>;
+export type CreateBusinessUnitInput = z.infer<typeof createBusinessUnitValidationSchema>;
+export type UpdateBusinessUnitInput = z.infer<typeof updateBusinessUnitSchema>;

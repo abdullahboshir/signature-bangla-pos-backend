@@ -1,12 +1,12 @@
 import catchAsync from "@core/utils/catchAsync.ts";
 import status from "http-status";
-import { createStoreService } from "./business-unit.service.ts";
+import { BusinessUnitService } from "./business-unit.service.ts";
 import { ApiResponse } from "@core/utils/api-response.ts";
 
 
-export const createStoreController = catchAsync(async (req: any, res) => {
-  const {storeData} = req.body;
-  const data = await createStoreService(storeData, req?.file)
+export const createBusinessUnitController = catchAsync(async (req: any, res) => {
+  const businessUnitData = req.body;
+  const data = await BusinessUnitService.createBusinessUnit(businessUnitData)
 
   ApiResponse.success(res, {
     success: true,

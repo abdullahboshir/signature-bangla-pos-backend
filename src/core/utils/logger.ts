@@ -1,7 +1,6 @@
+// src/core/utils/logger.ts
+
 import appConfig from "@shared/config/app.config.ts";
-
-
-
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -9,37 +8,121 @@ const isProd = appConfig.NODE_ENV === 'production';
 
 const LEVEL_VALUE: Record<LogLevel, number> = {
   debug: 0,
-  info:  1,
-  warn:  2,
+  info: 1,
+  warn: 2,
   error: 3,
 };
 
-
 const DEFAULT_LEVEL: LogLevel = isProd ? 'info' : 'debug';
 
-
 const COLORS: Record<LogLevel, string> = {
-  debug: '\x1b[34m', // blue
-  info:  '\x1b[32m', // green
-  warn:  '\x1b[33m', // yellow
+  debug: '\x1b[36m', // cyan
+  info: '\x1b[32m', // green
+  warn: '\x1b[33m', // yellow
   error: '\x1b[31m', // red
 };
 const RESET = '\x1b[0m';
+const DIM = '\x1b[2m';
+const BRIGHT = '\x1b[1m';
 
+/**
+ * Extract caller information from stack trace at CALL TIME
+ * This must be called INSIDE the logging function, not during initialization
+ */
+function getCallerInfo(): { file: string; line: string; full: string } {
+  try {
+    // Prepare stack trace
+    const oldPrepareStackTrace = Error.prepareStackTrace;
+    Error.prepareStackTrace = (_err, stack) => stack;
 
-type SensitiveKey = 'password' | 'token' | 'accessToken' | 'refreshToken' | 'email' | 'userId';
+    const err = new Error();
+    const stack = err.stack as any;
 
+    Error.prepareStackTrace = oldPrepareStackTrace;
 
+    if (!Array.isArray(stack)) {
+      return { file: 'unknown', line: '0', full: '[unknown:0]' };
+    }
+
+    // Skip frames:
+    // 0: getCallerInfo
+    // 1: logAtLevel (our internal function)
+    // 2: log.info/warn/error/debug (user call)
+    // 3+: ACTUAL USER CODE ← We want this
+    
+    for (let i = 3; i < stack.length; i++) {
+      const frame = stack[i];
+      
+      // Skip logger internals
+      const filename = frame.getFileName() || '';
+      if (filename.includes('logger.ts') || filename.includes('/core/utils/')) {
+        continue;
+      }
+
+      // Skip node_modules and internal Node stuff
+      if (filename.includes('node_modules') || filename === 'internal') {
+        continue;
+      }
+
+      const functionName = frame.getFunctionName() || 'anonymous';
+      const lineNumber = frame.getLineNumber() || 0;
+      const columnNumber = frame.getColumnNumber() || 0;
+
+      if (filename) {
+        // Convert absolute path to relative
+        const projectRoot = process.cwd();
+        const relativePath = filename
+          .replace(projectRoot, '')
+          .replace(/^[/\\]/, '')
+          .replace(/\\/g, '/');
+
+        // Take last 3-4 segments for readability
+        const segments = relativePath.split('/');
+        const shortPath = segments.length > 3
+          ? `.../${segments.slice(-3).join('/')}`
+          : relativePath;
+
+        return {
+          file: shortPath,
+          line: String(lineNumber),
+          full: `${shortPath}:${lineNumber}:${columnNumber}`,
+        };
+      }
+    }
+  } catch (e) {
+    // Silent fail
+  }
+
+  return {
+    file: 'unknown',
+    line: '0',
+    full: 'unknown:0:0',
+  };
+}
+
+/**
+ * Sanitize sensitive data in logs (production only)
+ */
 function sanitizeSensitive(data: any): any {
-  if (!isProd) return data;              
+  if (!isProd) return data;
   if (data == null || typeof data !== 'object') return data;
 
   const clone = Array.isArray(data) ? [] : {};
+  const sensitiveKeys = [
+    'password',
+    'token',
+    'accessToken',
+    'refreshToken',
+    'secret',
+    'apiKey',
+    'authorization',
+    'cookie',
+  ];
 
   for (const key in data) {
     const val = (data as any)[key];
-    if (['password', 'token', 'accessToken', 'refreshToken', 'email', 'userId'].includes(key)) {
-      (clone as any)[key] = '***';
+    if (sensitiveKeys.some(k => key.toLowerCase().includes(k))) {
+      (clone as any)[key] = '***REDACTED***';
     } else if (typeof val === 'object' && val !== null) {
       (clone as any)[key] = sanitizeSensitive(val);
     } else {
@@ -49,123 +132,67 @@ function sanitizeSensitive(data: any): any {
   return clone;
 }
 
-
-interface LoggerFn {
-  (msg: string, meta?: Record<string, unknown>): void;
-}
-
-
-function makeLogger(level: LogLevel): LoggerFn {
+/**
+ * Core logging function - captures stack at CALL TIME
+ */
+function logAtLevel(level: LogLevel, msg: string, meta?: Record<string, unknown>): void {
   const currentLevelValue = LEVEL_VALUE[DEFAULT_LEVEL];
   const thisLevelValue = LEVEL_VALUE[level];
 
-
+  // Skip if below threshold
   if (thisLevelValue < currentLevelValue) {
-    return () => {}; 
+    return;
   }
 
-  return (msg: string, meta: Record<string, unknown> = {}) => {
-    const timestamp = new Date().toISOString();
-    const sanitizedMeta = sanitizeSensitive(meta);
+  // CAPTURE STACK TRACE HERE (at call time)
+  const callerInfo = getCallerInfo();
+  const timestamp = new Date().toISOString();
+  const sanitizedMeta = sanitizeSensitive(meta || {});
 
-    if (isProd) {
-      // ---- production : JSON line -------------------------------------------------
-      const payload = {
-        timestamp,
-        level,
-        message: msg,
-        ...sanitizedMeta,
-      };
-      // console.log automatically adds newline
-      console.log(JSON.stringify(payload));
-    } else {
-      // ---- development : colored, human readable ----------------------------------
-      const color = COLORS[level];
-      const metaString = Object.keys(sanitizedMeta).length
-        ? ' ' + JSON.stringify(sanitizedMeta, null, 2)
-        : '';
-      const line = `${timestamp} ${color}${level.toUpperCase()}${RESET} ${msg}${metaString}`;
-  
-      if (level === 'error' || level === 'warn') {
-        console.error(line);
-      } else {
-        console.log(line);
-      }
+  if (isProd) {
+    // ============ PRODUCTION: JSON format ============
+    const payload = {
+      timestamp,
+      level: level.toUpperCase(),
+      location: callerInfo.full,
+      message: msg,
+      ...(Object.keys(sanitizedMeta).length > 0 && { meta: sanitizedMeta }),
+    };
+    console.log(JSON.stringify(payload));
+  } else {
+    // ============ DEVELOPMENT: Colored format ============
+    const color = COLORS[level];
+    const levelTag = `${color}${BRIGHT}${level.toUpperCase().padEnd(5)}${RESET}`;
+    const timeTag = `${DIM}${timestamp}${RESET}`;
+    const fileTag = `${BRIGHT}[${callerInfo.full}]${RESET}`;
+
+    let metaString = '';
+    if (Object.keys(sanitizedMeta).length > 0) {
+      metaString = '\n' + JSON.stringify(sanitizedMeta, null, 2);
     }
-  };
+
+    const logLine = `${timeTag} ${levelTag} ${fileTag}\n  → ${msg}${metaString}`;
+
+    if (level === 'error') {
+      console.error(logLine);
+    } else if (level === 'warn') {
+      console.warn(logLine);
+    } else {
+      console.log(logLine);
+    }
+  }
 }
 
-
+/**
+ * Export logger with methods
+ * Each method calls logAtLevel DIRECTLY (not through a factory)
+ * This ensures stack trace is captured at the right depth
+ */
 export const log = {
-  debug: makeLogger('debug'),
-  info:  makeLogger('info'),
-  warn:  makeLogger('warn'),
-  error: makeLogger('error'),
+  debug: (msg: string, meta?: Record<string, unknown>) => logAtLevel('debug', msg, meta),
+  info: (msg: string, meta?: Record<string, unknown>) => logAtLevel('info', msg, meta),
+  warn: (msg: string, meta?: Record<string, unknown>) => logAtLevel('warn', msg, meta),
+  error: (msg: string, meta?: Record<string, unknown>) => logAtLevel('error', msg, meta),
 };
 
-
-export default {
-  debug: log.debug,
-  info:  log.info,
-  warn:  log.warn,
-  error: log.error,
-};
-
-
-
-
-// improvement version 
-// src/core/utils/logger.ts
-
-// import fs from 'fs';
-// import path from 'path';
-
-// const logDir = path.join(process.cwd(), 'logs');
-
-// // Create logs directory if it doesn't exist
-// if (!fs.existsSync(logDir)) {
-//   fs.mkdirSync(logDir, { recursive: true });
-// }
-
-// export class Logger {
-//   private getTimestamp(): string {
-//     return new Date().toISOString();
-//   }
-
-//   private formatMessage(level: string, message: string, meta?: any): string {
-//     const timestamp = this.getTimestamp();
-//     const metaString = meta ? ` | ${JSON.stringify(meta)}` : '';
-//     return `[${timestamp}] [${level}] ${message}${metaString}`;
-//   }
-
-//   private writeLog(level: string, message: string, meta?: any): void {
-//     const formatted = this.formatMessage(level, message, meta);
-//     const logFile = path.join(logDir, `${level.toLowerCase()}.log`);
-
-//     fs.appendFileSync(logFile, formatted + '\n');
-//   }
-
-//   info(message: string, meta?: any): void {
-//     console.log(`✓ ${message}`, meta || '');
-//     this.writeLog('INFO', message, meta);
-//   }
-
-//   error(message: string, error?: any): void {
-//     console.error(`✗ ${message}`, error || '');
-//     this.writeLog('ERROR', message, error);
-//   }
-
-//   warn(message: string, meta?: any): void {
-//     console.warn(`⚠ ${message}`, meta || '');
-//     this.writeLog('WARN', message, meta);
-//   }
-
-//   debug(message: string, meta?: any): void {
-//     if (process.env.DEBUG) {
-//       console.log(`🐛 ${message}`, meta || '');
-//       this.writeLog('DEBUG', message, meta);
-//     }
-//   }
-// }
-
-// export const logger = new Logger();
+export default log;

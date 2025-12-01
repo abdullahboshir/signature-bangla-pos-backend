@@ -13,7 +13,7 @@ export interface IUser {
   email: string;
   phone?: string;
   password: string;
-  businessUnitId?: Types.ObjectId[];
+  businessUnits?: Types.ObjectId[];
   roles: Types.ObjectId[];
   departments: string[];
   branches?: string[];

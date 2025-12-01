@@ -7,6 +7,7 @@ import status from "http-status";
 
 export const loginService = async (email: string, pass: string) => {
   const isUserExists = await User.isUserExists(email);
+  console.info("I AM FROM AUTH SERVICE:", isUserExists);
 
 
   if (!isUserExists) {
@@ -30,20 +31,14 @@ export const loginService = async (email: string, pass: string) => {
   }
 
   
- const allRoles = isUserExists.roles?.map(r => r.name) ?? [];
-
-  
-  console.log("isUserExists:", allRoles);
+ const allRoles = isUserExists.roles?.map((r: any) => r.name) ?? [];
   
   const jwtPayload: any = {
     userId: isUserExists?._id,
-    email: isUserExists?.email,
-    role: allRoles,
-    permissions: isUserExists?.directPermissions || [],
-    businessUnit: isUserExists.businessUnitId || ['telemedicine', 'clothing', 'all-business-units'],
     id: isUserExists?.id,
+    email: isUserExists?.email,
+    role: allRoles
   };
-  // console.log("User logged in:", isUserExists, jwtPayload);
   
   const accessToken = createToken(
     jwtPayload,
@@ -57,13 +52,25 @@ export const loginService = async (email: string, pass: string) => {
     appConfig.jwt_refresh_expired_in as string
   );
 
+// console.log('userrrrrrrrrrrrrrrrrrrrrrrrr', isUserExists.businessUnits)
+
+ const businessUnits = isUserExists.businessUnits?.map((bu: any) => bu.name) ?? [];
+  const userInfo = {
+    userId: isUserExists?._id,
+    id: isUserExists?.id,
+    email: isUserExists?.email,
+    role: allRoles,
+    permissions: isUserExists?.directPermissions || [],
+    businessUnit:  businessUnits
+  }
+  
 
 
   return {
     accessToken,
     refreshToken,
     needsPasswordChange: isUserExists?.needsPasswordChange,
-    user: jwtPayload,
+    user: userInfo
   };
 };
 
@@ -81,58 +88,73 @@ export const refreshTokenAuthService = async (token: string) => {
   }
 
   const decoded = verifyToken(token, appConfig.jwt_refresh_secret as string)
-
   const { userId, iat } = decoded
 
-  const isUserExists = await User.findOne(userId)
-
+  // FIXED: find user by custom userId
+  const isUserExists = await User.findOne({_id: userId }).populate([{path: 'businessUnits', select: 'name'}, { 
+      path: 'roles', 
+      select: 'name permissions',
+      populate: { path: 'permissions' }
+    }]).lean()
+ 
+  
   if (!isUserExists) {
     throw new AppError(status.NOT_FOUND, 'User is not found')
   }
-
-  const isDeleted = isUserExists.isDeleted
-  if (isDeleted) {
-    throw new AppError(status.FORBIDDEN, 'this User is deleted')
+  
+  if (isUserExists.isDeleted) {
+    throw new AppError(status.FORBIDDEN, 'This user is deleted')
   }
-
-  const userStatus = isUserExists.status
-  if (userStatus === 'blocked') {
-    throw new AppError(status.FORBIDDEN, 'this User is blocked')
+  
+  if (isUserExists.status === 'blocked') {
+    throw new AppError(status.FORBIDDEN, 'This user is blocked')
   }
-
-  if (userStatus === 'inactive') {
-    throw new AppError(status.FORBIDDEN, 'this User is inactive')
+  
+  if (isUserExists.status === 'inactive') {
+    throw new AppError(status.FORBIDDEN, 'This user is inactive')
   }
-
+  
   if (
-    isUserExists?.passwordChangedAt &&
+    isUserExists.passwordChangedAt &&
     User.isJWTIssuedBeforePasswordChanged(
       isUserExists.passwordChangedAt,
-      iat as number,
+      iat as number
     )
   ) {
     throw new AppError(status.UNAUTHORIZED, 'You are not authorized')
   }
+  
+ 
+  const allRoles = isUserExists.roles?.map((r: any) => r.name) ?? [];
+  
 
 
-   const allRoles = isUserExists.roles?.map(r => r.name) ?? [];
-
-  const jwtPayload: any = {
+   const jwtPayload: any = {
     userId: isUserExists?._id,
+    id: isUserExists?.id,
     email: isUserExists?.email,
     role: allRoles,
-    permissions: isUserExists?.directPermissions || [],
-    businessUnit: isUserExists.businessUnitId || ['telemedicine', 'clothing', 'all-business-units'],
-    id: isUserExists?.id,
+    roleIds: allRoles
   };
 
   const accessToken = createToken(
     jwtPayload,
     appConfig.jwt_access_secret as string,
-    appConfig.jwt_access_expired_in as string,
+    appConfig.jwt_access_expired_in as string
   )
 
-  return {
-    accessToken,
-  }
+  return { accessToken }
+}
+
+
+
+
+export const authMeService = async (userInfo: any) => {
+  
+const res = await User.findOne({_id: userInfo.userId }).populate([{path: 'businessUnits', select: 'name'},  { 
+      path: 'roles', 
+      select: 'name permissions',
+      populate: { path: 'permissions' }
+    }]).lean();
+return res;
 }

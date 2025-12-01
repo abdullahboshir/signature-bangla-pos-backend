@@ -206,7 +206,7 @@ export class PermissionService {
     }
   }
 
-  /** final allow/deny decision – explicit deny wins, then allow, else default deny */
+
   private resolvePermissions(
     permissions: IPermission[],
     _context: IPermissionContext,

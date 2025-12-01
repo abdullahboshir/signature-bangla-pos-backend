@@ -7,7 +7,7 @@ export const PermissionResourceType = [
   "customer",
   "category",
   "brand",
-  "business-unit",
+  "businessUnit",
   "vendor",
   "store",
   "supplier",
@@ -27,7 +27,7 @@ export const PermissionResourceType = [
   "ticket",
   "delivery",
   "affiliate",
-  "ad-campaign",
+  "adCampaign",
   "notification",
   "loyalty",
   "subscription",
@@ -35,8 +35,8 @@ export const PermissionResourceType = [
   "settlement",
   "payout",
   "chat",
-  "fraud-detection",
-  "audit-log",
+  "fraudDetection",
+  "auditLog",
 ] as const;
 
 
