@@ -25,7 +25,7 @@ import { validateRequest } from "@core/middleware/validateRequest.ts";
 
 const router = Router();
 
-router.get("/getUsers", getUsersController);
+router.get("/all-users", getUsersController);
 
 router.post(
   "/create-customer",
