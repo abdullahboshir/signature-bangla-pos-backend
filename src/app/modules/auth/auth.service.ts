@@ -158,3 +158,9 @@ const res = await User.findOne({_id: userInfo.userId }).populate([{path: 'busine
     }]).lean();
 return res;
 }
+
+
+
+export const logoutService = async () => {
+  return true;
+};
