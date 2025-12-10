@@ -9,8 +9,9 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
   nameBangla: { type: String, trim: true },
   slug: { type: String, required: true, unique: true, index: true },
   sku: { type: String, required: true, unique: true, index: true },
-  
-  store: { type: Schema.Types.ObjectId, ref: 'Store', required: true, index: true },
+
+  store: { type: Schema.Types.ObjectId, ref: 'Store', required: false, index: true }, // Deprecated in favor of businessUnit?
+  businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
   vendor: {
     id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     name: { type: String, required: true },
@@ -22,36 +23,36 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
   brands: [{ type: Schema.Types.ObjectId, ref: 'Brand' }],
   tags: [{ type: String, trim: true }],
   tagsBangla: [{ type: String, trim: true }],
-  
+
   // References to Sub-documents
   pricing: { type: Schema.Types.ObjectId, ref: 'ProductPricing', required: true },
   inventory: { type: Schema.Types.ObjectId, ref: 'ProductInventory', required: true },
   shipping: { type: Schema.Types.ObjectId, ref: 'ProductShipping', required: true },
   warranty: { type: Schema.Types.ObjectId, ref: 'ProductWarrantyReturn', required: true },
   details: { type: Schema.Types.ObjectId, ref: 'ProductDetails', required: true },
-  
+
   // Variants System
   hasVariants: { type: Boolean, default: false },
   variantTemplate: { type: Schema.Types.ObjectId, ref: 'ProductVariant' },
-  
+
   // Bundle Configuration
   isBundle: { type: Boolean, default: false },
   bundleProducts: [BundleProductSchema],
   bundleDiscount: { type: Number, default: 0, min: 0, max: 100 },
-  
+
   // Ratings & Reviews Summary
   ratings: { type: RatingSummarySchema, default: () => ({}) },
-  
+
   // Delivery Information
   delivery: { type: DeliveryOptionsSchema, required: true },
-  
+
   // Product Attributes
   attributes: { type: ProductAttributesSchema, default: () => ({}) },
-  
+
   // Origin & Manufacturing
   productmodel: { type: String },
   origine: { type: String },
-  
+
   // Tax & Compliance
   tax: { type: TaxConfigurationSchema, required: true },
   compliance: {
@@ -60,7 +61,7 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
     importRestrictions: [{ type: String }],
     safetyStandards: [{ type: String }]
   },
-  
+
   // Marketing & Promotions
   marketing: {
     isFeatured: { type: Boolean, default: false, index: true },
@@ -72,10 +73,10 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
     socialShares: { type: Number, default: 0 },
     wishlistCount: { type: Number, default: 0 }
   },
-  
+
   // Status & Workflow
   statusInfo: { type: ProductStatusSchema, default: () => ({}) },
-  
+
   lastRestockedAt: { type: Date }
 }, {
   timestamps: true,
@@ -94,207 +95,207 @@ productSchema.index({ name: 'text', description: 'text', tags: 'text' });
 
 // ==================== VIRTUAL PROPERTIES ====================
 
-productSchema.virtual('discountedPrice').get(function(this: IProductDocument) {
+productSchema.virtual('discountedPrice').get(function (this: IProductDocument) {
   // This will be populated from pricing subdocument
   return 0;
 });
 
-productSchema.virtual('finalPrice').get(function(this: IProductDocument) {
+productSchema.virtual('finalPrice').get(function (this: IProductDocument) {
   // This will be populated from pricing subdocument
   return 0;
 });
 
-productSchema.virtual('isOnSale').get(function(this: IProductDocument) {
+productSchema.virtual('isOnSale').get(function (this: IProductDocument) {
   // This will be populated from pricing subdocument
   return false;
 });
 
-productSchema.virtual('isNewProduct').get(function(this: IProductDocument) {
+productSchema.virtual('isNewProduct').get(function (this: IProductDocument) {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   return this.createdAt > thirtyDaysAgo;
 });
 
-productSchema.virtual('isLowStock').get(function(this: IProductDocument) {
+productSchema.virtual('isLowStock').get(function (this: IProductDocument) {
   // This will be populated from inventory subdocument
   return false;
 });
 
-productSchema.virtual('isOutOfStock').get(function(this: IProductDocument) {
+productSchema.virtual('isOutOfStock').get(function (this: IProductDocument) {
   // This will be populated from inventory subdocument
   return false;
 });
 
-productSchema.virtual('isFlashSaleActive').get(function(this: IProductDocument) {
+productSchema.virtual('isFlashSaleActive').get(function (this: IProductDocument) {
   // This will be populated from pricing subdocument
   return false;
 });
 
-productSchema.virtual('isBundleProduct').get(function(this: IProductDocument) {
+productSchema.virtual('isBundleProduct').get(function (this: IProductDocument) {
   return this.isBundle;
 });
 
-productSchema.virtual('hasVariantsAvailable').get(function(this: IProductDocument) {
+productSchema.virtual('hasVariantsAvailable').get(function (this: IProductDocument) {
   return this.hasVariants && this.variantTemplate !== undefined;
 });
 
-productSchema.virtual('stockPercentage').get(function(this: IProductDocument) {
+productSchema.virtual('stockPercentage').get(function (this: IProductDocument) {
   // This will be populated from inventory subdocument
   return 0;
 });
 
-productSchema.virtual('estimatedProfit').get(function(this: IProductDocument) {
+productSchema.virtual('estimatedProfit').get(function (this: IProductDocument) {
   // This will be calculated from pricing and inventory
   return 0;
 });
 
 // ==================== INSTANCE METHODS ====================
 
-productSchema.methods['isInStock'] = function(this: IProductDocument): boolean {
+productSchema.methods['isInStock'] = function (this: IProductDocument): boolean {
   // Implementation will depend on inventory data
   return true;
 };
 
-productSchema.methods['getMaxPurchaseQuantity'] = function(this: IProductDocument): number {
+productSchema.methods['getMaxPurchaseQuantity'] = function (this: IProductDocument): number {
   // Implementation will depend on inventory data
   return 10;
 };
 
-productSchema.methods['canOrderQuantity'] = function(this: IProductDocument, quantity: number): boolean {
+productSchema.methods['canOrderQuantity'] = function (this: IProductDocument, quantity: number): boolean {
   return quantity > 0 && quantity <= this.getMaxPurchaseQuantity();
 };
 
-productSchema.methods['updateStock'] = async function(this: IProductDocument, quantity: number, operation: "add" | "subtract"): Promise<void> {
+productSchema.methods['updateStock'] = async function (this: IProductDocument, _quantity: number, _operation: "add" | "subtract"): Promise<void> {
   // Implementation will update inventory subdocument
 };
 
-productSchema.methods['reserveStock'] = async function(this: IProductDocument, quantity: number): Promise<boolean> {
+productSchema.methods['reserveStock'] = async function (this: IProductDocument, _quantity: number): Promise<boolean> {
   // Implementation will reserve stock in inventory
   return true;
 };
 
-productSchema.methods['releaseStock'] = async function(this: IProductDocument, quantity: number): Promise<void> {
+productSchema.methods['releaseStock'] = async function (this: IProductDocument, _quantity: number): Promise<void> {
   // Implementation will release reserved stock
 };
 
-productSchema.methods['calculateCommission'] = function(this: IProductDocument): number {
+productSchema.methods['calculateCommission'] = function (this: IProductDocument): number {
   // Implementation will calculate commission from pricing
   return 0;
 };
 
-productSchema.methods['calculateTax'] = function(this: IProductDocument, quantity: number): number {
+productSchema.methods['calculateTax'] = function (this: IProductDocument, _quantity: number): number {
   // Implementation will calculate tax
   return 0;
 };
 
-productSchema.methods['getShippingCost'] = function(this: IProductDocument, destination: string, method: string): number {
+productSchema.methods['getShippingCost'] = function (this: IProductDocument, _destination: string, _method: string): number {
   // Implementation will calculate shipping cost
   return 0;
 };
 
-productSchema.methods['addToWishlist'] = async function(this: IProductDocument): Promise<void> {
+productSchema.methods['addToWishlist'] = async function (this: IProductDocument): Promise<void> {
   this.marketing.wishlistCount += 1;
   await this.save();
 };
 
-productSchema.methods['incrementViewCount'] = async function(this: IProductDocument): Promise<void> {
+productSchema.methods['incrementViewCount'] = async function (this: IProductDocument): Promise<void> {
   // This would typically update analytics
 };
 
-productSchema.methods['updateRatingStats'] = async function(this: IProductDocument): Promise<void> {
+productSchema.methods['updateRatingStats'] = async function (this: IProductDocument): Promise<void> {
   // This would recalculate rating statistics from reviews
 };
 
 // ==================== STATIC METHODS ====================
 
-productSchema.statics['findFeatured'] = async function(): Promise<IProductDocument[]> {
-  return this.find({ 
+productSchema.statics['findFeatured'] = async function (): Promise<IProductDocument[]> {
+  return this.find({
     'marketing.isFeatured': true,
     'statusInfo.status': 'published'
   }).populate('pricing inventory').limit(20);
 };
 
-productSchema.statics['findByCategory'] = async function(categoryId: string | Types.ObjectId): Promise<IProductDocument[]> {
-  return this.find({ 
+productSchema.statics['findByCategory'] = async function (categoryId: string | Types.ObjectId): Promise<IProductDocument[]> {
+  return this.find({
     categories: categoryId,
     'statusInfo.status': 'published'
   }).populate('pricing inventory');
 };
 
-productSchema.statics['findByStore'] = async function(storeId: string | Types.ObjectId): Promise<IProductDocument[]> {
+productSchema.statics['findByStore'] = async function (storeId: string | Types.ObjectId): Promise<IProductDocument[]> {
   return this.find({ store: storeId }).populate('pricing inventory');
 };
 
-productSchema.statics['findTrending'] = async function(limit: number = 20): Promise<IProductDocument[]> {
-  return this.find({ 
+productSchema.statics['findTrending'] = async function (limit: number = 20): Promise<IProductDocument[]> {
+  return this.find({
     'marketing.isTrending': true,
     'statusInfo.status': 'published'
   })
-  .sort({ 'marketing.socialShares': -1, 'ratings.average': -1 })
-  .limit(limit)
-  .populate('pricing inventory');
+    .sort({ 'marketing.socialShares': -1, 'ratings.average': -1 })
+    .limit(limit)
+    .populate('pricing inventory');
 };
 
-productSchema.statics['findFlashSales'] = async function(): Promise<IProductDocument[]> {
-  return this.find({ 
+productSchema.statics['findFlashSales'] = async function (): Promise<IProductDocument[]> {
+  return this.find({
     'statusInfo.status': 'published'
   })
-  .populate({
-    path: 'pricing',
-    match: { 
-      'flashSale.isActive': true,
-      'flashSale.startDate': { $lte: new Date() },
-      'flashSale.endDate': { $gte: new Date() }
-    }
-  })
-  .then(products => products.filter(product => product.pricing));
+    .populate({
+      path: 'pricing',
+      match: {
+        'flashSale.isActive': true,
+        'flashSale.startDate': { $lte: new Date() },
+        'flashSale.endDate': { $gte: new Date() }
+      }
+    })
+    .then(products => products.filter(product => product.pricing));
 };
 
-productSchema.statics['findLowStock'] = async function(): Promise<IProductDocument[]> {
-  return this.find({ 
+productSchema.statics['findLowStock'] = async function (): Promise<IProductDocument[]> {
+  return this.find({
     'statusInfo.status': 'published'
   })
-  .populate({
-    path: 'inventory',
-    match: { 
-      'inventory.stockStatus': 'limited_stock',
-      'inventory.stock': { $lte: 10 }
-    }
-  })
-  .then(products => products.filter(product => product.inventory));
+    .populate({
+      path: 'inventory',
+      match: {
+        'inventory.stockStatus': 'limited_stock',
+        'inventory.stock': { $lte: 10 }
+      }
+    })
+    .then(products => products.filter(product => product.inventory));
 };
 
-productSchema.statics['searchProducts'] = async function(query: string, filters: any = {}): Promise<IProductDocument[]> {
+productSchema.statics['searchProducts'] = async function (query: string, filters: any = {}): Promise<IProductDocument[]> {
   const searchFilter: any = {
     $text: { $search: query },
     'statusInfo.status': 'published'
   };
-  
+
   // Apply additional filters
   if (filters.categories) searchFilter.categories = { $in: filters.categories };
   if (filters.brands) searchFilter.brands = { $in: filters.brands };
   if (filters.minPrice || filters.maxPrice) {
     // This would require pricing population and filtering
   }
-  
+
   return this.find(searchFilter)
     .populate('pricing inventory')
     .sort({ score: { $meta: "textScore" } });
 };
 
-productSchema.statics['getSimilarProducts'] = async function(productId: string | Types.ObjectId, limit: number = 10): Promise<IProductDocument[]> {
+productSchema.statics['getSimilarProducts'] = async function (productId: string | Types.ObjectId, limit: number = 10): Promise<IProductDocument[]> {
   const product = await this.findById(productId);
   if (!product) return [];
-  
+
   return this.find({
     _id: { $ne: productId },
     categories: { $in: product.categories },
     'statusInfo.status': 'published'
   })
-  .limit(limit)
-  .populate('pricing inventory');
+    .limit(limit)
+    .populate('pricing inventory');
 };
 
-productSchema.statics['updateBulkPrices'] = async function(products: string[], updateData: any): Promise<void> {
+productSchema.statics['updateBulkPrices'] = async function (products: string[], updateData: any): Promise<void> {
   // Implementation for bulk price updates
   await this.updateMany(
     { _id: { $in: products } },
@@ -302,12 +303,12 @@ productSchema.statics['updateBulkPrices'] = async function(products: string[], u
   );
 };
 
-productSchema.statics['getProductAnalytics'] = async function(productId: string | Types.ObjectId): Promise<any> {
+productSchema.statics['getProductAnalytics'] = async function (_productId: string | Types.ObjectId): Promise<any> {
   // Implementation for product analytics aggregation
   return {};
 };
 
-productSchema.statics['getCategoryStats'] = async function(categoryId: string | Types.ObjectId): Promise<any> {
+productSchema.statics['getCategoryStats'] = async function (categoryId: string | Types.ObjectId): Promise<any> {
   return this.aggregate([
     { $match: { categories: categoryId, 'statusInfo.status': 'published' } },
     {
@@ -321,7 +322,7 @@ productSchema.statics['getCategoryStats'] = async function(categoryId: string | 
   ]);
 };
 
-productSchema.statics['getBrandStats'] = async function(brandId: string | Types.ObjectId): Promise<any> {
+productSchema.statics['getBrandStats'] = async function (brandId: string | Types.ObjectId): Promise<any> {
   return this.aggregate([
     { $match: { brands: brandId, 'statusInfo.status': 'published' } },
     {
@@ -335,7 +336,7 @@ productSchema.statics['getBrandStats'] = async function(brandId: string | Types.
   ]);
 };
 
-productSchema.statics['getVendorStats'] = async function(vendorId: string | Types.ObjectId): Promise<any> {
+productSchema.statics['getVendorStats'] = async function (vendorId: string | Types.ObjectId): Promise<any> {
   return this.aggregate([
     { $match: { 'vendor.id': vendorId } },
     {
@@ -349,7 +350,7 @@ productSchema.statics['getVendorStats'] = async function(vendorId: string | Type
   ]);
 };
 
-productSchema.statics['getSalesReport'] = async function(startDate: Date, endDate: Date): Promise<any> {
+productSchema.statics['getSalesReport'] = async function (startDate: Date, endDate: Date): Promise<any> {
   // This would typically join with orders collection
   return this.aggregate([
     {

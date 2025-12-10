@@ -76,7 +76,7 @@ export function buildContextFromRequest(req: any): IPermissionContext {
     user: {
       id: user?.id || user?.userId,
       roles: user?.roles || [],
-      departments: user?.departments || [],
+      businessUnits: user?.businessUnits || [],
       ...(user?.branches && { branches: user.branches }),
       ...(user?.vendorId && { vendorId: user.vendorId }),
       ...(user?.region && { region: user.region })
@@ -143,8 +143,8 @@ export function matchesScope(
     case 'vendor':
       return context.user.vendorId === context.resource?.vendorId;
       
-    case 'department':
-      return context.user.departments.some(
+    case 'businessUnit':
+      return context.user.businessUnits.some(
         (dept) => dept === context.resource?.region
       );
       

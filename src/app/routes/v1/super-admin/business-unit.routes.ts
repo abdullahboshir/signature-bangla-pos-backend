@@ -7,4 +7,4 @@ const router = Router();
 router.use('/', businessUnitRoutes);
 
 
-export const businessUnitGrouptRoutes = router;
+export const businessUnitGroupRoutes = router;

@@ -37,6 +37,7 @@ export const PermissionResourceType = [
   "chat",
   "fraudDetection",
   "auditLog",
+  "seo",
 ] as const;
 
 
@@ -70,7 +71,7 @@ export const PermissionScope = [
   "store",
   "category",
   "region",
-  "department",
+  "businessUnit",
   "team",
   "branch",
   "warehouse",

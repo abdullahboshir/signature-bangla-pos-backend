@@ -18,7 +18,7 @@ const CategorySchema = new Schema<ICategories>(
       unique: true,
       index: true,
     },
-    department: {
+    businessUnit: {
       type: Schema.Types.ObjectId,
       ref: "Dpartment",
       required: true,

@@ -15,7 +15,7 @@ export const PermissionActionTypeSchema = z.enum([
 ]);
 
 export const PermissionScopeSchema = z.enum([
-  'global', 'vendor', 'category', 'region', 'department', 
+  'global', 'vendor', 'category', 'region', 'businessUnit', 
   'team', 'branch', 'warehouse'
 ]);
 
@@ -101,7 +101,7 @@ export const PermissionContextSchema = z.object({
   user: z.object({
     id: z.string().min(1),
     roles: z.array(z.string()),
-    departments: z.array(z.string()),
+    businessUnits: z.array(z.string()),
     branches: z.array(z.string()).optional().default([]),
     vendorId: z.string().optional(),
     region: z.string().optional()

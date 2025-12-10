@@ -14,7 +14,8 @@ import type {
 
 export interface IBusinessUnitCore {
   name: string;
-  id: string; 
+  id: string;
+  company?: Types.ObjectId;
 
   // ====== BRANDING ======
   branding: IBusinessUnitBranding;
@@ -96,7 +97,7 @@ export interface IBusinessUnitCore {
 // ==================== DOCUMENT INTERFACE ====================
 export interface IBusinessUnitCoreDocument extends Document, IBusinessUnitCore {
 
-id: string;
+  id: string;
   isActive: boolean; // status === "published" && visibility === "public"
   isPublished: boolean; // status === "published"
   isSuspended: boolean; // status === "suspended"

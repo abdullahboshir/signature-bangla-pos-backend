@@ -2,7 +2,7 @@ import { Document, Types } from "mongoose";
 
 export interface IChildCategory extends Document {
   name: string;
-  department: Types.ObjectId;
+  businessUnit: Types.ObjectId;
   subCategory: Types.ObjectId;
   code?: string;
   slug?: string;

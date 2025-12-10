@@ -70,7 +70,7 @@ export interface IPermissionContext {
   user: {
     id: string;
     roles: string[];
-    departments: string[];
+    businessUnits: string[];
     branches?: string[];
     vendorId?: string;
     region?: string;

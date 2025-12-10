@@ -21,6 +21,6 @@ router.get("/", getCategoriesController);
 // router.patch("/:id/status", /* change category status */);
 // router.patch("/:id/order", /* change display order */);
 
-router.get("/:departmentId/getCategories", getCategoriesController);
+router.get("/:businessUnitId/getCategories", getCategoriesController);
 
 export const categoryRoutes = router;

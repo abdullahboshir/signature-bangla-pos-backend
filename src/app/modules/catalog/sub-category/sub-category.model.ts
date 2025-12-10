@@ -20,9 +20,9 @@ const SubCategorySchema = new Schema<ISubCategory>(
       trim: true,
       maxlength: 60,
     },
-    department: {
+    businessUnit: {
       type: Schema.Types.ObjectId,
-      ref: "Dpartment",
+      ref: "BusinessUnit",
       required: true,
     },
     category: {
@@ -47,7 +47,7 @@ const SubCategorySchema = new Schema<ISubCategory>(
   { timestamps: true }
 );
 
-SubCategorySchema.pre("save", function (next) { 
+SubCategorySchema.pre("save", function (next) {
   if (this.isModified("name")) {
     this.slug = makeSlug(this.name);
   }

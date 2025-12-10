@@ -3,21 +3,28 @@ import { USER_ROLE } from '@app/modules/iam/user/user.constant.ts';
 import auth from '@core/middleware/auth.ts';
 import { authorize } from '@core/middleware/authorize.ts';
 import { validateRequest } from '@core/middleware/validateRequest.ts';
-import {Router} from 'express';
+import { Router } from 'express';
 
 import type { AnyZodObject } from 'zod/v3';
 import { createBusinessUnitValidationSchema } from './business-unit.validation.ts';
-import { createBusinessUnitController } from './business-unit.controller.ts';
+import { createBusinessUnitController, getAllBusinessUnitsController } from './business-unit.controller.ts';
 
 
 const router = Router();
 
+router.get(
+  '/',
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  authorize(PermissionSourceObj.businessUnit, PermissionActionObj.view),
+  getAllBusinessUnitsController
+);
+
 router.post(
   '/create',
-   auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.VENDOR),
-   authorize(PermissionSourceObj.businessUnit, PermissionActionObj.create),
+  auth(USER_ROLE.SUPER_ADMIN), // Only super admin can create business units
+  // authorize(PermissionSourceObj.businessUnit, PermissionActionObj.create), // Temporarily disabled
   // validateRequest(createBusinessUnitValidationSchema as unknown as AnyZodObject),
-  createBusinessUnitController  
+  createBusinessUnitController
 );
 
 

@@ -1,7 +1,7 @@
 import type { Types } from "mongoose";
 
 export interface ICategories {
-  department: Types.ObjectId;
+  businessUnit: Types.ObjectId;
   name: string;
   description?: string;
   code?: string;

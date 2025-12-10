@@ -73,13 +73,13 @@ const LoginHistorySchema = new Schema({
 
 // Main User Schema
 const UserSchema = new Schema<IUser, UserStatic>({
-      id: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true,
-      trim: true,
-    },
+  id: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true,
+    trim: true,
+  },
   name: {
     type: NameSchema,
     required: false
@@ -108,17 +108,10 @@ const UserSchema = new Schema<IUser, UserStatic>({
     ref: 'Role',
     required: true
   }],
-  departments: [{
-    type: String,
-    required: true
-  }],
-  branches: [{
-    type: String
-  }],
-   businessUnits: [{
+  businessUnits: [{
     type: Schema.Types.ObjectId,
     ref: 'BusinessUnit',
-    required: true
+    default: []
   }],
   region: {
     type: String
@@ -179,7 +172,7 @@ const UserSchema = new Schema<IUser, UserStatic>({
   timestamps: true,
   toJSON: {
     virtuals: true,
-    transform: function(_doc, ret: any ) {
+    transform: function (_doc, ret: any) {
       delete ret?.password;
       return ret;
     }
@@ -189,7 +182,7 @@ const UserSchema = new Schema<IUser, UserStatic>({
 
 // Indexes for better performance
 UserSchema.index({ roles: 1 });
-UserSchema.index({ departments: 1 });
+UserSchema.index({ businessUnits: 1 });
 UserSchema.index({ branches: 1 });
 UserSchema.index({ vendorId: 1 });
 UserSchema.index({ region: 1 });
@@ -200,7 +193,7 @@ UserSchema.index({ createdAt: -1 });
 UserSchema.index({ 'name.firstName': 1, 'name.lastName': 1 });
 
 // Virtual for fullName
-UserSchema.virtual('fullName').get(function() {
+UserSchema.virtual('fullName').get(function () {
   if (this["name"]) {
     return `${this["name"].firstName} ${this["name"].lastName}`.trim();
   }
@@ -208,9 +201,9 @@ UserSchema.virtual('fullName').get(function() {
 });
 
 // Pre-save middleware to hash password
-UserSchema.pre('save', async function(next) {
+UserSchema.pre('save', async function (next) {
   if (!this["isModified"]('password')) return next();
-  
+
   try {
     const salt = await bcrypt.genSalt(12);
     this["password"] = await bcrypt.hash(this["password"], salt);
@@ -221,9 +214,9 @@ UserSchema.pre('save', async function(next) {
 });
 
 // Pre-save middleware for passwordChangedAt
-UserSchema.pre('save', function(next) {
+UserSchema.pre('save', function (next) {
   if (!this["isModified"]('password') || this["isNew"]) return next();
-  
+
   this["passwordChangedAt"] = new Date(Date.now() - 1000); // 1 second ago
   next();
 });
@@ -232,7 +225,7 @@ UserSchema.pre('save', function(next) {
 // Assuming IUser and UserSchema are defined and imported
 // Note: 'this' inside a static method refers to the Model.
 
-UserSchema.statics["isUserExists"] = async function(email: string): Promise<IUser> {
+UserSchema.statics["isUserExists"] = async function (email: string): Promise<IUser> {
   const user = await this["findOne"]({ email, isDeleted: false, isActive: true })
     .populate([
       {
@@ -242,32 +235,32 @@ UserSchema.statics["isUserExists"] = async function(email: string): Promise<IUse
           path: 'permissions', // Step 2: Path to the array of permission IDs within the Role document
           // CRITICAL: Ensure 'Permission' is the EXACT registered name of your Permission Model
           // as defined in mongoose.model('Permission', ...). This guarantees Mongoose finds the collection.
-          model: 'Permission' 
+          model: 'Permission'
         }
-      }, 
-      { 
+      },
+      {
         path: 'businessUnits' // Keep existing population
       }
     ])
     .select('+password');
-  
+
   if (!user) {
     throw new Error('User not found');
   }
-  
+
   return user;
 };
 
 // Static method: Check if password matches (instance method alternative)
-UserSchema.statics["isPasswordMatched"] = async function(
-  plainText: string, 
+UserSchema.statics["isPasswordMatched"] = async function (
+  plainText: string,
   hashedPass: string
 ): Promise<boolean> {
   return await bcrypt.compare(plainText, hashedPass);
 };
 
 // Static method: Check if JWT was issued before password change
-UserSchema.statics["isJWTIssuedBeforePasswordChanged"] = function(
+UserSchema.statics["isJWTIssuedBeforePasswordChanged"] = function (
   passwordChangedAtTime: Date,
   jwtIssuedTime: number
 ): boolean {
@@ -279,12 +272,12 @@ UserSchema.statics["isJWTIssuedBeforePasswordChanged"] = function(
 };
 
 // Instance method: Check if password matches (alternative approach)
-UserSchema.methods["isPasswordMatched"] = async function(plainText: string): Promise<boolean> {
+UserSchema.methods["isPasswordMatched"] = async function (plainText: string): Promise<boolean> {
   return await bcrypt.compare(plainText, this["password"]);
 };
 
 // Instance method: Check if user needs password change
-UserSchema.methods["changedPasswordAfter"] = function(JWTTimestamp: number): boolean {
+UserSchema.methods["changedPasswordAfter"] = function (JWTTimestamp: number): boolean {
   if (this["passwordChangedAt"]) {
     const changedTimestamp = Math.floor(this["passwordChangedAt"].getTime() / 1000);
     return JWTTimestamp < changedTimestamp;
@@ -301,30 +294,30 @@ UserSchema.virtual('activeRoles', {
 });
 
 // Query middleware to exclude deleted users
-UserSchema.pre(/^find/, function(next) {
+UserSchema.pre(/^find/, function (next) {
   (this as any).where({ isDeleted: false });
   next();
 });
 
 // Method to add login history
-UserSchema.methods["addLoginHistory"] = function(ip: string, userAgent: string) {
+UserSchema.methods["addLoginHistory"] = function (ip: string, userAgent: string) {
   this["loginHistory"].push({
     date: new Date(),
     ip,
     userAgent
   });
-  
+
   // Keep only last 10 login records
   if (this["loginHistory"].length > 10) {
     this["loginHistory"] = this["loginHistory"].slice(-10);
   }
-  
+
   this["lastLogin"] = new Date();
   return this["save"]();
 };
 
 // Method to get user permissions summary
-UserSchema.methods["getPermissionsSummary"] = async function() {
+UserSchema.methods["getPermissionsSummary"] = async function () {
   await this["populate"]({
     path: 'roles',
     populate: {
@@ -334,10 +327,10 @@ UserSchema.methods["getPermissionsSummary"] = async function() {
       }
     }
   });
-  
+
   const allPermissions = [];
   const permissionMap = new Map();
-  
+
   // Collect permissions from roles
   for (const role of this["roles"]) {
     for (const group of role.permissionGroups) {
@@ -349,7 +342,7 @@ UserSchema.methods["getPermissionsSummary"] = async function() {
       }
     }
   }
-  
+
   // Add direct permissions
   if (this["directPermissions"] && this["directPermissions"].length > 0) {
     for (const permission of this["directPermissions"]) {
@@ -359,7 +352,7 @@ UserSchema.methods["getPermissionsSummary"] = async function() {
       }
     }
   }
-  
+
   return {
     totalPermissions: allPermissions.length,
     allowedPermissions: allPermissions.filter(p => p.effect === 'allow').length,
@@ -369,6 +362,6 @@ UserSchema.methods["getPermissionsSummary"] = async function() {
   };
 };
 
- cachingMiddleware(UserSchema);
+cachingMiddleware(UserSchema);
 
 export const User = model<IUser, UserStatic>('User', UserSchema);

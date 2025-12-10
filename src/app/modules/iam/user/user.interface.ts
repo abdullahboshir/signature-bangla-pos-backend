@@ -15,7 +15,7 @@ export interface IUser {
   password: string;
   businessUnits?: Types.ObjectId[];
   roles: Types.ObjectId[];
-  departments: string[];
+  businessUnits: string[];
   branches?: string[];
   vendorId?: string;
   region?: string;

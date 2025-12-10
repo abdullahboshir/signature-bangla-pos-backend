@@ -36,7 +36,7 @@ const restrictionsSchema = z.object({
 const permissionSchema = z.object({
   resource: z.enum(['product', 'order', 'customer', 'category', 'brand', 'vendor', 'supplier', 'promotion', 'content', 'user', 'role', 'payment', 'shipping', 'report', 'analytics', 'system']),
   action: z.enum(['create', 'read', 'update', 'delete', 'approve', 'reject', 'export', 'import', 'manage', 'view', 'process']),
-  scope: z.enum(['global', 'vendor', 'category', 'region', 'department']).default('global'),
+  scope: z.enum(['global', 'vendor', 'category', 'region', 'businessUnit']).default('global'),
   attributes: z.array(z.string()).optional(),
   conditions: z.record(z.string(), z.any()).optional(),
   description: z.string().optional(),

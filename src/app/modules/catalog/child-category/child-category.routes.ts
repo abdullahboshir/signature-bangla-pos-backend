@@ -5,6 +5,7 @@ import { childCategoryZodSchema } from "./child-category.validation.js";
 import {
   createChildCategoryController,
   getChildCategoriesController,
+  getAllChildCategoriesController,
 } from "./child-category.controller.js";
 import { validateRequest } from "@core/middleware/validateRequest.ts";
 
@@ -16,6 +17,7 @@ router.post(
   createChildCategoryController
 );
 
+router.get("/", getAllChildCategoriesController);
 router.get("/:subCategoryId/getChildCategories", getChildCategoriesController);
 
 export const childCategoryRoutes = router;

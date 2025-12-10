@@ -14,7 +14,10 @@ import Customer from "@app/modules/customer/customer.model.ts";
 import { sendImageToCloudinary } from "@core/utils/file-upload.ts";
 
 export const getUsersService = async (): Promise<IUser[]> => {
-  const users = await User.find().populate("roles").lean();
+  const users = await User.find()
+    .populate("roles")
+    .populate("businessUnits")
+    .lean();
   return users;
 };
 
@@ -85,7 +88,7 @@ export const createCustomerService = async (
       email: customerData.email,
       password: password || (appConfig.default_pass as string),
       roles: [role._id],
-      departments: ["customer"],
+      businessUnits: ["customer"],
       status: "pending",
       needsPasswordChange: !password,
       avatar: customerData.avatar as string,
@@ -202,7 +205,7 @@ export const createCustomerService = async (
 //       email: vendorData.contact.email,
 //       password: password || (appConfig.default_pass as string),
 //       roles: [role._id],
-//       departments: ['customer'],
+//       businessUnits: ['customer'],
 //       status: 'pending',
 //       needsPasswordChange: !password,
 //       avatar: vendorData.avatar as string,
@@ -268,3 +271,29 @@ export const createCustomerService = async (
 //     await session.endSession()
 //   }
 // }
+// ... existing code
+
+export const updateUserService = async (
+  userId: string,
+  payload: Partial<IUser>
+) => {
+  const isUserExists = await User.findById(userId);
+
+  if (!isUserExists) {
+    throw new AppError(404, "User not found!");
+  }
+
+  // Security: Prevent updating password through this route to avoid hashing issues/accidental overwrites
+  if (payload.password) {
+    console.warn("⚠️ Attempted to update password via updateUserService. Removing password from payload.");
+    delete payload.password;
+  }
+
+  console.log("updateUserService Payload (After Sanitation):", payload);
+
+  const result = await User.findByIdAndUpdate(userId, payload, {
+    new: true,
+  }).populate("roles").populate("businessUnits");
+
+  return result;
+};

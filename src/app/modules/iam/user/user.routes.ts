@@ -8,7 +8,9 @@ import {
 import {
   createCustomerController,
   getUsersController,
+  updateUserController,
 } from "./user.controller.js";
+import { createUserController } from "./create-user.controller.ts";
 
 import type { AnyZodObject } from "zod/v3";
 import { USER_ROLE } from "./user.constant.js";
@@ -26,6 +28,13 @@ import { validateRequest } from "@core/middleware/validateRequest.ts";
 const router = Router();
 
 router.get("/all-users", getUsersController);
+
+router.post(
+  "/create",
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  // authorize(PermissionSourceObj.user, PermissionActionObj.create),
+  createUserController
+);
 
 router.post(
   "/create-customer",
@@ -52,5 +61,21 @@ router.post(
 //   validateRequest(CreateVendorValidation as unknown as AnyZodObject),
 //   createVendorController
 // )
+
+// Update user (roles, status, etc.)
+router.patch(
+  "/:id",
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  // authorize(PermissionSourceObj.user, PermissionActionObj.update),
+  updateUserController
+);
+
+// Update user (roles, status, etc.)
+router.patch(
+  "/:id",
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  // authorize(PermissionSourceObj.user, PermissionActionObj.update),
+  updateUserController
+);
 
 export const userRoutes = router;

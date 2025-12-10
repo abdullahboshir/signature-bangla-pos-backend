@@ -11,11 +11,11 @@ class RoleService {
   // Get all roles
   async getAllRoles(query: any) {
     const filter: any = {};
-    
+
     if (query.isActive !== undefined) {
       filter.isActive = query.isActive === 'true';
     }
-    
+
     if (query.isSystemRole !== undefined) {
       filter.isSystemRole = query.isSystemRole === 'true';
     }
@@ -77,16 +77,19 @@ class RoleService {
       }
     }
 
+    const userId = user.userId || user.id || user._id || user.sub;
+
+    if (!userId) {
+      throw new AppError(status.UNAUTHORIZED, "User ID missing from token");
+    }
+
     const roleData = {
       ...payload,
-      createdBy: user['userId'],
-      updatedBy: user['userId'],
+      createdBy: userId,
+      updatedBy: userId,
     };
 
     const role = await Role.create(roleData);
-    
-    // Bump cache version
-    await bumpVersion('role');
 
     return role;
   }
@@ -133,9 +136,6 @@ class RoleService {
       { new: true, runValidators: true }
     ).populate('permissions');
 
-    // Bump cache version
-    await bumpVersion('role');
-
     return updatedRole;
   }
 
@@ -164,9 +164,8 @@ class RoleService {
     }
 
     await Role.findByIdAndDelete(id);
-    
-    // Bump cache version
-    await bumpVersion('role');
+
+
   }
 
   // Assign permissions to role
@@ -201,8 +200,7 @@ class RoleService {
     role.updatedBy = user['userId'] as any;
     await role.save();
 
-    // Bump cache version
-    await bumpVersion('role');
+
 
     return role.populate('permissions');
   }
@@ -223,8 +221,7 @@ class RoleService {
     role.updatedBy = user['userId'] as any;
     await role.save();
 
-    // Bump cache version
-    await bumpVersion('role');
+
 
     return role.populate('permissions');
   }

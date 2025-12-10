@@ -4,6 +4,7 @@ import { subcategoryZodSchema } from "./sub-category.validation.js";
 import {
   createSubCategoryController,
   getSubCategoriesController,
+  getAllSubCategoriesController,
 } from "./sub-category.controller.js";
 import type { AnyZodObject } from "zod/v3";
 import { validateRequest } from "@core/middleware/validateRequest.ts";
@@ -16,6 +17,7 @@ router.post(
   createSubCategoryController
 );
 
+router.get("/", getAllSubCategoriesController);
 router.get("/:categoryId/getSubCategories", getSubCategoriesController);
 
 export const subCategoryRoutes = router;

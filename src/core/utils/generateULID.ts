@@ -92,12 +92,12 @@ export class ULIDGenerator {
     return `USR_${this.generateULID()}_CUS_${region}`;
   }
 
-  static generateStaffId(department: string = 'GEN'): string {
-    this.validateInput({ department }, 'generateStaffId');
-    if (!/^[A-Z]{2,5}$/.test(department)) {
-      throw new Error('Department must be 2-5 uppercase letters');
+  static generateStaffId(businessUnit: string = 'GEN'): string {
+    this.validateInput({ businessUnit }, 'generateStaffId');
+    if (!/^[A-Z]{2,5}$/.test(businessUnit)) {
+      throw new Error('Business Unit must be 2-5 uppercase letters');
     }
-    return `USR_${this.generateULID()}_STF_${department}`;
+    return `USR_${this.generateULID()}_STF_${businessUnit}`;
   }
 
   // 🏢 BUSINESS ENTITIES

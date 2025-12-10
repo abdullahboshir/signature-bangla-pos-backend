@@ -4,7 +4,10 @@ import { userGroupRoutes } from "./users.routes.ts";
 // import vendorsRoutes from "./vendors.routes.js";
 // import productsRoutes from "./products.routes.js";
 import categoriesRoutes from "./categories.routes.ts";
-import { businessUnitGrouptRoutes } from "./business-unit.routes.ts";
+import { businessUnitGroupRoutes } from "./business-unit.routes.ts";
+import { roleRoutes } from "../../../modules/iam/role/role.routes.ts";
+import { permissionRoutes } from "../../../modules/iam/permission/permission.routes.ts";
+import { dashboardRoutes } from "./dashboard.routes.ts";
 
 // import { vendorsRoutes } from "./vendors.routes.js";
 
@@ -17,11 +20,14 @@ import { businessUnitGrouptRoutes } from "./business-unit.routes.ts";
 const router = Router();
 
 router.use("/users", userGroupRoutes);
-router.use("/business-unit", businessUnitGrouptRoutes);
+router.use("/dashboard", dashboardRoutes);
+router.use("/business-unit", businessUnitGroupRoutes);
 // router.use("/vendors", vendorsRoutes);
 // router.use("/products", productsRoutes);
 router.use("/categories", categoriesRoutes);
-router.use("/departments", categoriesRoutes);
+router.use("/businessUnits", categoriesRoutes);
+router.use("/role", roleRoutes);
+router.use("/permission", permissionRoutes);
 // router.use("/orders", ordersRoutes);
 // router.use("/analytics", analyticsRoutes);
 // router.use("/system", systemRoutes);

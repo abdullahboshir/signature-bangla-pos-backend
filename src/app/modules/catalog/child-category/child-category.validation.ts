@@ -6,7 +6,7 @@ export const childCategoryZodSchema = z.object({
     .string()
     .min(1, "Slug is required")
     .regex(/^[a-z0-9-]+$/, "Slug must be URL-friendly"),
-  department: z.string().min(1, "Category is required"),
+  businessUnit: z.string().min(1, "Category is required"),
   subCategory: z.string().min(1, "Category is required"),
   description: z.string().max(200).optional(),
   isActive: z.boolean().default(true),

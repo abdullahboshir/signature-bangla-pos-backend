@@ -1,0 +1,37 @@
+--- Test Suite Started ---
+
+--- Getting Token ---
+Token written to: E:\WEB-DEVELOPMENT\PROJECTS\Mern\signature-bangla\pos\signature-bangla-primary\signature-bangla-pos-backend\token.txt
+
+--- Seeding Business Unit ---
+Creating Business Unit...
+SEED STATUS: 500
+SEED DATA ID: NO_ID
+SEED SUCCESS: false
+
+--- Creating Category ---
+Testing Category Creation with Custom ID: STR_01KBAZDK3K9611WEJZN04KGBJE_BU
+Status: 200
+Response: {
+  "success": true,
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "success": true,
+    "statusCode": 200,
+    "message": " Category has been Created Successfully",
+    "data": {
+      "name": "TestCategory_Final_1765346284785",
+      "businessUnit": "692c88e8b2ef59e3fe4d04d5",
+      "description": "Test description final",
+      "image": "",
+      "isActive": true,
+      "_id": "69390bec8b4a22eef199d45a",
+      "createdAt": "2025-12-10T05:58:04.944Z",
+      "updatedAt": "2025-12-10T05:58:04.944Z",
+      "slug": "testcategoryfinal1765346284785",
+      "__v": 0
+    }
+  },
+  "timestamp": "2025-12-10T05:58:05.000Z"
+}

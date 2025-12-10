@@ -1,4 +1,4 @@
-import { Schema, model} from "mongoose";
+import { Schema, model } from "mongoose";
 import type { IChildCategory } from "./child-category.interface.js";
 import { makeSlug } from "@core/utils/utils.common.ts";
 
@@ -20,9 +20,9 @@ const ChildCategorySchema = new Schema<IChildCategory>(
       trim: true,
       maxlength: 60,
     },
-    department: {
+    businessUnit: {
       type: Schema.Types.ObjectId,
-      ref: "Dpartment",
+      ref: "BusinessUnit",
       required: true,
     },
     subCategory: {

@@ -47,7 +47,7 @@ export const authorize = (resource: string, action: string) => {
         user: {
           id: userWithRoles.id,
           roles: userWithRoles.roles.map((role: any) => role.name),
-          departments: userWithRoles.departments,
+          businessUnits: userWithRoles.businessUnits,
           ...(userWithRoles.branches !== undefined && { branches: userWithRoles.branches }),
           ...(userWithRoles.vendorId !== undefined && { vendorId: userWithRoles.vendorId }),
           ...(userWithRoles.region !== undefined && { region: userWithRoles.region })

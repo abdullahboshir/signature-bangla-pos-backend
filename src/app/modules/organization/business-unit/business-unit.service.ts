@@ -36,10 +36,11 @@ export class BusinessUnitService {
         session
       );
 
-      const businessUnitId = ULIDGenerator.generateStoreId("BU");
-      log.debug("Generated business unit ID", { businessUnitId });
-
-      businessUnitData.id = businessUnitId;
+      if (!businessUnitData.id) {
+        const businessUnitId = ULIDGenerator.generateStoreId("BU");
+        log.debug("Generated business unit ID", { businessUnitId });
+        businessUnitData.id = businessUnitId;
+      }
       businessUnitData.slug = slug;
 
       const [createdBusinessUnit] = await BusinessUnit.create(
@@ -55,7 +56,7 @@ export class BusinessUnitService {
         );
       }
 
-      const superAdminRole = await Role.findOne({name: USER_ROLE.SUPER_ADMIN}).session(session);
+      const superAdminRole = await Role.findOne({ name: USER_ROLE.SUPER_ADMIN }).session(session);
       if (!superAdminRole) {
         throw new AppError(
           500,
@@ -67,9 +68,9 @@ export class BusinessUnitService {
 
       const addToAdmin = await User.findOneAndUpdate(
         {
-        roles: {$in: [superAdminRole._id]},
-      }, {$addToSet: { businessUnits: createdBusinessUnit._id} }).session(session);
-      
+          roles: { $in: [superAdminRole._id] },
+        }, { $addToSet: { businessUnits: createdBusinessUnit._id } }).session(session);
+
       if (!addToAdmin) {
         throw new AppError(
           500,
@@ -77,7 +78,7 @@ export class BusinessUnitService {
           "BU_CREATE_002"
         );
       }
-      
+
       if (session.inTransaction()) {
         await session.commitTransaction();
       }
@@ -85,7 +86,7 @@ export class BusinessUnitService {
       return createdBusinessUnit;
 
     } catch (error: any) {
-    
+
       if (session.inTransaction()) {
         await session.abortTransaction();
         log.warn("Transaction aborted due to error", { error: error.message });
@@ -138,7 +139,7 @@ export class BusinessUnitService {
         return makeSlug(businessName);
       }
 
-   
+
       // Extract increment from last slug (e.g., "business-name-2" -> "2")
       const lastSlug = relatedBusinessUnits[0]?.slug;
       const lastIncrement = lastSlug?.split("-").pop();
@@ -319,6 +320,15 @@ export class BusinessUnitService {
         "Failed to publish business unit",
         "BU_PUBLISH_002"
       );
+    }
+  }
+
+  static async getAllBusinessUnits(): Promise<IBusinessUnitCoreDocument[]> {
+    try {
+      return await BusinessUnit.find().sort({ createdAt: -1 });
+    } catch (error: any) {
+      log.error("Failed to fetch all business units", { error: error.message });
+      throw new AppError(500, "Failed to fetch all business units", "BU_FETCH_ALL_001");
     }
   }
 

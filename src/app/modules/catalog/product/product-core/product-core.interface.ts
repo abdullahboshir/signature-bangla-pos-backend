@@ -15,6 +15,7 @@ export interface IProductCore {
   slug: string;
   sku: string;
   store: Types.ObjectId;
+  businessUnit: Types.ObjectId;
   vendor: {
     id: Types.ObjectId;
     name: string;
@@ -33,6 +34,7 @@ export interface IProductCore {
   details: Types.ObjectId;
   origine: string;
   variantTemplate?: Types.ObjectId;
+  hasVariants: boolean;
   isBundle: boolean;
   bundleProducts: BundleProduct[];
   bundleDiscount: number;

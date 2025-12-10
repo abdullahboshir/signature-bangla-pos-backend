@@ -3,7 +3,7 @@
 // ============================================================================
 // Extract from your current business-unit.model.ts and move here
 
-import { model, Schema, Types } from "mongoose";
+import { model, Schema } from "mongoose";
 import type { IBusinessUnitCoreDocument, IBusinessUnitCoreModel } from "./business-unit.interface.ts";
 
 
@@ -16,12 +16,12 @@ export const businessUnitCoreSchema = new Schema<
   IBusinessUnitCoreModel
 >(
   {
-   name: {
+    name: {
       type: String,
       required: true,
       trim: true,
       index: true,
-   },
+    },
     id: {
       type: String,
       required: true,
@@ -29,7 +29,12 @@ export const businessUnitCoreSchema = new Schema<
       index: true,
       trim: true,
     },
-
+    company: {
+      type: Schema.Types.ObjectId,
+      ref: 'Company',
+      required: false,
+      index: true,
+    },
     // ====== BRANDING ======
     branding: {
       name: { type: String, required: true, trim: true },
@@ -139,8 +144,8 @@ export const businessUnitCoreSchema = new Schema<
       refundPolicy: { type: String }
     },
     seo: {
-      metaTitle: { type: String, required: true },
-      metaDescription: { type: String, required: true },
+      metaTitle: { type: String, required: false, default: "" },
+      metaDescription: { type: String, required: false, default: "" },
       keywords: [{ type: String }],
       canonicalUrl: { type: String },
       ogImage: { type: String },
@@ -230,27 +235,27 @@ businessUnitCoreSchema.index({ "ratings.average": -1 });
 businessUnitCoreSchema.index({ "statistics.totalRevenue": -1 });
 
 // ==================== VIRTUAL PROPERTIES ====================
-businessUnitCoreSchema.virtual("isActive").get(function () {
+businessUnitCoreSchema.virtual("isActive").get(function (this: IBusinessUnitCoreDocument) {
   return this.status === "published" && this.visibility === "public";
 });
 
-businessUnitCoreSchema.virtual("isPublished").get(function () {
+businessUnitCoreSchema.virtual("isPublished").get(function (this: IBusinessUnitCoreDocument) {
   return this.status === "published";
 });
 
-businessUnitCoreSchema.virtual("isSuspended").get(function () {
+businessUnitCoreSchema.virtual("isSuspended").get(function (this: IBusinessUnitCoreDocument) {
   return this.status === "suspended";
 });
 
-businessUnitCoreSchema.virtual("performanceScore").get(function () {
+businessUnitCoreSchema.virtual("performanceScore").get(function (this: IBusinessUnitCoreDocument) {
   return this.performance.overallScore;
 });
 
-businessUnitCoreSchema.virtual("totalEarnings").get(function () {
+businessUnitCoreSchema.virtual("totalEarnings").get(function (this: IBusinessUnitCoreDocument) {
   return this.statistics.totalRevenue;
 });
 
-businessUnitCoreSchema.virtual("daysSinceCreation").get(function () {
+businessUnitCoreSchema.virtual("daysSinceCreation").get(function (this: IBusinessUnitCoreDocument) {
   const diffTime = Math.abs(
     new Date().getTime() - this.createdAt.getTime()
   );

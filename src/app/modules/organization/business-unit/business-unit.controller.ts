@@ -15,3 +15,13 @@ export const createBusinessUnitController = catchAsync(async (req: any, res) => 
     data,
   })
 })
+
+export const getAllBusinessUnitsController = catchAsync(async (req, res) => {
+  const data = await BusinessUnitService.getAllBusinessUnits();
+  ApiResponse.success(res, {
+    success: true,
+    statusCode: status.OK,
+    message: 'Business Units retrieved successfully',
+    data,
+  });
+});

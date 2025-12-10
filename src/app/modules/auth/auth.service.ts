@@ -7,6 +7,7 @@ import status from "http-status";
 
 export const loginService = async (email: string, pass: string) => {
   const isUserExists = await User.isUserExists(email);
+  console.info("LOGIN DEBUG - Email:", email, "Pass:", pass);
   console.info("I AM FROM AUTH SERVICE:", isUserExists);
 
 
@@ -30,16 +31,16 @@ export const loginService = async (email: string, pass: string) => {
     throw new AppError(status.FORBIDDEN, "password deos not matched");
   }
 
-  
- const allRoles = isUserExists.roles?.map((r: any) => r.name) ?? [];
-  
+
+  const allRoles = isUserExists.roles?.map((r: any) => r.name) ?? [];
+
   const jwtPayload: any = {
     userId: isUserExists?._id,
     id: isUserExists?.id,
     email: isUserExists?.email,
     role: allRoles
   };
-  
+
   const accessToken = createToken(
     jwtPayload,
     appConfig.jwt_access_secret as string,
@@ -52,19 +53,22 @@ export const loginService = async (email: string, pass: string) => {
     appConfig.jwt_refresh_expired_in as string
   );
 
-// console.log('userrrrrrrrrrrrrrrrrrrrrrrrr', isUserExists.businessUnits)
+  // console.log('userrrrrrrrrrrrrrrrrrrrrrrrr', isUserExists.businessUnits)
 
- const businessUnits = isUserExists.businessUnits?.map((bu: any) => bu.name) ?? [];
+  const businessUnits = isUserExists.businessUnits?.map((bu: any) => ({
+    _id: bu._id,
+    name: bu.name,
+    id: bu.id // This is likely the slug/custom ID used in URLs
+  })) ?? [];
   const userInfo = {
     userId: isUserExists?._id,
     id: isUserExists?.id,
     email: isUserExists?.email,
-    role: allRoles,
+    role: allRoles, // Array of strings (legacy/simple)
+    roles: isUserExists.roles, // Array of objects (populated)
     permissions: isUserExists?.directPermissions || [],
-    businessUnit:  businessUnits
+    businessUnits: businessUnits // sending full object array
   }
-  
-
 
   return {
     accessToken,
@@ -73,14 +77,6 @@ export const loginService = async (email: string, pass: string) => {
     user: userInfo
   };
 };
-
-
-
-
-
-
-
-
 
 export const refreshTokenAuthService = async (token: string) => {
   if (!token) {
@@ -91,29 +87,29 @@ export const refreshTokenAuthService = async (token: string) => {
   const { userId, iat } = decoded
 
   // FIXED: find user by custom userId
-  const isUserExists = await User.findOne({_id: userId }).populate([{path: 'businessUnits', select: 'name'}, { 
-      path: 'roles', 
-      select: 'name permissions',
-      populate: { path: 'permissions' }
-    }]).lean()
- 
-  
+  const isUserExists = await User.findOne({ _id: userId }).populate([{ path: 'businessUnits', select: 'name id' }, {
+    path: 'roles',
+    select: 'name permissions',
+    populate: { path: 'permissions' }
+  }]).lean()
+
+
   if (!isUserExists) {
     throw new AppError(status.NOT_FOUND, 'User is not found')
   }
-  
+
   if (isUserExists.isDeleted) {
     throw new AppError(status.FORBIDDEN, 'This user is deleted')
   }
-  
+
   if (isUserExists.status === 'blocked') {
     throw new AppError(status.FORBIDDEN, 'This user is blocked')
   }
-  
+
   if (isUserExists.status === 'inactive') {
     throw new AppError(status.FORBIDDEN, 'This user is inactive')
   }
-  
+
   if (
     isUserExists.passwordChangedAt &&
     User.isJWTIssuedBeforePasswordChanged(
@@ -123,13 +119,12 @@ export const refreshTokenAuthService = async (token: string) => {
   ) {
     throw new AppError(status.UNAUTHORIZED, 'You are not authorized')
   }
-  
- 
+
+
   const allRoles = isUserExists.roles?.map((r: any) => r.name) ?? [];
-  
 
 
-   const jwtPayload: any = {
+  const jwtPayload: any = {
     userId: isUserExists?._id,
     id: isUserExists?.id,
     email: isUserExists?.email,
@@ -147,16 +142,20 @@ export const refreshTokenAuthService = async (token: string) => {
 }
 
 
-
-
 export const authMeService = async (userInfo: any) => {
-  
-const res = await User.findOne({_id: userInfo.userId }).populate([{path: 'businessUnits', select: 'name'},  { 
-      path: 'roles', 
-      select: 'name permissions',
-      populate: { path: 'permissions' }
-    }]).lean();
-return res;
+
+  const res = await User.findOne({ _id: userInfo.userId }).populate([{ path: 'businessUnits', select: 'name id slug' }, {
+    path: 'roles',
+    select: 'name permissions',
+    populate: { path: 'permissions' }
+  }]).lean();
+
+  if (res) {
+    // Standardize response: Add 'role' (string array) to match loginService
+    (res as any).role = res.roles?.map((r: any) => r.name) || [];
+  }
+
+  return res;
 }
 
 

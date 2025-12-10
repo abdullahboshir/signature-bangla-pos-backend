@@ -3,6 +3,7 @@ import { ApiResponse } from "@core/utils/api-response.ts";
 import {
   createCustomerService,
   getUsersService,
+  updateUserService,
 } from "./user.service.js";
 
 import status from "http-status";
@@ -45,5 +46,17 @@ export const getUsersController = catchAsync(async (req: any, res) => {
     statusCode: status.OK,
     message: "Users has been retrieved Successfully",
     data,
+  });
+});
+
+export const updateUserController = catchAsync(async (req: any, res) => {
+  const { id } = req.params;
+  const updatedUser = await updateUserService(id, req.body);
+
+  ApiResponse.success(res, {
+    success: true,
+    statusCode: status.OK,
+    message: "User updated successfully",
+    data: updatedUser,
   });
 });

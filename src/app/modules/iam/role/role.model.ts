@@ -29,15 +29,15 @@ const RoleSchema = new Schema<IRole>(
     descriptionBangla: {
       type: String,
       trim: true,
-      maxlength: [500, 'Bangla description cannot exceed 500 characters'] 
+      maxlength: [500, 'Bangla description cannot exceed 500 characters']
     },
-    permissions:  [{type: Types.ObjectId, ref: "Permission", required: true}],
-    permissionGroups:  [{type: Types.ObjectId, ref: "PermissionGroup", required: true}],
+    permissions: [{ type: Types.ObjectId, ref: "Permission", required: true }],
+    permissionGroups: [{ type: Types.ObjectId, ref: "PermissionGroup", required: true }],
     inheritedRoles: [{
       type: Types.ObjectId,
       ref: 'Role',
       validate: {
-        validator: function(this: IRole, roles: Types.ObjectId[]) {
+        validator: function (this: IRole, roles: Types.ObjectId[]) {
           // Prevent circular inheritance
           return !roles.includes(this._id as unknown as Types.ObjectId);
         },
@@ -92,18 +92,18 @@ RoleSchema.index({ isSystemRole: 1 });
 RoleSchema.index({ isDefault: 1 });
 
 
-RoleSchema.virtual('allPermissions').get(function(this: IRole) {
+RoleSchema.virtual('allPermissions').get(function (this: IRole) {
   return this.permissions;
 });
 
-RoleSchema.pre('save', async function(next) {
+RoleSchema.pre('save', async function (next) {
   if (this.isDefault) {
     const existingDefault = await model('Role').findOne({
       isDefault: true,
       hierarchyLevel: this.hierarchyLevel,
       _id: { $ne: this._id }
     });
-    
+
     if (existingDefault) {
       throw new Error(`There is already a default role for hierarchy level ${this.hierarchyLevel}`);
     }
@@ -115,17 +115,17 @@ RoleSchema.pre('save', async function(next) {
 cachingMiddleware(RoleSchema);
 
 // Invalidate permission caches by bumping role version on changes
-RoleSchema.post('save', async function() {
-  await bumpVersion('role');
-});
-RoleSchema.post('findOneAndUpdate', async function() {
-  await bumpVersion('role');
-});
-RoleSchema.post('deleteOne', { document: false, query: true }, async function() {
-  await bumpVersion('role');
-});
-RoleSchema.post('deleteMany', async function() {
-  await bumpVersion('role');
-});
+// RoleSchema.post('save', async function() {
+//   await bumpVersion('role');
+// });
+// RoleSchema.post('findOneAndUpdate', async function() {
+//   await bumpVersion('role');
+// });
+// RoleSchema.post('deleteOne', { document: false, query: true }, async function() {
+//   await bumpVersion('role');
+// });
+// RoleSchema.post('deleteMany', async function() {
+//   await bumpVersion('role');
+// });
 
 export const Role = model<IRole>('Role', RoleSchema);

@@ -8,15 +8,15 @@ export const createCategoryService = async (payload: ISubCategory) => {
 };
 
 export const getCategoriesService = async (
-  departmentId: Types.ObjectId | string | null
+  businessUnitId: Types.ObjectId | string | null
 ) => {
     let result;
     
-    if (departmentId === null) {
+    if (businessUnitId === null) {
     result = await Category.find({});
     return result;
   } else {
-    result = await Category.find({ department: departmentId });
+    result = await Category.find({ businessUnit: businessUnitId });
     return result;
   }
 };

@@ -114,7 +114,7 @@ const auth = (...requiredRoles: string[]) => {
       id: isUserExists.id,
       email: isUserExists.email,
       roleName: roleDetails.map((role: any) => role.name),
-      departments: isUserExists.departments,
+      businessUnits: isUserExists.businessUnits,
       ...(isUserExists.branches !== undefined && { branches: isUserExists.branches }),
       ...(isUserExists.vendorId !== undefined && { vendorId: isUserExists.vendorId }),
       ...(isUserExists.region !== undefined && { region: isUserExists.region }),
