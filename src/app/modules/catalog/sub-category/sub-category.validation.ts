@@ -1,12 +1,14 @@
 import { z } from 'zod';
 
 export const subcategoryZodSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(50),
-  slug: z.string().min(1, 'Slug is required').regex(/^[a-z0-9-]+$/, 'Slug must be URL-friendly'),
-  category: z.string().min(1, 'Category is required'),
-  businessUnit: z.string().min(1, 'Category is required'),
-  description: z.string().max(200).optional(),
-  isActive: z.boolean().default(true),
+  body: z.object({
+    name: z.string().min(1, 'Name is required').max(50),
+    slug: z.string().optional(),
+    category: z.string().min(1, 'Category is required'),
+    businessUnit: z.string().min(1, 'Business Unit is required'),
+    description: z.string().max(200).optional(),
+    isActive: z.boolean().default(true),
+  })
 });
 
 // For partial updates (PATCH requests)

@@ -1,6 +1,10 @@
 import { createToken, verifyToken } from "./auth.utils.ts";
 import { USER_STATUS } from "../iam/user/user.constant.ts";
 import { User } from "../iam/user/user.model.ts";
+// Force registration of BusinessUnit model to prevent MissingSchemaError during populate
+import "../organization/business-unit/business-unit.model.ts";
+import "../iam/role/role.model.ts";
+import "../iam/permission/permission.model.ts";
 import appConfig from "@shared/config/app.config.ts";
 import AppError from "@shared/errors/app-error.ts";
 import status from "http-status";

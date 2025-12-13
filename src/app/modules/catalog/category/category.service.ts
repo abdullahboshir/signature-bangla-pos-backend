@@ -1,8 +1,9 @@
 import { Types } from "mongoose";
-import type { ISubCategory } from "../sub-category/sub-category.interface.js";
-import { Category } from "./category.model.js";
 
-export const createCategoryService = async (payload: ISubCategory) => {
+import { Category } from "./category.model.js";
+import type { ICategories } from "./category.interface.ts";
+
+export const createCategoryService = async (payload: ICategories) => {
   const result = await Category.create(payload);
   return result;
 };
@@ -10,9 +11,9 @@ export const createCategoryService = async (payload: ISubCategory) => {
 export const getCategoriesService = async (
   businessUnitId: Types.ObjectId | string | null
 ) => {
-    let result;
-    
-    if (businessUnitId === null) {
+  let result;
+
+  if (businessUnitId === null) {
     result = await Category.find({});
     return result;
   } else {

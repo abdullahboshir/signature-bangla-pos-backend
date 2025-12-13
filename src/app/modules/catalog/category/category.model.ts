@@ -20,7 +20,7 @@ const CategorySchema = new Schema<ICategories>(
     },
     businessUnit: {
       type: Schema.Types.ObjectId,
-      ref: "Dpartment",
+      ref: "BusinessUnit",
       required: true,
     },
     description: {

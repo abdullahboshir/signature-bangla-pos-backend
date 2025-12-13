@@ -206,9 +206,7 @@ export class BusinessUnitService {
     businessUnitId: string
   ): Promise<IBusinessUnitCoreDocument | null> {
     try {
-      const businessUnit = await BusinessUnit.findOne({
-        businessUnitId,
-      });
+      const businessUnit = await BusinessUnit.findById(businessUnitId);
 
       return businessUnit;
 
@@ -250,9 +248,23 @@ export class BusinessUnitService {
     updateData: Partial<IBusinessUnitCore>
   ): Promise<IBusinessUnitCoreDocument | null> {
     try {
-      const updatedBusinessUnit = await BusinessUnit.findOneAndUpdate(
-        { businessUnitId },
-        updateData,
+      const flattenUpdateData = (data: any, prefix = '') => {
+        return Object.keys(data).reduce((acc: any, key: string) => {
+          const pre = prefix.length ? prefix + '.' : '';
+          if (typeof data[key] === 'object' && data[key] !== null && !Array.isArray(data[key])) {
+            Object.assign(acc, flattenUpdateData(data[key], pre + key));
+          } else {
+            acc[pre + key] = data[key];
+          }
+          return acc;
+        }, {});
+      };
+
+      const flattenedData = flattenUpdateData(updateData);
+
+      const updatedBusinessUnit = await BusinessUnit.findByIdAndUpdate(
+        businessUnitId,
+        flattenedData,
         { new: true, runValidators: true }
       );
 
@@ -293,7 +305,7 @@ export class BusinessUnitService {
     businessUnitId: string
   ): Promise<IBusinessUnitCoreDocument | null> {
     try {
-      const businessUnit = await BusinessUnit.findOne({ businessUnitId });
+      const businessUnit = await BusinessUnit.findById(businessUnitId);
 
       if (!businessUnit) {
         throw new AppError(404, "Business unit not found", "BU_PUBLISH_001");
@@ -334,9 +346,7 @@ export class BusinessUnitService {
 
   static async deleteBusinessUnit(businessUnitId: string): Promise<void> {
     try {
-      const result = await BusinessUnit.findOneAndDelete({
-        businessUnitId,
-      });
+      const result = await BusinessUnit.findByIdAndDelete(businessUnitId);
 
       if (!result) {
         throw new AppError(404, "Business unit not found", "BU_DELETE_001");

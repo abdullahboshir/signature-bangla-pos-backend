@@ -8,11 +8,27 @@ export class ProductRepository {
     }
 
     async findAll(filter: FilterQuery<IProductDocument> = {}): Promise<IProductDocument[]> {
-        return await Product.find(filter).populate('businessUnit');
+        return await Product.find(filter)
+            .populate('businessUnit')
+            .populate('primaryCategory')
+            .populate('pricing')
+            .populate('inventory')
+            .populate('details') // Needed for images
+            .populate('unit')
+            .populate('brands');
     }
 
     async findById(id: string): Promise<IProductDocument | null> {
-        return await Product.findById(id).populate('businessUnit');
+        return await Product.findById(id)
+            .populate('businessUnit')
+            .populate('primaryCategory')
+            .populate('pricing')
+            .populate('inventory')
+            .populate('details')
+            .populate('brands')
+            .populate('shipping')
+            .populate('unit')
+            .populate('variantTemplate');
     }
 
     async update(id: string, data: Partial<IProductDocument>): Promise<IProductDocument | null> {
@@ -24,6 +40,13 @@ export class ProductRepository {
     }
 
     async findByBusinessUnit(businessUnitId: string): Promise<IProductDocument[]> {
-        return await Product.find({ businessUnit: businessUnitId }).populate('businessUnit');
+        return await Product.find({ businessUnit: businessUnitId })
+            .populate('businessUnit')
+            .populate('primaryCategory')
+            .populate('pricing')
+            .populate('inventory')
+            .populate('details')
+            .populate('unit')
+            .populate('brands');
     }
 }

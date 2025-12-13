@@ -25,3 +25,42 @@ export const getAllBusinessUnitsController = catchAsync(async (req, res) => {
     data,
   });
 });
+
+export const deleteBusinessUnitController = catchAsync(async (req, res) => {
+  const { businessUnitId } = req.params;
+  await BusinessUnitService.deleteBusinessUnit(businessUnitId);
+  ApiResponse.success(res, {
+    success: true,
+    statusCode: status.OK,
+    message: 'Business Unit deleted successfully',
+  });
+});
+
+export const getBusinessUnitByIdController = catchAsync(async (req, res) => {
+  const { businessUnitId } = req.params;
+  if (!businessUnitId) {
+    throw new Error("Business Unit ID is required");
+  }
+  const data = await BusinessUnitService.getBusinessUnitById(businessUnitId);
+  ApiResponse.success(res, {
+    success: true,
+    statusCode: status.OK,
+    message: 'Business Unit retrieved successfully',
+    data: data,
+  });
+});
+
+export const updateBusinessUnitController = catchAsync(async (req, res) => {
+  const { businessUnitId } = req.params;
+  if (!businessUnitId) {
+    throw new Error("Business Unit ID is required");
+  }
+  const updateData = req.body;
+  const data = await BusinessUnitService.updateBusinessUnit(businessUnitId, updateData);
+  ApiResponse.success(res, {
+    success: true,
+    statusCode: status.OK,
+    message: 'Business Unit updated successfully',
+    data,
+  });
+});

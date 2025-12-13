@@ -11,6 +11,7 @@ export interface IProductPricing {
   currency: "BDT" | "USD";
   costPrice: number;
   profitMargin: number;
+  profitMarginType: "percentage" | "fixed";
 
   // Discount System
   discount: {

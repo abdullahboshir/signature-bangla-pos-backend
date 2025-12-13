@@ -14,6 +14,7 @@ export interface IProductCore {
   nameBangla?: string;
   slug: string;
   sku: string;
+  unit?: Types.ObjectId;
   store: Types.ObjectId;
   businessUnit: Types.ObjectId;
   vendor: {
@@ -24,6 +25,8 @@ export interface IProductCore {
   };
   categories: Types.ObjectId[];
   primaryCategory: Types.ObjectId;
+  subCategory?: Types.ObjectId;
+  childCategory?: Types.ObjectId;
   brands: Types.ObjectId[];
   tags: string[];
   tagsBangla?: string[];

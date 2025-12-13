@@ -51,8 +51,8 @@ export const generateProductCode = async (
   category: string,
   origin: string
 ): Promise<string> => {
-  const categoryCode = category.trim().toUpperCase()
-  const originCode = origin.trim().toUpperCase()
+  const categoryCode = (category || 'GEN').trim().toUpperCase()
+  const originCode = (origin || 'BD').trim().toUpperCase()
 
   const now = new Date()
   const yy = now.getFullYear().toString().slice(-2)

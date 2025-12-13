@@ -1,7 +1,7 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 
 import { productZodSchema } from "./product-core-validation.js";
-import { createProductController, getAllProductsController } from "./product-core-controller.js";
+import { createProductController, getAllProductsController, getProductByIdController, updateProductController, deleteProductController } from "./product-core-controller.js";
 import type { AnyZodObject } from "zod/v3";
 import auth from "@core/middleware/auth.ts";
 import { USER_ROLE } from "@app/modules/iam/user/user.constant.ts";
@@ -27,6 +27,24 @@ router.post('/create', auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
 router.get('/',
   auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.VENDOR), // Optional: Adjust roles as needed
   getAllProductsController
+);
+
+router.get('/:id',
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.VENDOR),
+  getProductByIdController
+);
+
+router.patch('/:id',
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  // authorize(PermissionSourceObj.customer, PermissionActionObj.update), // Add detailed auth later
+  validateRequest(productZodSchema.partial() as unknown as AnyZodObject),
+  updateProductController
+);
+
+router.delete('/:id',
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  // authorize(PermissionSourceObj.customer, PermissionActionObj.delete), // Add detailed auth later
+  deleteProductController
 );
 
 

@@ -27,7 +27,7 @@ export const seedSuperAdmin = async () => {
 
     if (missingConfig.length > 0) {
       throw new Error(
-        `Missing required configuration: ${missingConfig.join(", ")}` 
+        `Missing required configuration: ${missingConfig.join(", ")}`
       );
     }
 
@@ -55,18 +55,22 @@ export const seedSuperAdmin = async () => {
     }).session(session);
 
     if (existingSuperAdmin) {
-      await session.abortTransaction();
-      console.log("✅ SUPER_ADMIN already exists");
+      // Ensure password is synced with .env
+      existingSuperAdmin.password = appConfig.super_admin_pass;
+      await existingSuperAdmin.save({ session });
+
+      await session.commitTransaction();
+      console.log("✅ SUPER_ADMIN exists - Password synced with .env");
       return {
         success: true,
-        message: "SUPER_ADMIN already exists",
+        message: "SUPER_ADMIN exists - Password synced",
         exists: true,
       };
     }
 
     // 5. Validate dependencies
     const [role, allPermissions] = await Promise.all([
-      Role.findOne({ name: USER_ROLE.SUPER_ADMIN }).session(session), 
+      Role.findOne({ name: USER_ROLE.SUPER_ADMIN }).session(session),
       Permission.find({}).session(session),
     ]);
 

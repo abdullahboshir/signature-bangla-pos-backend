@@ -7,7 +7,7 @@ import { Router } from 'express';
 
 import type { AnyZodObject } from 'zod/v3';
 import { createBusinessUnitValidationSchema } from './business-unit.validation.ts';
-import { createBusinessUnitController, getAllBusinessUnitsController } from './business-unit.controller.ts';
+import { createBusinessUnitController, getAllBusinessUnitsController, deleteBusinessUnitController, getBusinessUnitByIdController, updateBusinessUnitController } from './business-unit.controller.ts';
 
 
 const router = Router();
@@ -25,6 +25,25 @@ router.post(
   // authorize(PermissionSourceObj.businessUnit, PermissionActionObj.create), // Temporarily disabled
   // validateRequest(createBusinessUnitValidationSchema as unknown as AnyZodObject),
   createBusinessUnitController
+);
+
+router.delete(
+  '/:businessUnitId',
+  auth(USER_ROLE.SUPER_ADMIN),
+  // authorize(PermissionSourceObj.businessUnit, PermissionActionObj.delete),
+  deleteBusinessUnitController
+);
+
+router.get(
+  '/:businessUnitId',
+  auth(USER_ROLE.SUPER_ADMIN),
+  getBusinessUnitByIdController
+);
+
+router.patch(
+  '/:businessUnitId',
+  auth(USER_ROLE.SUPER_ADMIN),
+  updateBusinessUnitController
 );
 
 

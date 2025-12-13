@@ -9,6 +9,7 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
   nameBangla: { type: String, trim: true },
   slug: { type: String, required: true, unique: true, index: true },
   sku: { type: String, required: true, unique: true, index: true },
+  unit: { type: Schema.Types.ObjectId, ref: 'Unit' },
 
   store: { type: Schema.Types.ObjectId, ref: 'Store', required: false, index: true }, // Deprecated in favor of businessUnit?
   businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
@@ -20,6 +21,8 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
   },
   categories: [{ type: Schema.Types.ObjectId, ref: 'Category', required: true }],
   primaryCategory: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
+  subCategory: { type: Schema.Types.ObjectId, ref: 'SubCategory' },
+  childCategory: { type: Schema.Types.ObjectId, ref: 'ChildCategory' },
   brands: [{ type: Schema.Types.ObjectId, ref: 'Brand' }],
   tags: [{ type: String, trim: true }],
   tagsBangla: [{ type: String, trim: true }],

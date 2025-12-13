@@ -4,8 +4,12 @@ import catchAsync from "../utils/catchAsync.js"
 
 export const validateRequest = (zodSchema: AnyZodObject) => {
   return catchAsync(async (req, _res, next) => {
-    await zodSchema.safeParseAsync({ body: req.body, cookies: req.cookies })
-    next()
+    const result = await zodSchema.safeParseAsync({ body: req.body, cookies: req.cookies })
+
+    if (!result.success) {
+      next(result.error)
+    } else {
+      next()
+    }
   })
-} 
-  
+}
