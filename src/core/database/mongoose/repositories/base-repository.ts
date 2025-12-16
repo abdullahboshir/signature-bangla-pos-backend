@@ -8,7 +8,7 @@ import type {
 } from "mongoose";
 
 export interface IRepository<T extends Document> {
-  create(data: Partial<T>): Promise<T>;
+  create(data: Partial<T>, options?: any): Promise<T>;
   findById(id: string): Promise<T | null>;
   findOne(filter: FilterQuery<T>): Promise<T | null>;
   findAll(filter?: FilterQuery<T>, options?: any): Promise<T[]>;
@@ -27,10 +27,11 @@ export interface IRepository<T extends Document> {
 }
 
 export class BaseRepository<T extends Document> implements IRepository<T> {
-  constructor(protected model: Model<T>) {}
+  constructor(protected model: Model<T>) { }
 
-  async create(data: Partial<T>): Promise<T> {
-    const document = await this.model.create(data);
+  async create(data: Partial<T>, options?: any): Promise<T> {
+    const document = new this.model(data);
+    await document.save(options);
     return document;
   }
 

@@ -25,7 +25,12 @@ import { createCustomerZodSchema } from "@app/modules/customer/customer.validati
 import { upload } from "@core/utils/file-upload.ts";
 import { validateRequest } from "@core/middleware/validateRequest.ts";
 
+import { roleRoutes } from "../role/role.routes.js";
+
 const router = Router();
+
+router.use("/roles", roleRoutes);
+
 
 router.get("/all-users", getUsersController);
 

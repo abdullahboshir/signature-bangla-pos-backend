@@ -2,10 +2,10 @@ import { Router } from "express";
 
 // import businessAdminRoutes from "./vendor";
 
-import { authGroupRoutes } from "./auth/auth.routes.ts";
-import { adminGroupRoutes } from "./super-admin/index.ts";
-import { customerGroupRoutes } from "./customer/index.ts";
-import { publicGroupRoutes } from "./public/index.ts";
+import { authGroupRoutes } from "./auth/auth.routes.js";
+import { adminGroupRoutes } from "./super-admin/index.js";
+import { customerGroupRoutes } from "./customer/index.js";
+import { publicGroupRoutes } from "./public/index.js";
 
 const router = Router();
 

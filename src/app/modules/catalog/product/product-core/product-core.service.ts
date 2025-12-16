@@ -38,6 +38,7 @@ const mapFrontendToBackendVariant = (frontendVariant: any, parentId: string, par
       stock: frontendVariant.stock || 0,
       allowBackorder: false
     },
+    images: frontendVariant.images && Array.isArray(frontendVariant.images) ? frontendVariant.images : (frontendVariant.image ? [frontendVariant.image] : []),
     isDefault: frontendVariant.isDefault || false,
     status: "active"
   };
@@ -127,9 +128,19 @@ export const createProductService = async (payload: any) => {
 
 export const getAllProductsService = async (query: any) => {
   const filter: any = {};
+
   if (query.businessUnit) {
     filter.businessUnit = query.businessUnit;
   }
+
+  if (query.search) {
+    const searchRegex = new RegExp(query.search, 'i');
+    filter.$or = [
+      { name: searchRegex },
+      { sku: searchRegex },
+    ];
+  }
+
   // Add other filters as needed
   return await productRepository.findAll(filter);
 }
@@ -196,7 +207,7 @@ export const updateProductService = async (id: string, payload: any) => {
           variantAttributes: payload.variantAttributes || []
         };
         const newVariant = await ProductVariant.create([variantData], { session });
-        payload.variantTemplate = newVariant[0]._id;
+        payload.variantTemplate = newVariant[0]?._id;
       }
     }
 

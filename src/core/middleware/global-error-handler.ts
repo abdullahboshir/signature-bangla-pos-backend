@@ -179,6 +179,17 @@ const globalErrorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
       },
     ]
   }
+  // Custom AppError (Duck Typing fallback)
+  else if (err.statusCode && typeof err.statusCode === 'number') {
+    statusCode = err.statusCode
+    message = err.message
+    errorSources = [
+      {
+        path: '',
+        message: err.message,
+      },
+    ]
+  }
   // Generic Error
   else if (err instanceof Error) {
     message = err.message

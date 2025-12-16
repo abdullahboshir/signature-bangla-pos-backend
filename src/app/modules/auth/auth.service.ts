@@ -87,7 +87,16 @@ export const refreshTokenAuthService = async (token: string) => {
     throw new AppError(status.UNAUTHORIZED, 'You are not authorized!')
   }
 
-  const decoded = verifyToken(token, appConfig.jwt_refresh_secret as string)
+  let decoded;
+  try {
+    decoded = verifyToken(token, appConfig.jwt_refresh_secret as string)
+  } catch (err: any) {
+    if (err.name === 'TokenExpiredError') {
+      throw new AppError(status.UNAUTHORIZED, 'Refresh token expired!')
+    }
+    throw new AppError(status.UNAUTHORIZED, 'Invalid refresh token!')
+  }
+
   const { userId, iat } = decoded
 
   // FIXED: find user by custom userId

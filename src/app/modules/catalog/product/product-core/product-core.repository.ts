@@ -1,4 +1,7 @@
 import { Product } from "./product-core.model.ts";
+import "../../unit/unit.model.js"; // Register Unit model
+import "../../brand/brand.model.js"; // Register Brand model (proactive)
+
 import type { IProductDocument } from "./product-core.interface.ts";
 import type { FilterQuery } from "mongoose";
 
