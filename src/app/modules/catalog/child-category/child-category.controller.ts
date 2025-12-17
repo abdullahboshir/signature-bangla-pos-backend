@@ -1,9 +1,18 @@
 
 import status from 'http-status'
-import { createChildCategoryService, getChildCategoriesService, getAllChildCategoriesService } from './child-category.service.js'
+import {
+  createChildCategoryService,
+  getChildCategoriesService,
+  getAllChildCategoriesService,
+  getChildCategoryByIdService,
+  updateChildCategoryService,
+  deleteChildCategoryService,
+  createChildCategoryWithResolution
+} from './child-category.service.js'
 import mongoose from 'mongoose'
 import { ApiResponse } from '@core/utils/api-response.ts'
 import catchAsync from '@core/utils/catchAsync.ts'
+import { GenericController } from "@core/controllers/GenericController.ts";
 
 
 export const createChildCategoryController = catchAsync(async (req, res) => {
@@ -87,7 +96,7 @@ export const getChildCategoriesController = catchAsync(async (req, res) => {
 })
 
 export const getAllChildCategoriesController = catchAsync(async (req, res) => {
-  const data = await getAllChildCategoriesService();
+  const data = await getAllChildCategoriesService(req.query);
 
   ApiResponse.success(res, {
     success: true,
@@ -96,3 +105,13 @@ export const getAllChildCategoriesController = catchAsync(async (req, res) => {
     data,
   });
 });
+
+const childCategoryServiceMap = {
+  create: createChildCategoryWithResolution,
+  getAll: getAllChildCategoriesService,
+  getById: getChildCategoryByIdService,
+  update: updateChildCategoryService,
+  delete: deleteChildCategoryService,
+};
+
+export const ChildCategoryController = new GenericController(childCategoryServiceMap, "ChildCategory");

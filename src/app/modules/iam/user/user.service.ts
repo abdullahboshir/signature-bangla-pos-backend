@@ -297,3 +297,25 @@ export const updateUserService = async (
 
   return result;
 };
+
+export const getUserSettingsService = async (userId: string) => {
+  const user = await User.findById(userId).select("settings");
+  return user?.settings || {};
+};
+
+export const updateUserSettingsService = async (
+  userId: string,
+  settings: { theme?: string; tableHeight?: string }
+) => {
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { $set: { settings } },
+    { new: true, runValidators: true }
+  ).select("settings");
+
+  if (!user) {
+    throw new AppError(404, "User not found");
+  }
+
+  return user.settings;
+};

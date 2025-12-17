@@ -19,8 +19,8 @@ export const loginController = catchAsync(async (req, res) => {
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: appConfig.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: false, // Explicitly false for debugging
+    sameSite: "lax",
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
@@ -35,13 +35,14 @@ export const loginController = catchAsync(async (req, res) => {
 
 export const refreshTokenController = catchAsync(async (req, res) => {
   const { refreshToken } = req.cookies;
+  console.log("DEBUG: Refresh Token Cookie:", refreshToken ? "Present" : "Missing");
 
   const result = await refreshTokenAuthService(refreshToken);
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: appConfig.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: false, // Explicitly false for debugging
+    sameSite: "lax",
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
@@ -71,8 +72,8 @@ export const logoutController = catchAsync(async (_req, res) => {
   await logoutService();
   res.clearCookie("refreshToken", {
     httpOnly: true,
-    secure: appConfig.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: false, // Match login/refresh
+    sameSite: "lax", // Match login/refresh
     path: "/",
   });
   ApiResponse.success(res, {

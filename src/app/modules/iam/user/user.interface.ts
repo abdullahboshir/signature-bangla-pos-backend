@@ -13,9 +13,8 @@ export interface IUser {
   email: string;
   phone?: string;
   password: string;
-  businessUnits?: Types.ObjectId[];
+  businessUnits?: Types.ObjectId[] | string[];
   roles: Types.ObjectId[];
-  businessUnits: string[];
   branches?: string[];
   vendorId?: string;
   region?: string;
@@ -44,6 +43,10 @@ export interface IUser {
     ip: string;
     userAgent: string;
   }[];
+  settings?: {
+    theme?: string;
+    tableHeight?: string;
+  };
   createdBy?: Types.ObjectId;
   updatedBy?: Types.ObjectId;
   createdAt: Date;

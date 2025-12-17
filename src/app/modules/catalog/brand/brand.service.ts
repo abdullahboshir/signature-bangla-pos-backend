@@ -6,8 +6,14 @@ const createBrand = async (payload: IBrand) => {
     return result;
 };
 
-const getAllBrands = async () => {
-    const result = await Brand.find({});
+const getAllBrands = async (query: any) => {
+    const { limit, page, sortBy, sortOrder, searchTerm, fields, ...filters } = query;
+
+    if (searchTerm) {
+        filters['name'] = { $regex: searchTerm, $options: 'i' };
+    }
+
+    const result = await Brand.find(filters);
     return result;
 };
 

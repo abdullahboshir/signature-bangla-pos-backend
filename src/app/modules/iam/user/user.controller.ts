@@ -4,6 +4,8 @@ import {
   createCustomerService,
   getUsersService,
   updateUserService,
+  getUserSettingsService,
+  updateUserSettingsService,
 } from "./user.service.js";
 
 import status from "http-status";
@@ -58,5 +60,30 @@ export const updateUserController = catchAsync(async (req: any, res) => {
     statusCode: status.OK,
     message: "User updated successfully",
     data: updatedUser,
+  });
+});
+
+
+export const getUserSettingsController = catchAsync(async (req: any, res) => {
+  const { id } = req.user; // Assuming user ID is in req.user from auth middleware
+  const data = await getUserSettingsService(id);
+
+  ApiResponse.success(res, {
+    success: true,
+    statusCode: status.OK,
+    message: "Settings retrieved successfully",
+    data,
+  });
+});
+
+export const updateUserSettingsController = catchAsync(async (req: any, res) => {
+  const { id } = req.user;
+  const data = await updateUserSettingsService(id, req.body);
+
+  ApiResponse.success(res, {
+    success: true,
+    statusCode: status.OK,
+    message: "Settings updated successfully",
+    data,
   });
 });

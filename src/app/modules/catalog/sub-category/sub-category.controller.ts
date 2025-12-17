@@ -4,7 +4,16 @@ import {
   createSubCategoryService,
   getSubCategoriesService,
   getAllSubCategoriesService,
+  getSubCategoryByIdService,
+  updateSubCategoryService,
+  deleteSubCategoryService,
+  createSubCategoryWithResolution
 } from "./sub-category.service.js";
+
+import mongoose from "mongoose";
+import catchAsync from "@core/utils/catchAsync.ts";
+import { ApiResponse } from "@core/utils/api-response.ts";
+import { GenericController } from "@core/controllers/GenericController.ts";
 
 export const createSubCategoryController = catchAsync(async (req, res) => {
   let { category, businessUnit } = req.body;
@@ -61,10 +70,6 @@ export const createSubCategoryController = catchAsync(async (req, res) => {
   });
 });
 
-import mongoose from "mongoose";
-import catchAsync from "@core/utils/catchAsync.ts";
-import { ApiResponse } from "@core/utils/api-response.ts";
-
 export const getSubCategoriesController = catchAsync(async (req, res) => {
   const { categoryId } = req.params;
 
@@ -88,7 +93,7 @@ export const getSubCategoriesController = catchAsync(async (req, res) => {
 });
 
 export const getAllSubCategoriesController = catchAsync(async (req, res) => {
-  const data = await getAllSubCategoriesService();
+  const data = await getAllSubCategoriesService(req.query);
 
   ApiResponse.success(res, {
     success: true,
@@ -97,3 +102,13 @@ export const getAllSubCategoriesController = catchAsync(async (req, res) => {
     data,
   });
 });
+
+const subCategoryServiceMap = {
+  create: createSubCategoryWithResolution, // Use custom creator with resolution logic
+  getAll: getAllSubCategoriesService,
+  getById: getSubCategoryByIdService,
+  update: updateSubCategoryService,
+  delete: deleteSubCategoryService,
+};
+
+export const SubCategoryController = new GenericController(subCategoryServiceMap, "SubCategory");

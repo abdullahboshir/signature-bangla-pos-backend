@@ -9,6 +9,8 @@ import {
   createCustomerController,
   getUsersController,
   updateUserController,
+  getUserSettingsController,
+  updateUserSettingsController,
 } from "./user.controller.js";
 import { createUserController } from "./create-user.controller.ts";
 
@@ -66,6 +68,19 @@ router.post(
 //   validateRequest(CreateVendorValidation as unknown as AnyZodObject),
 //   createVendorController
 // )
+
+// Settings Routes
+router.get(
+  "/settings",
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.USER, USER_ROLE.CUSTOMER),
+  getUserSettingsController
+);
+
+router.patch(
+  "/settings",
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.USER, USER_ROLE.CUSTOMER),
+  updateUserSettingsController
+);
 
 // Update user (roles, status, etc.)
 router.patch(

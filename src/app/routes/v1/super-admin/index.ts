@@ -10,14 +10,19 @@ import { userRoutes } from "../../../modules/iam/user/user.routes.js";
 import { roleRoutes } from "../../../modules/iam/role/role.routes.js";
 
 import { permissionRoutes } from "../../../modules/iam/permission/permission.routes.js";
+import { businessUnitRoutes } from "@app/modules/organization/business-unit/business-unit.routes.ts";
 
-// Catalog Routes
+// Catalog Imports
 import { categoryRoutes } from "@app/modules/catalog/category/category.routes.js";
 import { subCategoryRoutes } from "@app/modules/catalog/sub-category/sub-category.routes.js";
 import { childCategoryRoutes } from "@app/modules/catalog/child-category/child-category.routes.js";
 import { BrandRoutes } from "@app/modules/catalog/brand/brand.routes.js";
 import { UnitRoutes } from "@app/modules/catalog/unit/unit.routes.js";
-// import { TaxRoutes } from "@app/modules/catalog/tax/tax.routes.js"; // Assuming exists
+import { TaxRoutes } from "@app/modules/catalog/tax/tax.routes.ts";
+
+// Inventory & Supplier Imports
+import { SupplierRoutes } from "@app/modules/suppliers/supplier/supplier.routes.js";
+import { PurchaseRoutes } from "@app/modules/inventory/purchase/purchase.routes.js";
 
 const superAdminRoutes = Router();
 
@@ -28,6 +33,7 @@ superAdminRoutes.use("/customers", customerRoutes);
 superAdminRoutes.use("/users", userRoutes);
 superAdminRoutes.use("/role", roleRoutes);
 superAdminRoutes.use("/permission", permissionRoutes);
+superAdminRoutes.use("/business-unit", businessUnitRoutes);
 
 // Catalog Mounts
 superAdminRoutes.use("/categories/sub", subCategoryRoutes);
@@ -35,5 +41,10 @@ superAdminRoutes.use("/categories/child", childCategoryRoutes);
 superAdminRoutes.use("/categories", categoryRoutes);
 superAdminRoutes.use("/brands", BrandRoutes);
 superAdminRoutes.use("/units", UnitRoutes);
+superAdminRoutes.use("/taxes", TaxRoutes);
+
+// Inventory & Supplier Mounts
+superAdminRoutes.use("/suppliers", SupplierRoutes);
+superAdminRoutes.use("/purchases", PurchaseRoutes);
 
 export const adminGroupRoutes = superAdminRoutes;

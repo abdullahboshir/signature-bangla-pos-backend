@@ -12,20 +12,20 @@ router.post(
     "/",
     auth(USER_ROLE.SUPER_ADMIN),
     validateRequest(UnitValidations.createUnitValidationSchema as unknown as AnyZodObject),
-    UnitController.createUnit
+    UnitController.create
 );
 
-router.get("/", auth(USER_ROLE.SUPER_ADMIN), UnitController.getAllUnits);
+router.get("/", auth(USER_ROLE.SUPER_ADMIN), UnitController.getAll);
 
-router.get("/:id", auth(USER_ROLE.SUPER_ADMIN), UnitController.getUnitById);
+router.get("/:id", auth(USER_ROLE.SUPER_ADMIN), UnitController.getById);
 
 router.patch(
     "/:id",
     auth(USER_ROLE.SUPER_ADMIN),
     validateRequest(UnitValidations.updateUnitValidationSchema as unknown as AnyZodObject),
-    UnitController.updateUnit
+    UnitController.update
 );
 
-router.delete("/:id", auth(USER_ROLE.SUPER_ADMIN), UnitController.deleteUnit);
+router.delete("/:id", auth(USER_ROLE.SUPER_ADMIN), UnitController.delete);
 
 export const UnitRoutes = router;

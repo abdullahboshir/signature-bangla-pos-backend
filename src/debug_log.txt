@@ -1,0 +1,43 @@
+Connected to DB
+
+User: superadmin@gmail.com
+Hash: $2b$12$FEr2C.c/UzZvMOVi.siU.OLOrmD7P7HtjEY0L2Ppps/gNOaCMqr76
+Matches '123456': false
+Matches 'admin': false
+Matches 'password': false
+
+User: seller@gmail.com
+Hash: $2b$12$gI4FfH4ty6O9g1ETVEIO4uehuA6cHAZ1AwpXLnhGtowQlVOj9.7Ry
+Matches '123456': false
+Matches 'admin': false
+Matches 'password': false
+
+User: pharmacyadmin@gmail.com
+Hash: $2b$12$WFHNF0wqtAu6iTzOtPDK2OWqFesBTGGAMjgvuvwUGuTDw5K5YbvFS
+Matches '123456': false
+Matches 'admin': false
+Matches 'password': false
+
+User: clothingadmin@gmail.com
+Hash: $2b$12$zRuDarAvlzR/MeNdOTzrbueeUL7d1Jo.FI8QEEKBvN0uHvK1F065W
+Matches '123456': false
+Matches 'admin': false
+Matches 'password': false
+
+User: libraryadmin@gmail.com
+Hash: $2b$12$KVq9jJoWG6os5lC8ctx63Od5V48z3Lp5a9rt.Z6.LnGBN/mdQOIze
+Matches '123456': false
+Matches 'admin': false
+Matches 'password': false
+
+User: customer1@gmail.com
+Hash: $2b$12$xnWyWNkuZ8zQujCGqE4Wde97HkdV3lLJccLmU4ebEIQAspIeVlFJK
+Matches '123456': false
+Matches 'admin': false
+Matches 'password': false
+
+User: customer2@gmail.com
+Hash: $2b$12$I6r3tkLFkYRbUdFQ/E84ROX7lOljGwt/J9pa7Eo4EReRYRs4vGAXy
+Matches '123456': false
+Matches 'admin': false
+Matches 'password': false

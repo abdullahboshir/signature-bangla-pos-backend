@@ -7,7 +7,10 @@ export const childCategoryZodSchema = z.object({
     businessUnit: z.string().min(1, "Category is required"),
     subCategory: z.string().min(1, "Category is required"),
     description: z.string().max(200).optional(),
-    isActive: z.boolean().default(true),
+    isActive: z.preprocess((val) => {
+      if (typeof val === 'string') return val === 'true';
+      return val;
+    }, z.boolean().default(true)),
   })
 });
 

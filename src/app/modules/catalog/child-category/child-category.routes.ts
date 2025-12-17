@@ -6,6 +6,7 @@ import {
   createChildCategoryController,
   getChildCategoriesController,
   getAllChildCategoriesController,
+  ChildCategoryController
 } from "./child-category.controller.js";
 import { validateRequest } from "@core/middleware/validateRequest.ts";
 
@@ -17,7 +18,8 @@ router.post(
   createChildCategoryController
 );
 
-router.get("/", getAllChildCategoriesController);
+router.get("/", ChildCategoryController.getAll);
 router.get("/:subCategoryId/getChildCategories", getChildCategoriesController);
-
+router.patch("/:id", ChildCategoryController.update);
+router.delete("/:id", ChildCategoryController.delete);
 export const childCategoryRoutes = router;

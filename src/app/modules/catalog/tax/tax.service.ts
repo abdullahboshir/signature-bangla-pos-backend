@@ -2,14 +2,14 @@ import type { ITax } from "./tax.interface.ts";
 import { Tax } from "./tax.model.ts";
 
 
-const createTax = async (payload: ITax) => {
+const create = async (payload: ITax) => {
     // If setting as default, unset other defaults for the same business unit?
     // For simplicity, let's just create for now. Enhancement: Handle unique default logic.
     const result = await Tax.create(payload);
     return result;
 };
 
-const getAllTaxes = async (query: Record<string, unknown> = {}) => {
+const getAll = async (query: Record<string, unknown> = {}) => {
     const { businessUnitId } = query;
     const filter: any = { isDeleted: false };
 
@@ -19,22 +19,18 @@ const getAllTaxes = async (query: Record<string, unknown> = {}) => {
             { businessUnit: businessUnitId },
             { businessUnit: null }
         ];
-    } else {
-        // If no business unit context, maybe fetch only global? Or admin view fetches all?
-        // Assuming this is used by admin or generic fetch, allow filtering if needed.
-        // For now, let's keep it simple: filter if provided, else return all (for super admin).
     }
 
     const result = await Tax.find(filter).sort({ createdAt: -1 });
     return result;
 };
 
-const getTaxById = async (id: string) => {
+const getById = async (id: string) => {
     const result = await Tax.findById(id);
     return result;
 };
 
-const updateTax = async (id: string, payload: Partial<ITax>) => {
+const update = async (id: string, payload: Partial<ITax>) => {
     const result = await Tax.findByIdAndUpdate(id, payload, {
         new: true,
         runValidators: true,
@@ -42,7 +38,7 @@ const updateTax = async (id: string, payload: Partial<ITax>) => {
     return result;
 };
 
-const deleteTax = async (id: string) => {
+const deleteTax = async (id: string) => { // generic controller expects delete
     const result = await Tax.findByIdAndUpdate(
         id,
         { isDeleted: true },
@@ -52,9 +48,9 @@ const deleteTax = async (id: string) => {
 };
 
 export const TaxService = {
-    createTax,
-    getAllTaxes,
-    getTaxById,
-    updateTax,
-    deleteTax,
+    create,
+    getAll,
+    getById,
+    update,
+    delete: deleteTax,
 };

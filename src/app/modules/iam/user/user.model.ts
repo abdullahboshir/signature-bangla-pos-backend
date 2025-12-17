@@ -150,6 +150,10 @@ const UserSchema = new Schema<IUser, UserStatic>({
   restrictions: {
     type: RestrictionsSchema
   },
+  settings: {
+    theme: { type: String, default: 'system' },
+    tableHeight: { type: String, default: '56' }
+  },
   isActive: {
     type: Boolean,
     default: true
