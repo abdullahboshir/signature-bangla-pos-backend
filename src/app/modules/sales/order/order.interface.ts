@@ -6,9 +6,9 @@ export type PaymentMethod = "cash" | "card" | "mobile_banking" | "bank_transfer"
 
 export interface IOrderItem {
     product: Types.ObjectId;
-    variant?: string; // Variant Name or ID if needed, mainly for display or reference
+    variant?: string;
     quantity: number;
-    price: number; // Unit Price at the time of order
+    price: number;
     total: number;
     discount?: number;
 }
