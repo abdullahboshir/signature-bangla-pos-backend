@@ -19,6 +19,7 @@ import { childCategoryRoutes } from "@app/modules/catalog/child-category/child-c
 import { BrandRoutes } from "@app/modules/catalog/brand/brand.routes.js";
 import { UnitRoutes } from "@app/modules/catalog/unit/unit.routes.js";
 import { TaxRoutes } from "@app/modules/catalog/tax/tax.routes.ts";
+import { attributeRoutes } from "@app/modules/catalog/attribute/attribute.routes.js";
 
 // Inventory & Supplier Imports
 import { SupplierRoutes } from "@app/modules/suppliers/supplier/supplier.routes.js";
@@ -42,6 +43,7 @@ superAdminRoutes.use("/categories", categoryRoutes);
 superAdminRoutes.use("/brands", BrandRoutes);
 superAdminRoutes.use("/units", UnitRoutes);
 superAdminRoutes.use("/taxes", TaxRoutes);
+superAdminRoutes.use("/attributes", attributeRoutes);
 
 // Inventory & Supplier Mounts
 superAdminRoutes.use("/suppliers", SupplierRoutes);

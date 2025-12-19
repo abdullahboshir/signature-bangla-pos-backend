@@ -25,12 +25,12 @@ export const loginController = catchAsync(async (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
-  ApiResponse.success(res, {
-    success: true,
-    statusCode: status.OK,
-    message: "User Login has been Successfully",
-    data: { accessToken, needsPasswordChange, user },
-  });
+  ApiResponse.success(
+    res,
+    { accessToken, needsPasswordChange, user },
+    "User Login has been Successfully",
+    status.OK
+  );
 });
 
 export const refreshTokenController = catchAsync(async (req, res) => {
@@ -47,12 +47,12 @@ export const refreshTokenController = catchAsync(async (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
-  ApiResponse.success(res, {
-    success: true,
-    statusCode: status.OK,
-    message: "Access Token has been retrieved successfully",
-    data: result,
-  });
+  ApiResponse.success(
+    res,
+    result,
+    "Access Token has been retrieved successfully",
+    status.OK
+  );
 });
 
 export const authMeController = catchAsync(async (req, res) => {
@@ -60,12 +60,12 @@ export const authMeController = catchAsync(async (req, res) => {
 
   const result = await authMeService(userInfo);
 
-  ApiResponse.success(res, {
-    success: true,
-    statusCode: status.OK,
-    message: "Access Token has been retrieved successfully",
-    data: result,
-  });
+  ApiResponse.success(
+    res,
+    result,
+    "Access Token has been retrieved successfully",
+    status.OK
+  );
 });
 
 export const logoutController = catchAsync(async (_req, res) => {
@@ -76,10 +76,10 @@ export const logoutController = catchAsync(async (_req, res) => {
     sameSite: "lax", // Match login/refresh
     path: "/",
   });
-  ApiResponse.success(res, {
-    success: true,
-    statusCode: 200,
-    message: "User has been logged out successfully",
-    data: null,
-  });
+  ApiResponse.success(
+    res,
+    null,
+    "User has been logged out successfully",
+    200
+  );
 });

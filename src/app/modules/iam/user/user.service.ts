@@ -275,12 +275,20 @@ export const createCustomerService = async (
 
 export const updateUserService = async (
   userId: string,
-  payload: Partial<IUser>
+  payload: Partial<IUser>,
+  file: any
 ) => {
   const isUserExists = await User.findById(userId);
 
   if (!isUserExists) {
     throw new AppError(404, "User not found!");
+  }
+
+  // Handle Image Upload
+  if (file) {
+    const imgName = `${payload.name?.firstName || isUserExists.name?.firstName || 'user'}-${Date.now()}`;
+    const { secure_url } = (await sendImageToCloudinary(imgName, file.path)) as any;
+    payload.avatar = secure_url;
   }
 
   // Security: Prevent updating password through this route to avoid hashing issues/accidental overwrites
@@ -293,6 +301,44 @@ export const updateUserService = async (
 
   const result = await User.findByIdAndUpdate(userId, payload, {
     new: true,
+  }).populate("roles").populate("businessUnits");
+
+  return result;
+};
+
+// Find a single user by ID
+export const getSingleUserService = async (id: string) => {
+  const result = await User.findById(id).populate("roles").populate("businessUnits");
+  return result;
+};
+
+export const updateProfileService = async (
+  userId: string,
+  payload: Partial<IUser>,
+  file: any
+) => {
+  const isUserExists = await User.findById(userId);
+
+  if (!isUserExists) {
+    throw new AppError(404, "User not found!");
+  }
+
+  // Handle Image Upload
+  if (file) {
+    const imgName = `${payload.name?.firstName || isUserExists.name?.firstName || 'user'}-${Date.now()}`;
+    const { secure_url } = (await sendImageToCloudinary(imgName, file.path)) as any;
+    payload.avatar = secure_url;
+  }
+
+  // Security: Prevent updating password
+  if (payload.password) delete payload.password;
+  // Prevent role/status update from profile
+  if (payload.roles) delete payload.roles;
+  if (payload.status) delete payload.status;
+
+  const result = await User.findByIdAndUpdate(userId, payload, {
+    new: true,
+    runValidators: true,
   }).populate("roles").populate("businessUnits");
 
   return result;
@@ -318,4 +364,18 @@ export const updateUserSettingsService = async (
   }
 
   return user.settings;
+};
+
+export const deleteUserService = async (userId: string) => {
+  const isUserExists = await User.findById(userId);
+
+  if (!isUserExists) {
+    throw new AppError(404, "User not found!");
+  }
+
+  // Optional: Prevent deleting super-admin if needed, or specific important users
+  // if (isUserExists.role === 'super-admin') throw new AppError(403, "Cannot delete Super Admin");
+
+  const result = await User.findByIdAndDelete(userId);
+  return result;
 };

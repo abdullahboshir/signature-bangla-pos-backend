@@ -3,9 +3,12 @@ import { ApiResponse } from "@core/utils/api-response.ts";
 import {
   createCustomerService,
   getUsersService,
+  getSingleUserService,
   updateUserService,
   getUserSettingsService,
   updateUserSettingsService,
+  updateProfileService,
+  deleteUserService,
 } from "./user.service.js";
 
 import status from "http-status";
@@ -26,6 +29,24 @@ export const createCustomerController = catchAsync(async (req: any, res) => {
     data: newUser,
   });
 });
+
+
+
+
+
+export const deleteUserController = catchAsync(async (req: any, res) => {
+  const { id } = req.params;
+  await deleteUserService(id);
+
+  ApiResponse.success(res, {
+    success: true,
+    statusCode: status.OK,
+    message: "User deleted successfully",
+    data: null,
+  });
+});
+
+
 
 // export const createVendorController = catchAsync(async (req: any, res) => {
 //   const { vendorData, password } = req.body;
@@ -51,14 +72,38 @@ export const getUsersController = catchAsync(async (req: any, res) => {
   });
 });
 
+export const getSingleUserController = catchAsync(async (req: any, res) => {
+  const { id } = req.params;
+  const result = await getSingleUserService(id);
+
+  ApiResponse.success(res, {
+    success: true,
+    statusCode: status.OK,
+    message: "User retrieved successfully",
+    data: result,
+  });
+});
+
 export const updateUserController = catchAsync(async (req: any, res) => {
   const { id } = req.params;
-  const updatedUser = await updateUserService(id, req.body);
+  const updatedUser = await updateUserService(id, req.body, req.file);
 
   ApiResponse.success(res, {
     success: true,
     statusCode: status.OK,
     message: "User updated successfully",
+    data: updatedUser,
+  });
+});
+
+export const updateProfileController = catchAsync(async (req: any, res) => {
+  const { userId } = req.user;
+  const updatedUser = await updateProfileService(userId, req.body, req.file);
+
+  ApiResponse.success(res, {
+    success: true,
+    statusCode: status.OK,
+    message: "Profile updated successfully",
     data: updatedUser,
   });
 });

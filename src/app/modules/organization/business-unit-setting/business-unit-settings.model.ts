@@ -2,8 +2,8 @@ import { Schema, model } from "mongoose";
 import type { IStoreSettingsDocument, IStoreSettingsModel } from "./store-settings.interface.js";
 
 const storeSettingsSchema = new Schema<IStoreSettingsDocument, IStoreSettingsModel>({
-  store: { type: Schema.Types.ObjectId, ref: 'Store', required: true, unique: true },
-  
+  store: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, unique: true },
+
   // Display Settings
   display: {
     showOutOfStock: { type: Boolean, default: true },
@@ -20,7 +20,7 @@ const storeSettingsSchema = new Schema<IStoreSettingsDocument, IStoreSettingsMod
     enableWishlist: { type: Boolean, default: true },
     enableCompare: { type: Boolean, default: true }
   },
-  
+
   // Checkout Settings
   checkout: {
     guestCheckout: { type: Boolean, default: true },
@@ -31,7 +31,7 @@ const storeSettingsSchema = new Schema<IStoreSettingsDocument, IStoreSettingsMod
     termsAndConditions: { type: String, required: true },
     privacyPolicy: { type: String, required: true }
   },
-  
+
   // Shipping Settings
   shipping: {
     enabled: { type: Boolean, default: true },
@@ -58,7 +58,7 @@ const storeSettingsSchema = new Schema<IStoreSettingsDocument, IStoreSettingsMod
       }]
     }]
   },
-  
+
   // Tax Settings
   tax: {
     enabled: { type: Boolean, default: true },
@@ -75,7 +75,7 @@ const storeSettingsSchema = new Schema<IStoreSettingsDocument, IStoreSettingsMod
       states: [{ type: String }]
     }]
   },
-  
+
   // Payment Settings
   payment: {
     acceptedMethods: [{
@@ -88,7 +88,7 @@ const storeSettingsSchema = new Schema<IStoreSettingsDocument, IStoreSettingsMod
     autoCapture: { type: Boolean, default: true },
     paymentInstructions: { type: String }
   },
-  
+
   // Notification Settings
   notifications: {
     email: {
@@ -106,7 +106,7 @@ const storeSettingsSchema = new Schema<IStoreSettingsDocument, IStoreSettingsMod
       securityAlerts: { type: Boolean, default: true }
     }
   },
-  
+
   // Security Settings
   security: {
     enableHttps: { type: Boolean, default: true },
@@ -115,7 +115,7 @@ const storeSettingsSchema = new Schema<IStoreSettingsDocument, IStoreSettingsMod
     sessionTimeout: { type: Number, default: 60, min: 5 },
     ipBlacklist: [{ type: String }]
   },
-  
+
   // Maintenance Settings
   maintenance: {
     enableMaintenanceMode: { type: Boolean, default: false },
@@ -127,7 +127,7 @@ const storeSettingsSchema = new Schema<IStoreSettingsDocument, IStoreSettingsMod
       message: { type: String }
     }
   },
-  
+
   // SEO Settings
   seo: {
     metaRobots: { type: String, default: 'index, follow' },
@@ -145,7 +145,7 @@ const storeSettingsSchema = new Schema<IStoreSettingsDocument, IStoreSettingsMod
       priority: { type: Number, default: 0.8, min: 0, max: 1 }
     }
   },
-  
+
   // Social Media Settings
   social: {
     shareButtons: { type: Boolean, default: true },
@@ -180,18 +180,18 @@ storeSettingsSchema.index({ store: 1 });
 
 // storeSettingsSchema.methods.isInMaintenance = function(): boolean {
 //   if (!this.maintenance.enableMaintenanceMode) return false;
-  
+
 //   // Check for scheduled maintenance
 //   if (this.maintenance.scheduledMaintenance) {
 //     const now = new Date();
 //     const start = this.maintenance.scheduledMaintenance.start;
 //     const end = this.maintenance.scheduledMaintenance.end;
-    
+
 //     if (now >= start && now <= end) {
 //       return true;
 //     }
 //   }
-  
+
 //   return this.maintenance.enableMaintenanceMode;
 // };
 
@@ -201,26 +201,26 @@ storeSettingsSchema.index({ store: 1 });
 //   destination: string
 // ): number {
 //   if (!this.shipping.enabled) return 0;
-  
+
 //   // Check for free shipping
 //   if (this.shipping.freeShippingEnabled && this.shipping.freeShippingMinimum && price >= this.shipping.freeShippingMinimum) {
 //     return 0;
 //   }
-  
+
 //   // Find applicable shipping zone
 //   const zone = this.shipping.shippingZones.find(z => 
 //     z.countries.includes(destination)
 //   );
-  
+
 //   if (!zone) return this.shipping.defaultRate;
-  
+
 //   // Find applicable rate
 //   const rate = zone.rates.find(r => {
 //     const weightMatch = (!r.minWeight || weight >= r.minWeight) && (!r.maxWeight || weight <= r.maxWeight);
 //     const priceMatch = (!r.minPrice || price >= r.minPrice) && (!r.maxPrice || price <= r.maxPrice);
 //     return weightMatch && priceMatch;
 //   });
-  
+
 //   return rate ? rate.cost : this.shipping.defaultRate;
 // };
 
@@ -230,13 +230,13 @@ storeSettingsSchema.index({ store: 1 });
 
 // storeSettingsSchema.methods.getTaxRate = function(country: string, state?: string): number {
 //   if (!this.tax.enabled) return 0;
-  
+
 //   const taxClass = this.tax.taxClasses.find(tc => {
 //     const countryMatch = tc.countries.includes(country);
 //     const stateMatch = !state || !tc.states || tc.states.length === 0 || tc.states.includes(state);
 //     return countryMatch && stateMatch;
 //   });
-  
+
 //   return taxClass ? taxClass.rate : 0;
 // };
 

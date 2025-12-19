@@ -18,13 +18,16 @@ export class ProductRepository {
             .populate('inventory')
             .populate('details') // Needed for images
             .populate('unit')
-            .populate('brands');
+            .populate('brands')
+            .populate('variantTemplate');
     }
 
     async findById(id: string): Promise<IProductDocument | null> {
         return await Product.findById(id)
             .populate('businessUnit')
             .populate('primaryCategory')
+            .populate('subCategory')
+            .populate('childCategory')
             .populate('pricing')
             .populate('inventory')
             .populate('details')
@@ -50,6 +53,7 @@ export class ProductRepository {
             .populate('inventory')
             .populate('details')
             .populate('unit')
-            .populate('brands');
+            .populate('brands')
+            .populate('variantTemplate');
     }
 }

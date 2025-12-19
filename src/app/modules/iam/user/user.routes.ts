@@ -8,14 +8,17 @@ import {
 import {
   createCustomerController,
   getUsersController,
+  getSingleUserController,
   updateUserController,
   getUserSettingsController,
   updateUserSettingsController,
+  deleteUserController,
+  updateProfileController,
 } from "./user.controller.js";
 import { createUserController } from "./create-user.controller.ts";
 
 import type { AnyZodObject } from "zod/v3";
-import { USER_ROLE } from "./user.constant.js";
+
 
 import {
   PermissionActionObj,
@@ -28,6 +31,7 @@ import { upload } from "@core/utils/file-upload.ts";
 import { validateRequest } from "@core/middleware/validateRequest.ts";
 
 import { roleRoutes } from "../role/role.routes.js";
+import { USER_ROLE } from "./user.constant.ts";
 
 const router = Router();
 
@@ -35,6 +39,19 @@ router.use("/roles", roleRoutes);
 
 
 router.get("/all-users", getUsersController);
+
+router.patch(
+  "/profile",
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.CUSTOMER),
+  upload.single("file"),
+  (req: Request, _res: Response, next: NextFunction) => {
+    if (req.body.data) {
+      req.body = JSON.parse(req.body.data);
+    }
+    next();
+  },
+  updateProfileController
+);
 
 router.post(
   "/create",
@@ -72,22 +89,21 @@ router.post(
 // Settings Routes
 router.get(
   "/settings",
-  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.USER, USER_ROLE.CUSTOMER),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.CUSTOMER),
   getUserSettingsController
 );
 
 router.patch(
   "/settings",
-  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.USER, USER_ROLE.CUSTOMER),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.CUSTOMER),
   updateUserSettingsController
 );
 
-// Update user (roles, status, etc.)
-router.patch(
+// Get Single User
+router.get(
   "/:id",
   auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
-  // authorize(PermissionSourceObj.user, PermissionActionObj.update),
-  updateUserController
+  getSingleUserController
 );
 
 // Update user (roles, status, etc.)
@@ -95,7 +111,22 @@ router.patch(
   "/:id",
   auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
   // authorize(PermissionSourceObj.user, PermissionActionObj.update),
+  upload.single("file"),
+  (req: Request, _res: Response, next: NextFunction) => {
+    if (req.body.data) {
+      req.body = JSON.parse(req.body.data);
+    }
+    next();
+  },
   updateUserController
+);
+
+// Delete user
+router.delete(
+  "/:id",
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  // authorize(PermissionSourceObj.user, PermissionActionObj.delete),
+  deleteUserController
 );
 
 export const userRoutes = router;
