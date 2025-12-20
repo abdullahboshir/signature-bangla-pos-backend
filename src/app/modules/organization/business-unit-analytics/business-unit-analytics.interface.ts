@@ -4,7 +4,7 @@ export interface IBusinessUnitAnalytics {
   businessUnit: Types.ObjectId;
   date: Date;
   period: "hourly" | "daily" | "weekly" | "monthly";
-  
+
   // Traffic Analytics
   traffic: {
     sessions: number;
@@ -16,7 +16,7 @@ export interface IBusinessUnitAnalytics {
     newVisitors: number;
     returningVisitors: number;
   };
-  
+
   // Sales Analytics
   sales: {
     orders: number;
@@ -27,7 +27,7 @@ export interface IBusinessUnitAnalytics {
     refunds: number;
     returns: number;
   };
-  
+
   // Product Analytics
   products: {
     views: number;
@@ -41,7 +41,7 @@ export interface IBusinessUnitAnalytics {
     }[];
     outOfStockViews: number;
   };
-  
+
   // Customer Analytics
   customers: {
     newCustomers: number;
@@ -51,7 +51,7 @@ export interface IBusinessUnitAnalytics {
     retentionRate: number;
     churnRate: number;
   };
-  
+
   // Marketing Analytics
   marketing: {
     trafficSources: {
@@ -69,7 +69,7 @@ export interface IBusinessUnitAnalytics {
       revenue: number;
     }[];
   };
-  
+
   // Geographic Analytics
   geographic: {
     countries: {
@@ -84,7 +84,7 @@ export interface IBusinessUnitAnalytics {
       visitors: number;
     }[];
   };
-  
+
   // Device Analytics
   devices: {
     desktop: number;
@@ -96,17 +96,17 @@ export interface IBusinessUnitAnalytics {
       tablet: number;
     };
   };
-  
+
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface IBusinessUnitAnalyticsSummary {
-  store: Types.ObjectId;
+  outlet: Types.ObjectId;
   period: "weekly" | "monthly" | "quarterly" | "yearly";
   startDate: Date;
   endDate: Date;
-  
+
   // Performance Summary
   performance: {
     totalRevenue: number;
@@ -116,7 +116,7 @@ export interface IBusinessUnitAnalyticsSummary {
     conversionRate: number;
     customerRetentionRate: number;
   };
-  
+
   // Growth Metrics
   growth: {
     revenueGrowth: number;
@@ -124,7 +124,7 @@ export interface IBusinessUnitAnalyticsSummary {
     customerGrowth: number;
     trafficGrowth: number;
   };
-  
+
   // Top Performers
   topPerformers: {
     products: {
@@ -139,7 +139,7 @@ export interface IBusinessUnitAnalyticsSummary {
       orders: number;
     }[];
   };
-  
+
   // Customer Insights
   customerInsights: {
     averageCustomerValue: number;
@@ -151,7 +151,7 @@ export interface IBusinessUnitAnalyticsSummary {
       gender: { male: number; female: number; other: number };
     };
   };
-  
+
   // Business Insights
   businessInsights: {
     bestSellingTime: string;
@@ -160,7 +160,7 @@ export interface IBusinessUnitAnalyticsSummary {
     inventoryTurnover: number;
     profitMargin: number;
   };
-  
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -173,6 +173,6 @@ export type IBusinessUnitAnalyticsSummaryDocument = IBusinessUnitAnalyticsSummar
 };
 
 export interface IBusinessUnitAnalyticsSummaryModel extends Model<IBusinessUnitAnalyticsSummaryDocument> {
-  generateBusinessUnitReport(storeId: Types.ObjectId, period: string): Promise<IBusinessUnitAnalyticsSummaryDocument>;
-  getBusinessUnitBenchmarks(storeId: Types.ObjectId): Promise<any>;
+  generateBusinessUnitReport(outletId: Types.ObjectId, period: string): Promise<IBusinessUnitAnalyticsSummaryDocument>;
+  getBusinessUnitBenchmarks(outletId: Types.ObjectId): Promise<any>;
 }

@@ -15,7 +15,7 @@ export interface IProductCore {
   slug: string;
   sku: string;
   unit?: Types.ObjectId;
-  store: Types.ObjectId;
+  outlet: Types.ObjectId;
   businessUnit: Types.ObjectId;
   vendor: {
     id: Types.ObjectId;
@@ -104,7 +104,7 @@ export interface IProductModel extends Model<IProductDocument> {
   findByCategory(
     categoryId: string | Types.ObjectId
   ): Promise<IProductDocument[]>;
-  findByStore(storeId: string | Types.ObjectId): Promise<IProductDocument[]>;
+  findByOutlet(outletId: string | Types.ObjectId): Promise<IProductDocument[]>;
   findTrending(limit?: number): Promise<IProductDocument[]>;
   findFlashSales(): Promise<IProductDocument[]>;
   findLowStock(): Promise<IProductDocument[]>;

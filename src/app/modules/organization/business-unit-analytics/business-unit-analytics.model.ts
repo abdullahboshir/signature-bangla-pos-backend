@@ -1,17 +1,17 @@
-import { Schema, model } from "mongoose";
+import { Schema, Types, model } from "mongoose";
 import type { IBusinessUnitAnalyticsDocument, IBusinessUnitAnalyticsSummaryDocument, IBusinessUnitAnalyticsSummaryModel } from "./business-unit-analytics.interface.ts";
 
 
-// ==================== STORE ANALYTICS MODEL ====================
+// ==================== BUSINESS UNIT ANALYTICS MODEL ====================
 const businessUnitAnalyticsSchema = new Schema<IBusinessUnitAnalyticsDocument>({
   businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true },
   date: { type: Date, required: true, default: Date.now },
-  period: { 
-    type: String, 
+  period: {
+    type: String,
     enum: ["hourly", "daily", "weekly", "monthly"],
-    required: true 
+    required: true
   },
-  
+
   // Traffic Analytics
   traffic: {
     sessions: { type: Number, default: 0 },
@@ -23,7 +23,7 @@ const businessUnitAnalyticsSchema = new Schema<IBusinessUnitAnalyticsDocument>({
     newVisitors: { type: Number, default: 0 },
     returningVisitors: { type: Number, default: 0 }
   },
-  
+
   // Sales Analytics
   sales: {
     orders: { type: Number, default: 0 },
@@ -34,7 +34,7 @@ const businessUnitAnalyticsSchema = new Schema<IBusinessUnitAnalyticsDocument>({
     refunds: { type: Number, default: 0 },
     returns: { type: Number, default: 0 }
   },
-  
+
   // Product Analytics
   products: {
     views: { type: Number, default: 0 },
@@ -48,7 +48,7 @@ const businessUnitAnalyticsSchema = new Schema<IBusinessUnitAnalyticsDocument>({
     }],
     outOfStockViews: { type: Number, default: 0 }
   },
-  
+
   // Customer Analytics
   customers: {
     newCustomers: { type: Number, default: 0 },
@@ -58,7 +58,7 @@ const businessUnitAnalyticsSchema = new Schema<IBusinessUnitAnalyticsDocument>({
     retentionRate: { type: Number, default: 0, min: 0, max: 100 },
     churnRate: { type: Number, default: 0, min: 0, max: 100 }
   },
-  
+
   // Marketing Analytics
   marketing: {
     trafficSources: {
@@ -76,7 +76,7 @@ const businessUnitAnalyticsSchema = new Schema<IBusinessUnitAnalyticsDocument>({
       revenue: { type: Number, default: 0 }
     }]
   },
-  
+
   // Geographic Analytics
   geographic: {
     countries: [{
@@ -91,7 +91,7 @@ const businessUnitAnalyticsSchema = new Schema<IBusinessUnitAnalyticsDocument>({
       visitors: { type: Number, default: 0 }
     }]
   },
-  
+
   // Device Analytics
   devices: {
     desktop: { type: Number, default: 0 },
@@ -116,15 +116,15 @@ export const BusinessUnitAnalytics = model<IBusinessUnitAnalyticsDocument>('Busi
 
 // ==================== STORE ANALYTICS SUMMARY MODEL ====================
 const businessUnitAnalyticsSummarySchema = new Schema<IBusinessUnitAnalyticsSummaryDocument, IBusinessUnitAnalyticsSummaryModel>({
-  businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true },
-  period: { 
-    type: String, 
+  outlet: { type: Schema.Types.ObjectId, ref: 'Outlet', required: true },
+  period: {
+    type: String,
     enum: ["weekly", "monthly", "quarterly", "yearly"],
-    required: true 
+    required: true
   },
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
-  
+
   // Performance Summary
   performance: {
     totalRevenue: { type: Number, default: 0 },
@@ -134,7 +134,7 @@ const businessUnitAnalyticsSummarySchema = new Schema<IBusinessUnitAnalyticsSumm
     conversionRate: { type: Number, default: 0, min: 0, max: 100 },
     customerRetentionRate: { type: Number, default: 0, min: 0, max: 100 }
   },
-  
+
   // Growth Metrics
   growth: {
     revenueGrowth: { type: Number, default: 0 },
@@ -142,7 +142,7 @@ const businessUnitAnalyticsSummarySchema = new Schema<IBusinessUnitAnalyticsSumm
     customerGrowth: { type: Number, default: 0 },
     trafficGrowth: { type: Number, default: 0 }
   },
-  
+
   // Top Performers
   topPerformers: {
     products: [{
@@ -157,7 +157,7 @@ const businessUnitAnalyticsSummarySchema = new Schema<IBusinessUnitAnalyticsSumm
       orders: { type: Number, default: 0 }
     }]
   },
-  
+
   // Customer Insights
   customerInsights: {
     averageCustomerValue: { type: Number, default: 0 },
@@ -173,7 +173,7 @@ const businessUnitAnalyticsSummarySchema = new Schema<IBusinessUnitAnalyticsSumm
       }
     }
   },
-  
+
   // Business Insights
   businessInsights: {
     bestSellingTime: { type: String },
@@ -185,60 +185,61 @@ const businessUnitAnalyticsSummarySchema = new Schema<IBusinessUnitAnalyticsSumm
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
-  toObject: { virtuals: true } 
+  toObject: { virtuals: true }
 });
 
 // Indexes
-businessUnitAnalyticsSummarySchema.index({ businessUnit: 1, period: 1, startDate: 1 }, { unique: true });
+businessUnitAnalyticsSummarySchema.index({ outlet: 1, period: 1, startDate: 1 }, { unique: true });
 businessUnitAnalyticsSummarySchema.index({ period: 1, startDate: 1 });
 
 // Instance Methods
-businessUnitAnalyticsSummarySchema.methods.calculateGrowthMetrics = async function(previousPeriod: any): Promise<void> {
+businessUnitAnalyticsSummarySchema.methods['calculateGrowthMetrics'] = async function (this: IBusinessUnitAnalyticsSummaryDocument, previousPeriod: any): Promise<void> {
   if (previousPeriod) {
-    this.growth.revenueGrowth = previousPeriod.performance.totalRevenue > 0 
-      ? ((this.performance.totalRevenue - previousPeriod.performance.totalRevenue) / previousPeriod.performance.totalRevenue) * 100 
+    this.growth.revenueGrowth = previousPeriod.performance.totalRevenue > 0
+      ? ((this.performance.totalRevenue - previousPeriod.performance.totalRevenue) / previousPeriod.performance.totalRevenue) * 100
       : 0;
-    
-    this.growth.orderGrowth = previousPeriod.performance.totalOrders > 0 
-      ? ((this.performance.totalOrders - previousPeriod.performance.totalOrders) / previousPeriod.performance.totalOrders) * 100 
+
+    this.growth.orderGrowth = previousPeriod.performance.totalOrders > 0
+      ? ((this.performance.totalOrders - previousPeriod.performance.totalOrders) / previousPeriod.performance.totalOrders) * 100
       : 0;
-    
-    this.growth.customerGrowth = previousPeriod.performance.totalCustomers > 0 
-      ? ((this.performance.totalCustomers - previousPeriod.performance.totalCustomers) / previousPeriod.performance.totalCustomers) * 100 
+
+    this.growth.customerGrowth = previousPeriod.performance.totalCustomers > 0
+      ? ((this.performance.totalCustomers - previousPeriod.performance.totalCustomers) / previousPeriod.performance.totalCustomers) * 100
       : 0;
   }
   await this.save();
 };
 
-businessUnitAnalyticsSummarySchema.methods.generateBusinessInsights = async function(): Promise<void> {
+businessUnitAnalyticsSummarySchema.methods['generateBusinessInsights'] = async function (this: IBusinessUnitAnalyticsSummaryDocument): Promise<void> {
   // This would analyze the data to generate business insights
   // For now, we'll set some placeholder values
   this.businessInsights.bestSellingTime = "14:00-16:00";
   this.businessInsights.peakSalesDay = "Friday";
   this.businessInsights.profitMargin = 25; // 25% profit margin
-  
+
   await this.save();
 };
 
-businessUnitAnalyticsSummarySchema.methods.getPerformanceScore = function(): number {
+businessUnitAnalyticsSummarySchema.methods['getPerformanceScore'] = function (this: IBusinessUnitAnalyticsSummaryDocument): number {
   const factors = {
     conversionRate: this.performance.conversionRate * 0.3,
     customerRetention: this.performance.customerRetentionRate * 0.25,
     revenueGrowth: Math.max(0, this.growth.revenueGrowth) * 0.25,
     orderGrowth: Math.max(0, this.growth.orderGrowth) * 0.2
   };
-  
+
   return Object.values(factors).reduce((sum, score) => sum + score, 0);
 };
 
 // Static Methods
-businessUnitAnalyticsSummarySchema.statics.generateBusinessUnitReport = async function(
-  businessUnitId: Types.ObjectId, 
+businessUnitAnalyticsSummarySchema.statics['generateBusinessUnitReport'] = async function (
+  this: IBusinessUnitAnalyticsSummaryModel,
+  outletId: Types.ObjectId,
   period: string
 ): Promise<IBusinessUnitAnalyticsSummaryDocument> {
   const endDate = new Date();
   let startDate = new Date();
-  
+
   switch (period) {
     case 'weekly':
       startDate.setDate(endDate.getDate() - 7);
@@ -253,12 +254,12 @@ businessUnitAnalyticsSummarySchema.statics.generateBusinessUnitReport = async fu
       startDate.setFullYear(endDate.getFullYear() - 1);
       break;
   }
-  
+
   // Aggregate data from BusinessUnitAnalytics
   const analyticsData = await BusinessUnitAnalytics.aggregate([
     {
       $match: {
-        businessUnit: businessUnitId,
+        businessUnit: outletId,
         date: { $gte: startDate, $lte: endDate },
         period: 'daily'
       }
@@ -274,7 +275,7 @@ businessUnitAnalyticsSummarySchema.statics.generateBusinessUnitReport = async fu
       }
     }
   ]);
-  
+
   const summaryData = analyticsData[0] || {
     totalRevenue: 0,
     totalOrders: 0,
@@ -282,11 +283,11 @@ businessUnitAnalyticsSummarySchema.statics.generateBusinessUnitReport = async fu
     totalSessions: 0,
     averageConversion: 0
   };
-  
+
   const summary = await this.findOneAndUpdate(
-    { businessUnit: businessUnitId, period, startDate },
+    { outlet: outletId, period, startDate },
     {
-      businessUnit: businessUnitId,
+      outlet: outletId,
       period,
       startDate,
       endDate,
@@ -301,14 +302,18 @@ businessUnitAnalyticsSummarySchema.statics.generateBusinessUnitReport = async fu
     },
     { upsert: true, new: true }
   );
-  
+
+  if (!summary) {
+    throw new Error("Failed to generate or retrieve business unit analytics summary");
+  }
+
   return summary;
 };
 
-businessUnitAnalyticsSummarySchema.statics.getBusinessUnitBenchmarks = async function(businessUnitId: Types.ObjectId): Promise<any> {
+businessUnitAnalyticsSummarySchema.statics['getBusinessUnitBenchmarks'] = async function (this: IBusinessUnitAnalyticsSummaryModel, outletId: Types.ObjectId): Promise<any> {
   return this.aggregate([
     {
-      $match: { businessUnit: businessUnitId }
+      $match: { outlet: outletId }
     },
     {
       $group: {

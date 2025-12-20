@@ -9,7 +9,7 @@ export const PermissionResourceType = [
   "brand",
   "businessUnit",
   "vendor",
-  "store",
+  "outlet",
   "supplier",
   "promotion",
   "content",
@@ -68,7 +68,7 @@ export const PermissionActionType = [
 export const PermissionScope = [
   "global",
   "vendor",
-  "store",
+  "outlet",
   "category",
   "region",
   "businessUnit",

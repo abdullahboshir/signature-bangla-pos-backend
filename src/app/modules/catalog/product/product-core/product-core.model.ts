@@ -11,7 +11,12 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
   sku: { type: String, required: true, unique: true, index: true },
   unit: { type: Schema.Types.ObjectId, ref: 'Unit' },
 
-  store: { type: Schema.Types.ObjectId, ref: 'Store', required: false, index: true }, // Deprecated in favor of businessUnit?
+  outlet: {
+    type: Schema.Types.ObjectId,
+    ref: "Outlet", // Updated ref from Outlet to Outlet
+    required: true,
+    index: true,
+  },
   businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
   vendor: {
     id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -224,8 +229,11 @@ productSchema.statics['findByCategory'] = async function (categoryId: string | T
   }).populate('pricing inventory');
 };
 
-productSchema.statics['findByStore'] = async function (storeId: string | Types.ObjectId): Promise<IProductDocument[]> {
-  return this.find({ store: storeId }).populate('pricing inventory');
+// Find products by outlet
+productSchema.statics['findByOutlet'] = async function (
+  outletId: string | Types.ObjectId
+): Promise<IProductDocument[]> {
+  return this.find({ outlet: outletId, 'statusInfo.isPublished': true });
 };
 
 productSchema.statics['findTrending'] = async function (limit: number = 20): Promise<IProductDocument[]> {

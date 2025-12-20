@@ -1,8 +1,8 @@
 import type { Document, Model, Types } from "mongoose";
 
-export interface IStoreFinance {
-  store: Types.ObjectId;
-  
+export interface IBusinessUnitFinance {
+  businessUnit: Types.ObjectId;
+
   // Balance Information
   balance: {
     available: number;
@@ -12,7 +12,7 @@ export interface IStoreFinance {
     totalPayouts: number;
     currentBalance: number;
   };
-  
+
   // Revenue Breakdown
   revenue: {
     productSales: number;
@@ -22,7 +22,7 @@ export interface IStoreFinance {
     serviceFees: number;
     totalRevenue: number;
   };
-  
+
   // Expenses Breakdown
   expenses: {
     productCosts: number;
@@ -33,7 +33,7 @@ export interface IStoreFinance {
     operational: number;
     totalExpenses: number;
   };
-  
+
   // Commission & Fees
   commissions: {
     platformCommission: number;
@@ -43,7 +43,7 @@ export interface IStoreFinance {
     additionalFees: number;
     totalCommissions: number;
   };
-  
+
   // Transactions
   transactions: {
     date: Date;
@@ -55,7 +55,7 @@ export interface IStoreFinance {
     referenceId: string;
     metadata?: any;
   }[];
-  
+
   // Payout Information
   payouts: {
     date: Date;
@@ -66,7 +66,7 @@ export interface IStoreFinance {
     fees: number;
     netAmount: number;
   }[];
-  
+
   // Tax Information
   tax: {
     collected: number;
@@ -76,7 +76,7 @@ export interface IStoreFinance {
     nextFiling?: Date;
     taxId?: string;
   };
-  
+
   // Financial Settings
   settings: {
     autoPayout: boolean;
@@ -87,7 +87,7 @@ export interface IStoreFinance {
     currency: "BDT" | "USD";
     decimalPlaces: number;
   };
-  
+
   // Financial Metrics
   metrics: {
     grossProfit: number;
@@ -98,29 +98,29 @@ export interface IStoreFinance {
     returnOnInvestment: number;
     cashFlow: number;
   };
-  
+
   // Reporting Period
   reportingPeriod: {
     startDate: Date;
     endDate: Date;
     period: "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
   };
-  
+
   createdAt: Date;
   updatedAt: Date;
   lastReconciledAt?: Date;
 }
 
-export type IStoreFinanceDocument = IStoreFinance & Document & {
+export type IBusinessUnitFinanceDocument = IBusinessUnitFinance & Document & {
   // Computed Properties
   netRevenue: number;
   grossProfit: number;
   netProfit: number;
   profitMargin: number;
   availableForPayout: number;
-  
+
   // Methods
-  addTransaction(transaction: Omit<IStoreFinance['transactions'][0], 'date'>): Promise<void>;
+  addTransaction(transaction: Omit<IBusinessUnitFinance['transactions'][0], 'date'>): Promise<void>;
   processPayout(amount: number, method: string): Promise<boolean>;
   updateBalance(amount: number, type: "credit" | "debit"): Promise<void>;
   calculateCommissions(orderAmount: number): number;
@@ -128,9 +128,9 @@ export type IStoreFinanceDocument = IStoreFinance & Document & {
   reconcileTransactions(): Promise<void>;
 };
 
-export interface IStoreFinanceModel extends Model<IStoreFinanceDocument> {
+export interface IBusinessUnitFinanceModel extends Model<IBusinessUnitFinanceDocument> {
   // Static Methods
   processScheduledPayouts(): Promise<any>;
-  generateStoreFinancialReport(storeId: Types.ObjectId, period: string): Promise<any>;
+  generateBusinessUnitFinancialReport(businessUnitId: Types.ObjectId, period: string): Promise<any>;
   calculatePlatformRevenue(startDate: Date, endDate: Date): Promise<any>;
 }

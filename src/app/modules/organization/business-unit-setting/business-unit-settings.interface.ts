@@ -1,8 +1,8 @@
 import type { Document, Model, Types } from "mongoose";
 
-export interface IStoreSettings {
-  store: Types.ObjectId;
-  
+export interface IBusinessUnitSettings {
+  businessUnit: Types.ObjectId;
+
   // Display Settings
   display: {
     showOutOfStock: boolean;
@@ -15,7 +15,7 @@ export interface IStoreSettings {
     enableWishlist: boolean;
     enableCompare: boolean;
   };
-  
+
   // Checkout Settings
   checkout: {
     guestCheckout: boolean;
@@ -26,7 +26,7 @@ export interface IStoreSettings {
     termsAndConditions: string;
     privacyPolicy: string;
   };
-  
+
   // Shipping Settings
   shipping: {
     enabled: boolean;
@@ -49,12 +49,12 @@ export interface IStoreSettings {
       }[];
     }[];
   };
-  
+
   // Tax Settings
   tax: {
     enabled: boolean;
     pricesIncludeTax: boolean;
-    taxBasedOn: "shipping" | "billing" | "store";
+    taxBasedOn: "shipping" | "billing" | "businessUnit";
     taxClasses: {
       name: string;
       rate: number;
@@ -62,7 +62,7 @@ export interface IStoreSettings {
       states?: string[];
     }[];
   };
-  
+
   // Payment Settings
   payment: {
     acceptedMethods: ("card" | "cash" | "bank" | "mobile" | "digital")[];
@@ -72,7 +72,7 @@ export interface IStoreSettings {
     autoCapture: boolean;
     paymentInstructions?: string;
   };
-  
+
   // Notification Settings
   notifications: {
     email: {
@@ -90,7 +90,7 @@ export interface IStoreSettings {
       securityAlerts: boolean;
     };
   };
-  
+
   // Security Settings
   security: {
     enableHttps: boolean;
@@ -99,7 +99,7 @@ export interface IStoreSettings {
     sessionTimeout: number; // minutes
     ipBlacklist: string[];
   };
-  
+
   // Maintenance Settings
   maintenance: {
     enableMaintenanceMode: boolean;
@@ -111,7 +111,7 @@ export interface IStoreSettings {
       message: string;
     };
   };
-  
+
   // SEO Settings
   seo: {
     metaRobots: string;
@@ -125,7 +125,7 @@ export interface IStoreSettings {
       priority: number;
     };
   };
-  
+
   // Social Media Settings
   social: {
     shareButtons: boolean;
@@ -138,12 +138,38 @@ export interface IStoreSettings {
       showVisitorCount: boolean;
     };
   };
-  
+
+  // Prefixes
+  prefixes: {
+    invoice: string;
+    order: string;
+    purchase: string;
+    sku: string;
+  };
+
+  // POS Settings
+  pos: {
+    defaultCustomer: Types.ObjectId | string; // ID or 'walk-in'
+    disableSuspend: boolean;
+    enableCredit: boolean;
+    receiptLayout: "simple" | "detailed" | "thermal";
+    soundEffects: boolean;
+  };
+
+  // Reward Points
+  rewardPoints: {
+    enabled: boolean;
+    pointsPerCurrency: number; // How many points earned per 1 currency unit
+    currencyPerPoint: number; // Redemption value of 1 point
+    minimumRedemption: number;
+    expiryPeriod: number; // months
+  };
+
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type IStoreSettingsDocument = IStoreSettings & Document & {
+export type IBusinessUnitSettingsDocument = IBusinessUnitSettings & Document & {
   enableMaintenanceMode(message?: string): Promise<void>;
   disableMaintenanceMode(): Promise<void>;
   isInMaintenance(): boolean;
@@ -152,6 +178,6 @@ export type IStoreSettingsDocument = IStoreSettings & Document & {
   getTaxRate(country: string, state?: string): number;
 };
 
-export interface IStoreSettingsModel extends Model<IStoreSettingsDocument> {
-  getDefaultSettings(): Partial<IStoreSettings>;
+export interface IBusinessUnitSettingsModel extends Model<IBusinessUnitSettingsDocument> {
+  getDefaultSettings(): Partial<IBusinessUnitSettings>;
 }

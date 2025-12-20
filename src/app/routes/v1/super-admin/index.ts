@@ -11,6 +11,7 @@ import { roleRoutes } from "../../../modules/iam/role/role.routes.js";
 
 import { permissionRoutes } from "../../../modules/iam/permission/permission.routes.js";
 import { businessUnitRoutes } from "@app/modules/organization/business-unit/business-unit.routes.ts";
+import { OutletRoutes } from "@app/modules/organization/outlet/outlet.route.ts";
 
 // Catalog Imports
 import { categoryRoutes } from "@app/modules/catalog/category/category.routes.js";
@@ -20,6 +21,7 @@ import { BrandRoutes } from "@app/modules/catalog/brand/brand.routes.js";
 import { UnitRoutes } from "@app/modules/catalog/unit/unit.routes.js";
 import { TaxRoutes } from "@app/modules/catalog/tax/tax.routes.ts";
 import { attributeRoutes } from "@app/modules/catalog/attribute/attribute.routes.js";
+import { BusinessUnitSettingsRoutes } from "@app/modules/organization/business-unit-setting/business-unit-settings.routes.js";
 
 // Inventory & Supplier Imports
 import { SupplierRoutes } from "@app/modules/suppliers/supplier/supplier.routes.js";
@@ -35,6 +37,7 @@ superAdminRoutes.use("/users", userRoutes);
 superAdminRoutes.use("/role", roleRoutes);
 superAdminRoutes.use("/permission", permissionRoutes);
 superAdminRoutes.use("/business-unit", businessUnitRoutes);
+superAdminRoutes.use("/outlets", OutletRoutes);
 
 // Catalog Mounts
 superAdminRoutes.use("/categories/sub", subCategoryRoutes);
@@ -48,5 +51,6 @@ superAdminRoutes.use("/attributes", attributeRoutes);
 // Inventory & Supplier Mounts
 superAdminRoutes.use("/suppliers", SupplierRoutes);
 superAdminRoutes.use("/purchases", PurchaseRoutes);
+superAdminRoutes.use("/settings", BusinessUnitSettingsRoutes);
 
 export const adminGroupRoutes = superAdminRoutes;

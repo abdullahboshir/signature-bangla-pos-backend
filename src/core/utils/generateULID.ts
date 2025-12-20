@@ -5,7 +5,7 @@ export class ULIDGenerator {
   private static readonly TIME_LENGTH = 10;
   private static readonly RANDOM_LENGTH = 16;
   private static readonly MAX_RETRIES = 3;
-  
+
   // Thread-safe state management
   private static lastTime: number = 0;
   private static lastRandom: string = '';
@@ -22,11 +22,11 @@ export class ULIDGenerator {
       try {
         return this.generateULIDSafe();
       } catch (error) {
-        if (attempt === this.MAX_RETRIES - 1) { 
+        if (attempt === this.MAX_RETRIES - 1) {
           throw new Error(`ULID generation failed after ${this.MAX_RETRIES} attempts: ${error}`);
         }
         // Wait briefly before retry (progressive backoff)
-        console.log('dddddddddddd', attempt,  attempt * 10)
+        console.log('dddddddddddd', attempt, attempt * 10)
         this.delay(Math.pow(2, attempt) * 10);
       }
     }
@@ -35,7 +35,7 @@ export class ULIDGenerator {
 
   private static generateULIDSafe(): string {
     const now = Date.now();
-    
+
     // Validate timestamp (prevent clock skew issues)
     if (now < this.lastTime) {
       throw new Error('System clock moved backwards');
@@ -48,23 +48,23 @@ export class ULIDGenerator {
 
     try {
       let randomPart: string;
-      
+
       if (now === this.lastTime) {
         randomPart = this.incrementRandom(this.lastRandom);
       } else {
         randomPart = this.generateSecureRandom(this.RANDOM_LENGTH);
         this.lastTime = now;
       }
-      
+
       this.lastRandom = randomPart;
       const timePart = this.encodeTime(now, this.TIME_LENGTH);
-      
+
       // Final validation
       const ulid = timePart + randomPart;
       if (!this.validateULID(ulid)) {
         throw new Error('Generated ULID failed validation');
       }
-      
+
       return ulid;
     } finally {
       this.releaseLock('ulid_generation');
@@ -101,8 +101,8 @@ export class ULIDGenerator {
   }
 
   // 🏢 BUSINESS ENTITIES
-  static generateStoreId(vendorType: string = 'STD'): string {
-    this.validateInput({ vendorType }, 'generateStoreId');
+  static generateOutletId(vendorType: string = 'STD'): string {
+    this.validateInput({ vendorType }, 'generateOutletId');
     if (!/^[A-Z]{2,5}$/.test(vendorType)) {
       throw new Error('Vendor type must be 2-5 uppercase letters');
     }
@@ -209,7 +209,7 @@ export class ULIDGenerator {
 
   static generateReviewId(entityType: string = 'PROD'): string {
     this.validateInput({ entityType }, 'generateReviewId');
-    const validTypes = ['PROD', 'STORE', 'VENDOR', 'DELIVERY'];
+    const validTypes = ['PROD', 'OUTLET', 'VENDOR', 'DELIVERY'];
     if (!validTypes.includes(entityType)) {
       throw new Error(`Entity type must be one of: ${validTypes.join(', ')}`);
     }
@@ -221,20 +221,20 @@ export class ULIDGenerator {
   private static encodeTime(now: number, len: number): string {
     let str = '';
     let time = now;
-    
+
     for (let i = len; i > 0; i--) {
       const mod = time % this.ENCODING_LEN;
       str = this.ENCODING[mod] + str;
       time = Math.floor(time / this.ENCODING_LEN);
     }
-    
+
     return str;
   }
 
   private static generateSecureRandom(len: number): string {
     try {
       const bytes = new Uint8Array(len) as any;
-      
+
       // Use cryptographically secure random generator
       if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
         crypto.getRandomValues(bytes);
@@ -242,12 +242,12 @@ export class ULIDGenerator {
         // Fallback for Node.js without crypto (shouldn't happen in modern environments)
         throw new Error('Cryptographically secure random generator not available');
       }
-      
+
       let str = '';
       for (let i = 0; i < len; i++) {
         str += this.ENCODING[bytes[i] % this.ENCODING_LEN];
       }
-      
+
       return str;
     } catch (error) {
       throw new Error(`Secure random generation failed: ${error}`);
@@ -256,7 +256,7 @@ export class ULIDGenerator {
 
   private static incrementRandom(random: string): string {
     const chars = random.split('') as any;
-    
+
     for (let i = chars.length - 1; i >= 0; i--) {
       const index = this.ENCODING.indexOf(chars[i]);
       if (index < this.ENCODING_LEN - 1) {
@@ -266,7 +266,7 @@ export class ULIDGenerator {
         chars[i] = this.ENCODING[0];
       }
     }
-    
+
     // If we get here, all characters rolled over - generate new random
     return this.generateSecureRandom(random.length);
   }
@@ -275,14 +275,14 @@ export class ULIDGenerator {
 
   private static validateULID(ulid: string): boolean {
     if (ulid.length !== 26) return false;
-    
+
     const regex = /^[0-9A-HJ-KM-NP-TV-Z]{26}$/;
     if (!regex.test(ulid)) return false;
-    
+
     // Additional entropy check
     const uniqueChars = new Set(ulid.split(''));
     if (uniqueChars.size < 5) return false; // Ensure sufficient entropy
-    
+
     return true;
   }
 
@@ -291,7 +291,7 @@ export class ULIDGenerator {
       if (value === undefined || value === null) {
         throw new Error(`Parameter '${key}' is required for ${method}`);
       }
-      
+
       if (typeof value === 'string' && value.trim().length === 0) {
         throw new Error(`Parameter '${key}' cannot be empty for ${method}`);
       }
@@ -319,7 +319,7 @@ export class ULIDGenerator {
   }
 
   // ==================== UTILITY METHODS ====================
-  
+
   /**
    * Extract timestamp from any entity ID
    */
@@ -329,15 +329,15 @@ export class ULIDGenerator {
       if (parts.length < 2) {
         throw new Error('Invalid entity ID format');
       }
-      
+
       const ulidPart = parts[1] as any;
       if (!this.validateULID(ulidPart)) {
         throw new Error('Invalid ULID in entity ID');
       }
-      
+
       const timeStr = ulidPart.substring(0, this.TIME_LENGTH);
       let timestamp = 0;
-      
+
       for (let i = 0; i < timeStr.length; i++) {
         const char = timeStr[i];
         const value = this.ENCODING.indexOf(char);
@@ -346,7 +346,7 @@ export class ULIDGenerator {
         }
         timestamp = timestamp * this.ENCODING_LEN + value;
       }
-      
+
       return new Date(timestamp);
     } catch (error) {
       throw new Error(`Failed to extract timestamp from ID: ${error}`);
@@ -361,17 +361,17 @@ export class ULIDGenerator {
       if (typeof entityId !== 'string' || entityId.length < 30 || entityId.length > 50) {
         return false;
       }
-      
+
       const parts = entityId.split('_');
       if (parts.length < 2) return false;
-      
+
       const prefix = parts[0] as any;
       const ulidPart = parts[1] as any;
-      
+
       // Validate prefix
       const validPrefixes = ['USR', 'STR', 'CAT', 'BRN', 'PRO', 'VAR', 'INV', 'ORD', 'OIT', 'PAY', 'REF', 'CAM', 'CPN', 'REV'];
       if (!validPrefixes.includes(prefix)) return false;
-      
+
       // Validate ULID part
       return this.validateULID(ulidPart);
     } catch {

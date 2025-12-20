@@ -3216,8 +3216,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c02",
-                "id": "STORE_CREATE",
-                "resource": "store",
+                "id": "OUTLET_CREATE",
+                "resource": "outlet",
                 "action": "create",
                 "scope": "global",
                 "effect": "allow",
@@ -3230,7 +3230,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to create store",
+                "description": "Permission to create outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3240,8 +3240,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c03",
-                "id": "STORE_READ",
-                "resource": "store",
+                "id": "OUTLET_READ",
+                "resource": "outlet",
                 "action": "read",
                 "scope": "global",
                 "effect": "allow",
@@ -3254,7 +3254,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to read store",
+                "description": "Permission to read outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3264,8 +3264,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c04",
-                "id": "STORE_UPDATE",
-                "resource": "store",
+                "id": "OUTLET_UPDATE",
+                "resource": "outlet",
                 "action": "update",
                 "scope": "global",
                 "effect": "allow",
@@ -3278,7 +3278,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to update store",
+                "description": "Permission to update outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3288,8 +3288,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c05",
-                "id": "STORE_DELETE",
-                "resource": "store",
+                "id": "OUTLET_DELETE",
+                "resource": "outlet",
                 "action": "delete",
                 "scope": "global",
                 "effect": "allow",
@@ -3302,7 +3302,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to delete store",
+                "description": "Permission to delete outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3312,8 +3312,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c06",
-                "id": "STORE_APPROVE",
-                "resource": "store",
+                "id": "OUTLET_APPROVE",
+                "resource": "outlet",
                 "action": "approve",
                 "scope": "global",
                 "effect": "allow",
@@ -3326,7 +3326,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to approve store",
+                "description": "Permission to approve outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3336,8 +3336,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c07",
-                "id": "STORE_REJECT",
-                "resource": "store",
+                "id": "OUTLET_REJECT",
+                "resource": "outlet",
                 "action": "reject",
                 "scope": "global",
                 "effect": "allow",
@@ -3350,7 +3350,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to reject store",
+                "description": "Permission to reject outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3360,8 +3360,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c08",
-                "id": "STORE_EXPORT",
-                "resource": "store",
+                "id": "OUTLET_EXPORT",
+                "resource": "outlet",
                 "action": "export",
                 "scope": "global",
                 "effect": "allow",
@@ -3374,7 +3374,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to export store",
+                "description": "Permission to export outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3384,8 +3384,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c09",
-                "id": "STORE_IMPORT",
-                "resource": "store",
+                "id": "OUTLET_IMPORT",
+                "resource": "outlet",
                 "action": "import",
                 "scope": "global",
                 "effect": "allow",
@@ -3398,7 +3398,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to import store",
+                "description": "Permission to import outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3408,8 +3408,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c0a",
-                "id": "STORE_MANAGE",
-                "resource": "store",
+                "id": "OUTLET_MANAGE",
+                "resource": "outlet",
                 "action": "manage",
                 "scope": "global",
                 "effect": "allow",
@@ -3422,7 +3422,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to manage store",
+                "description": "Permission to manage outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3432,8 +3432,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c0b",
-                "id": "STORE_VIEW",
-                "resource": "store",
+                "id": "OUTLET_VIEW",
+                "resource": "outlet",
                 "action": "view",
                 "scope": "global",
                 "effect": "allow",
@@ -3446,7 +3446,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to view store",
+                "description": "Permission to view outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3456,8 +3456,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c0c",
-                "id": "STORE_SHIP",
-                "resource": "store",
+                "id": "OUTLET_SHIP",
+                "resource": "outlet",
                 "action": "ship",
                 "scope": "global",
                 "effect": "allow",
@@ -3470,7 +3470,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to ship store",
+                "description": "Permission to ship outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3480,8 +3480,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c0d",
-                "id": "STORE_REFUND",
-                "resource": "store",
+                "id": "OUTLET_REFUND",
+                "resource": "outlet",
                 "action": "refund",
                 "scope": "global",
                 "effect": "allow",
@@ -3494,7 +3494,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to refund store",
+                "description": "Permission to refund outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3504,8 +3504,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c0e",
-                "id": "STORE_DISPATCH",
-                "resource": "store",
+                "id": "OUTLET_DISPATCH",
+                "resource": "outlet",
                 "action": "dispatch",
                 "scope": "global",
                 "effect": "allow",
@@ -3518,7 +3518,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to dispatch store",
+                "description": "Permission to dispatch outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3528,8 +3528,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c0f",
-                "id": "STORE_ASSIGN",
-                "resource": "store",
+                "id": "OUTLET_ASSIGN",
+                "resource": "outlet",
                 "action": "assign",
                 "scope": "global",
                 "effect": "allow",
@@ -3542,7 +3542,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to assign store",
+                "description": "Permission to assign outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3552,8 +3552,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c10",
-                "id": "STORE_SYNC",
-                "resource": "store",
+                "id": "OUTLET_SYNC",
+                "resource": "outlet",
                 "action": "sync",
                 "scope": "global",
                 "effect": "allow",
@@ -3566,7 +3566,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to sync store",
+                "description": "Permission to sync outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3576,8 +3576,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c11",
-                "id": "STORE_SCHEDULE",
-                "resource": "store",
+                "id": "OUTLET_SCHEDULE",
+                "resource": "outlet",
                 "action": "schedule",
                 "scope": "global",
                 "effect": "allow",
@@ -3590,7 +3590,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to schedule store",
+                "description": "Permission to schedule outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3600,8 +3600,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c12",
-                "id": "STORE_PUBLISH",
-                "resource": "store",
+                "id": "OUTLET_PUBLISH",
+                "resource": "outlet",
                 "action": "publish",
                 "scope": "global",
                 "effect": "allow",
@@ -3614,7 +3614,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to publish store",
+                "description": "Permission to publish outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3624,8 +3624,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c13",
-                "id": "STORE_UNPUBLISH",
-                "resource": "store",
+                "id": "OUTLET_UNPUBLISH",
+                "resource": "outlet",
                 "action": "unpublish",
                 "scope": "global",
                 "effect": "allow",
@@ -3638,7 +3638,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to unpublish store",
+                "description": "Permission to unpublish outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -3648,8 +3648,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c14",
-                "id": "STORE_ESCALATE",
-                "resource": "store",
+                "id": "OUTLET_ESCALATE",
+                "resource": "outlet",
                 "action": "escalate",
                 "scope": "global",
                 "effect": "allow",
@@ -3662,7 +3662,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to escalate store",
+                "description": "Permission to escalate outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19191,8 +19191,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c02",
-                "id": "STORE_CREATE",
-                "resource": "store",
+                "id": "OUTLET_CREATE",
+                "resource": "outlet",
                 "action": "create",
                 "scope": "global",
                 "effect": "allow",
@@ -19205,7 +19205,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to create store",
+                "description": "Permission to create outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19215,8 +19215,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c03",
-                "id": "STORE_READ",
-                "resource": "store",
+                "id": "OUTLET_READ",
+                "resource": "outlet",
                 "action": "read",
                 "scope": "global",
                 "effect": "allow",
@@ -19229,7 +19229,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to read store",
+                "description": "Permission to read outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19239,8 +19239,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c04",
-                "id": "STORE_UPDATE",
-                "resource": "store",
+                "id": "OUTLET_UPDATE",
+                "resource": "outlet",
                 "action": "update",
                 "scope": "global",
                 "effect": "allow",
@@ -19253,7 +19253,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to update store",
+                "description": "Permission to update outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19263,8 +19263,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c05",
-                "id": "STORE_DELETE",
-                "resource": "store",
+                "id": "OUTLET_DELETE",
+                "resource": "outlet",
                 "action": "delete",
                 "scope": "global",
                 "effect": "allow",
@@ -19277,7 +19277,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to delete store",
+                "description": "Permission to delete outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19287,8 +19287,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c06",
-                "id": "STORE_APPROVE",
-                "resource": "store",
+                "id": "OUTLET_APPROVE",
+                "resource": "outlet",
                 "action": "approve",
                 "scope": "global",
                 "effect": "allow",
@@ -19301,7 +19301,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to approve store",
+                "description": "Permission to approve outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19311,8 +19311,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c07",
-                "id": "STORE_REJECT",
-                "resource": "store",
+                "id": "OUTLET_REJECT",
+                "resource": "outlet",
                 "action": "reject",
                 "scope": "global",
                 "effect": "allow",
@@ -19325,7 +19325,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to reject store",
+                "description": "Permission to reject outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19335,8 +19335,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c08",
-                "id": "STORE_EXPORT",
-                "resource": "store",
+                "id": "OUTLET_EXPORT",
+                "resource": "outlet",
                 "action": "export",
                 "scope": "global",
                 "effect": "allow",
@@ -19349,7 +19349,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to export store",
+                "description": "Permission to export outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19359,8 +19359,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c09",
-                "id": "STORE_IMPORT",
-                "resource": "store",
+                "id": "OUTLET_IMPORT",
+                "resource": "outlet",
                 "action": "import",
                 "scope": "global",
                 "effect": "allow",
@@ -19373,7 +19373,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to import store",
+                "description": "Permission to import outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19383,8 +19383,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c0a",
-                "id": "STORE_MANAGE",
-                "resource": "store",
+                "id": "OUTLET_MANAGE",
+                "resource": "outlet",
                 "action": "manage",
                 "scope": "global",
                 "effect": "allow",
@@ -19397,7 +19397,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to manage store",
+                "description": "Permission to manage outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19407,8 +19407,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c0b",
-                "id": "STORE_VIEW",
-                "resource": "store",
+                "id": "OUTLET_VIEW",
+                "resource": "outlet",
                 "action": "view",
                 "scope": "global",
                 "effect": "allow",
@@ -19421,7 +19421,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to view store",
+                "description": "Permission to view outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19431,8 +19431,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c0c",
-                "id": "STORE_SHIP",
-                "resource": "store",
+                "id": "OUTLET_SHIP",
+                "resource": "outlet",
                 "action": "ship",
                 "scope": "global",
                 "effect": "allow",
@@ -19445,7 +19445,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to ship store",
+                "description": "Permission to ship outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19455,8 +19455,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c0d",
-                "id": "STORE_REFUND",
-                "resource": "store",
+                "id": "OUTLET_REFUND",
+                "resource": "outlet",
                 "action": "refund",
                 "scope": "global",
                 "effect": "allow",
@@ -19469,7 +19469,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to refund store",
+                "description": "Permission to refund outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19479,8 +19479,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c0e",
-                "id": "STORE_DISPATCH",
-                "resource": "store",
+                "id": "OUTLET_DISPATCH",
+                "resource": "outlet",
                 "action": "dispatch",
                 "scope": "global",
                 "effect": "allow",
@@ -19493,7 +19493,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to dispatch store",
+                "description": "Permission to dispatch outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19503,8 +19503,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c0f",
-                "id": "STORE_ASSIGN",
-                "resource": "store",
+                "id": "OUTLET_ASSIGN",
+                "resource": "outlet",
                 "action": "assign",
                 "scope": "global",
                 "effect": "allow",
@@ -19517,7 +19517,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to assign store",
+                "description": "Permission to assign outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19527,8 +19527,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c10",
-                "id": "STORE_SYNC",
-                "resource": "store",
+                "id": "OUTLET_SYNC",
+                "resource": "outlet",
                 "action": "sync",
                 "scope": "global",
                 "effect": "allow",
@@ -19541,7 +19541,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to sync store",
+                "description": "Permission to sync outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19551,8 +19551,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c11",
-                "id": "STORE_SCHEDULE",
-                "resource": "store",
+                "id": "OUTLET_SCHEDULE",
+                "resource": "outlet",
                 "action": "schedule",
                 "scope": "global",
                 "effect": "allow",
@@ -19565,7 +19565,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to schedule store",
+                "description": "Permission to schedule outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19575,8 +19575,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c12",
-                "id": "STORE_PUBLISH",
-                "resource": "store",
+                "id": "OUTLET_PUBLISH",
+                "resource": "outlet",
                 "action": "publish",
                 "scope": "global",
                 "effect": "allow",
@@ -19589,7 +19589,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to publish store",
+                "description": "Permission to publish outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19599,8 +19599,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c13",
-                "id": "STORE_UNPUBLISH",
-                "resource": "store",
+                "id": "OUTLET_UNPUBLISH",
+                "resource": "outlet",
                 "action": "unpublish",
                 "scope": "global",
                 "effect": "allow",
@@ -19613,7 +19613,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to unpublish store",
+                "description": "Permission to unpublish outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",
@@ -19623,8 +19623,8 @@
               },
               {
                 "_id": "69259a33bb1829ac311f7c14",
-                "id": "STORE_ESCALATE",
-                "resource": "store",
+                "id": "OUTLET_ESCALATE",
+                "resource": "outlet",
                 "action": "escalate",
                 "scope": "global",
                 "effect": "allow",
@@ -19637,7 +19637,7 @@
                   "override": false,
                   "fallback": "deny"
                 },
-                "description": "Permission to escalate store",
+                "description": "Permission to escalate outlet",
                 "isActive": true,
                 "createdBy": "66f000000000000000000000",
                 "updatedBy": "66f000000000000000000000",

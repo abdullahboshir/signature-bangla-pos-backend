@@ -37,7 +37,7 @@ export class BusinessUnitService {
       );
 
       if (!businessUnitData.id) {
-        const businessUnitId = ULIDGenerator.generateStoreId("BU");
+        const businessUnitId = ULIDGenerator.generateOutletId("BU");
         log.debug("Generated business unit ID", { businessUnitId });
         businessUnitData.id = businessUnitId;
       }

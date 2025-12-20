@@ -1,10 +1,11 @@
-import { StoreCore } from "../store-core/store-core.model.js";
+import { Outlet } from "../outlet/outlet.model.ts";
+
 
 export const findLastCommonStore = async (
   role: string
 ): Promise<string | undefined> => {
   try {
-    const lastUser = await StoreCore.findOne({ role }, { id: 1 })
+    const lastUser = await Outlet.findOne({ role }, { id: 1 })
       .sort({ createdAt: -1 })
       .lean();
 
