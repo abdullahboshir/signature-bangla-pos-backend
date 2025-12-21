@@ -11,7 +11,7 @@ const urlSchema = z.string().url().optional().or(z.literal(''));
 // Main BusinessUnit validation schema
 export const createBusinessUnitValidationSchema = z.object({
   vendor: objectIdSchema,
-  
+
   branding: z.object({
     name: z.string().min(1, "BusinessUnit name is required").max(100, "BusinessUnit name too long"),
     description: z.string().min(10, "Description must be at least 10 characters").max(500, "Description too long"),
@@ -26,18 +26,19 @@ export const createBusinessUnitValidationSchema = z.object({
       fontFamily: z.string().max(50, "Font family too long").optional(),
     }).optional(),
   }),
-  
+
   slug: z.string()
     .min(3, "Slug must be at least 3 characters")
     .max(50, "Slug too long")
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
-  
+
   categories: z.array(objectIdSchema).min(1, "At least one category is required"),
   primaryCategory: objectIdSchema,
   tags: z.array(z.string().max(30, "Tag too long")).optional(),
   specialties: z.array(z.string().max(50, "Specialty too long")).optional(),
   businessUnitType: z.enum(["general", "boutique", "brand", "marketplace", "specialty"]).optional(),
-  
+  attributeGroup: objectIdSchema.optional(),
+
   contact: z.object({
     email: z.string().email("Invalid email address"),
     phone: z.string().min(5, "Phone number is required").max(20, "Phone number too long"),
@@ -51,7 +52,7 @@ export const createBusinessUnitValidationSchema = z.object({
       linkedin: urlSchema,
     }).optional(),
   }),
-  
+
   location: z.object({
     address: z.string().min(5, "Address is required").max(200, "Address too long"),
     city: z.string().min(1, "City is required").max(50, "City name too long"),
@@ -64,7 +65,7 @@ export const createBusinessUnitValidationSchema = z.object({
     }).optional(),
     timezone: z.string().optional(),
   }),
-  
+
   multipleLocations: z.array(z.object({
     address: z.string().max(200, "Address too long").optional(),
     city: z.string().max(50, "City name too long").optional(),
@@ -76,7 +77,7 @@ export const createBusinessUnitValidationSchema = z.object({
       lng: z.number().min(-180).max(180).optional(),
     }).optional(),
   })).optional(),
-  
+
   settings: z.object({
     currency: z.enum(["BDT", "USD"]).optional(),
     language: z.enum(["en", "bn"]).optional(),
@@ -87,7 +88,7 @@ export const createBusinessUnitValidationSchema = z.object({
     inventoryManagement: z.boolean().optional(),
     lowStockAlert: z.boolean().optional(),
   }).optional(),
-  
+
   policies: z.object({
     returnPolicy: z.string().min(10, "Return policy is required").max(1000, "Return policy too long"),
     shippingPolicy: z.string().min(10, "Shipping policy is required").max(1000, "Shipping policy too long"),
@@ -96,7 +97,7 @@ export const createBusinessUnitValidationSchema = z.object({
     warrantyPolicy: z.string().max(1000, "Warranty policy too long").optional(),
     refundPolicy: z.string().max(1000, "Refund policy too long").optional(),
   }),
-  
+
   seo: z.object({
     metaTitle: z.string().min(10, "Meta title is required").max(60, "Meta title should be under 60 characters"),
     metaDescription: z.string().min(50, "Meta description is required").max(160, "Meta description should be under 160 characters"),
@@ -105,7 +106,7 @@ export const createBusinessUnitValidationSchema = z.object({
     ogImage: urlSchema,
     structuredData: z.object({}).optional(),
   }),
-  
+
   // Optional fields with defaults
   status: z.enum(["draft", "under_review", "published", "suspended", "archived"]).optional(),
   visibility: z.enum(["public", "private", "unlisted"]).optional(),

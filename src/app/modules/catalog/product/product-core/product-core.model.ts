@@ -54,8 +54,8 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
   // Delivery Information
   delivery: { type: DeliveryOptionsSchema, required: true },
 
-  // Product Attributes
-  attributes: { type: ProductAttributesSchema, default: () => ({}) },
+  // Product Attributes (Dynamic)
+  attributes: { type: Schema.Types.Mixed, default: {} },
 
   // Origin & Manufacturing
   productmodel: { type: String },

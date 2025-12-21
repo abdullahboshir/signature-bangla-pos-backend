@@ -9,7 +9,7 @@ const createUnitValidationSchema = z.object({
             message: 'Symbol is required',
         }),
         status: z.enum(['active', 'inactive']).optional(),
-        businessUnit: z.string().optional(), // Can be optionally passed or inferred from user context
+        businessUnit: z.string().nullable().optional(), // Can be optionally passed or inferred from user context
         relatedBusinessTypes: z.array(z.string()).optional(),
     }),
 });

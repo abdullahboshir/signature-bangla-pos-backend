@@ -16,7 +16,7 @@ const attributeSchema = new Schema<IAttributeDocument, IAttributeModel>({
     businessUnit: {
         type: Schema.Types.ObjectId,
         ref: "BusinessUnit",
-        required: true
+        required: false
     },
     status: {
         type: String,

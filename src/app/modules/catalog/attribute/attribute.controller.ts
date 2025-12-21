@@ -20,18 +20,13 @@ const attributeServiceMap = {
 class AttributeGenericController extends GenericController<any> {
     override create = async (req: any, res: any, next: any) => { // Use explicit next for error handling
         try {
-            // Inject Business Unit from User
-            if (req.user && req.user.businessUnits && req.user.businessUnits.length > 0) {
-                // Assuming user belongs to at least one BU, use the first one 
-                // or you might want to pick one from params if in a specific BU context
-                // For now, simpler: use the first one
-                req.body.businessUnit = req.user.businessUnits[0];
-            } else {
-                // Fallback or Error? 
-                // If Super Admin with no explicit BU, what happens? 
-                // Attributes are usually BU specific.
-                // Let's assume req.user.businessUnits is populated.
-            }
+            // Do NOT forcefully inject Business Unit here.
+            // The frontend sends `null` for Global or a specific ID for Scoped.
+            // If we force `req.user.businessUnits[0]`, we break Global creation for Super Admins.
+
+            // (Optional) You might want to validate here that if the user is NOT a Super Admin,
+            // they are not trying to create a Global (null) attribute.
+            // But for now, removing the override solves the user's reported bug.
 
             // Call parent create
             const result = await createAttributeService(req.body);

@@ -21,6 +21,7 @@ import { BrandRoutes } from "@app/modules/catalog/brand/brand.routes.js";
 import { UnitRoutes } from "@app/modules/catalog/unit/unit.routes.js";
 import { TaxRoutes } from "@app/modules/catalog/tax/tax.routes.ts";
 import { attributeRoutes } from "@app/modules/catalog/attribute/attribute.routes.js";
+import { AttributeGroupRoutes } from "@app/modules/catalog/attribute-group/attribute-group.route.js";
 import { BusinessUnitSettingsRoutes } from "@app/modules/organization/business-unit-setting/business-unit-settings.routes.js";
 
 // Inventory & Supplier Imports
@@ -47,6 +48,7 @@ superAdminRoutes.use("/brands", BrandRoutes);
 superAdminRoutes.use("/units", UnitRoutes);
 superAdminRoutes.use("/taxes", TaxRoutes);
 superAdminRoutes.use("/attributes", attributeRoutes);
+superAdminRoutes.use("/attribute-groups", AttributeGroupRoutes);
 
 // Inventory & Supplier Mounts
 superAdminRoutes.use("/suppliers", SupplierRoutes);

@@ -38,11 +38,38 @@ export const getAllAttributesService = async (query: Record<string, any>) => {
     }
 
     if (Object.keys(filters).length) {
-        andConditions.push({
-            $and: Object.entries(filters).map(([field, value]) => ({
-                [field]: value
-            }))
-        });
+        // Special Handling for Business Unit: Include Global
+        if (filters['businessUnit']) {
+            let businessUnit = filters['businessUnit'];
+            if (typeof businessUnit === "string") businessUnit = businessUnit.trim();
+            const isBuObjectId = mongoose.Types.ObjectId.isValid(businessUnit) || /^[0-9a-fA-F]{24}$/.test(businessUnit);
+
+            let buId = businessUnit;
+            if (!isBuObjectId) {
+                const BusinessUnit = mongoose.model("BusinessUnit");
+                const buDoc = await BusinessUnit.findOne({ $or: [{ id: businessUnit }, { slug: businessUnit }] });
+                if (buDoc) buId = buDoc._id;
+                else return []; // BU not found
+            }
+
+            // Remove direct BU filter, add $or logic to AND conditions
+            delete filters['businessUnit'];
+            andConditions.push({
+                $or: [
+                    { businessUnit: buId },
+                    { businessUnit: null },
+                    { businessUnit: { $exists: false } }
+                ]
+            });
+        }
+
+        if (Object.keys(filters).length) {
+            andConditions.push({
+                $and: Object.entries(filters).map(([field, value]) => ({
+                    [field]: value
+                }))
+            });
+        }
     }
 
     const whereConditions = andConditions.length > 0 ? { $and: andConditions } : {};

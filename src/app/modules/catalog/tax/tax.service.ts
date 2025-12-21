@@ -2,22 +2,50 @@ import type { ITax } from "./tax.interface.ts";
 import { Tax } from "./tax.model.ts";
 
 
+import mongoose from "mongoose";
+
 const create = async (payload: ITax) => {
-    // If setting as default, unset other defaults for the same business unit?
-    // For simplicity, let's just create for now. Enhancement: Handle unique default logic.
+    // Resolve BU if needed
+    if (payload.businessUnit) {
+        let businessUnit = payload.businessUnit as any;
+        if (typeof businessUnit === "string") businessUnit = businessUnit.trim();
+        const isBuObjectId = mongoose.Types.ObjectId.isValid(businessUnit) || /^[0-9a-fA-F]{24}$/.test(businessUnit);
+
+        if (!isBuObjectId) {
+            const BusinessUnit = mongoose.model("BusinessUnit");
+            const buDoc = await BusinessUnit.findOne({ $or: [{ id: businessUnit }, { slug: businessUnit }] });
+            if (buDoc) payload.businessUnit = buDoc._id as any;
+            else throw new Error(`Business Unit Not Found: '${businessUnit}'`);
+        }
+    }
     const result = await Tax.create(payload);
     return result;
 };
 
 const getAll = async (query: Record<string, unknown> = {}) => {
-    const { businessUnitId } = query;
+    const { businessUnitId, businessUnit, ...rest } = query;
     const filter: any = { isDeleted: false };
 
-    if (businessUnitId) {
+    // Normalize BU input
+    let targetBU = businessUnitId || businessUnit;
+
+    if (targetBU) {
+        if (typeof targetBU === "string") targetBU = targetBU.trim();
+        const isBuObjectId = mongoose.Types.ObjectId.isValid(targetBU as string) || /^[0-9a-fA-F]{24}$/.test(targetBU as string);
+
+        let buId = targetBU;
+        if (!isBuObjectId) {
+            const BusinessUnit = mongoose.model("BusinessUnit"); // Dynamic import
+            const buDoc = await BusinessUnit.findOne({ $or: [{ id: targetBU }, { slug: targetBU }] });
+            if (buDoc) buId = buDoc._id;
+            else return [];
+        }
+
         // Fetch Global Taxes + Business Specific Taxes
         filter.$or = [
-            { businessUnit: businessUnitId },
-            { businessUnit: null }
+            { businessUnit: buId },
+            { businessUnit: null },
+            { businessUnit: { $exists: false } }
         ];
     }
 

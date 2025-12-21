@@ -1,15 +1,25 @@
 import { Schema, model } from "mongoose";
 
-import type { IProductInventoryDocument } from "./product-inventory.interface.js";
+import type { IProductInventoryDocument, IOutletStock } from "./product-inventory.interface.js";
 import { InventoryBaseSchema } from "../product-shared/product-shared.model.js";
 
 
+const outletStockSchema = new Schema({
+  outlet: { type: Schema.Types.ObjectId, ref: 'Outlet', required: true },
+  stock: { type: Number, default: 0, min: 0 },
+  reserved: { type: Number, default: 0, min: 0 },
+  sold: { type: Number, default: 0, min: 0 }
+}, { _id: false });
+
 const productInventorySchema = new Schema<IProductInventoryDocument>({
   product: { type: Schema.Types.ObjectId, ref: 'Product', required: true, unique: true },
-  
+
   // Stock Management
   inventory: { type: InventoryBaseSchema, required: true },
-  
+
+  // Multi-Outlet Stock
+  outletStock: [outletStockSchema],
+
   // Supplier Management
   suppliers: [{
     supplier: { type: Schema.Types.ObjectId, ref: 'Supplier', required: true },
@@ -20,7 +30,7 @@ const productInventorySchema = new Schema<IProductInventoryDocument>({
     priority: { type: Number, default: 1, min: 1 },
     isActive: { type: Boolean, default: true }
   }],
-  
+
   // Restock History
   restockHistory: [{
     date: { type: Date, default: Date.now },
@@ -28,7 +38,7 @@ const productInventorySchema = new Schema<IProductInventoryDocument>({
     supplier: { type: Schema.Types.ObjectId, ref: 'Supplier' },
     cost: { type: Number, required: true, min: 0 }
   }],
-  
+
   lastRestockedAt: { type: Date }
 }, {
   timestamps: true
@@ -36,69 +46,129 @@ const productInventorySchema = new Schema<IProductInventoryDocument>({
 
 // ==================== INSTANCE METHODS ====================
 
-productInventorySchema.methods['isInStock'] = function(): boolean {
-  return this['inventory'].stockStatus === 'in_stock' || 
-         this['inventory'].stockStatus === 'limited_stock';
+productInventorySchema.methods['isInStock'] = function (this: IProductInventoryDocument, outletId?: string): boolean {
+  if (outletId && this.outletStock) {
+    const outletData = this.outletStock.find((os: IOutletStock) => os.outlet.toString() === outletId);
+    if (!outletData) return false;
+    return (outletData.stock - outletData.reserved) > 0;
+  }
+  return this.inventory.stockStatus === 'in_stock' ||
+    this.inventory.stockStatus === 'limited_stock';
 };
 
-productInventorySchema.methods['canFulfillOrder'] = function(quantity: number): boolean {
-  if (!this['isInStock']()) return false;
-  
-  const availableStock = this['inventory'].stock - this['inventory'].reserved;
-  
-  if (availableStock >= quantity) return true;
-  
-  // Check if we can backorder
-  if (this['inventory'].allowBackorder) {
-    const backorderAvailable = this['inventory'].backorderLimit 
-      ? this['inventory'].backorderLimit - (this['inventory'].sold + this['inventory'].reserved)
+productInventorySchema.methods['canFulfillOrder'] = function (this: IProductInventoryDocument, quantity: number, outletId?: string): boolean {
+  // If Outlet ID provided, check specific outlet stock
+  if (outletId && this.outletStock) {
+    const outletData = this.outletStock.find((os: IOutletStock) => os.outlet.toString() === outletId);
+    if (!outletData) return false;
+
+    const available = outletData.stock - outletData.reserved;
+    if (available >= quantity) return true;
+  }
+
+  // Fallback / Global Logic
+  if (!outletId) {
+    // Cast to any to avoid circular strict check issues if needed, or rely on internal method
+    // But since we are inside the model methods, we can just call this.inventory check
+    if (!this.isInStock()) return false;
+    const availableStock = this.inventory.stock - this.inventory.reserved;
+    if (availableStock >= quantity) return true;
+  }
+
+  // Check Backorder (Global Policy)
+  if (this.inventory.allowBackorder) {
+    const backorderAvailable = this.inventory.backorderLimit
+      ? this.inventory.backorderLimit - (this.inventory.sold + this.inventory.reserved)
       : Number.MAX_SAFE_INTEGER;
     return backorderAvailable >= quantity;
   }
-  
+
   return false;
 };
 
-productInventorySchema.methods['reserveStock'] = function(quantity: number): boolean {
-  if (!this['canFulfillOrder'](quantity)) return false;
-  
-  const availableStock = this['inventory'].stock - this['inventory'].reserved;
-  
-  if (availableStock >= quantity) {
-    this['inventory'].reserved += quantity;
-  } else if (this['inventory'].allowBackorder) {
-    this['inventory'].reserved += quantity;
+productInventorySchema.methods['reserveStock'] = function (this: IProductInventoryDocument, quantity: number, outletId?: string): boolean {
+  if (!this.canFulfillOrder(quantity, outletId)) return false;
+
+  // 1. Reserve Global (Always sync global to reflect total reserved)
+  const availableStock = this.inventory.stock - this.inventory.reserved;
+
+  if (availableStock >= quantity || this.inventory.allowBackorder) {
+    this.inventory.reserved += quantity;
+
+    // 2. Reserve Outlet Specific
+    if (outletId && this.outletStock) {
+      const outletData = this.outletStock.find((os: IOutletStock) => os.outlet.toString() === outletId);
+      if (outletData) {
+        outletData.reserved += quantity;
+      }
+    }
   } else {
     return false;
   }
-  
-  this['updateStockStatus']();
+
+  this.updateStockStatus();
   return true;
 };
 
-productInventorySchema.methods['releaseStock'] = function(quantity: number): void {
-  this['inventory'].reserved = Math.max(0, this['inventory'].reserved - quantity);
-  this['updateStockStatus']();
+productInventorySchema.methods['releaseStock'] = function (this: IProductInventoryDocument, quantity: number, outletId?: string): void {
+  // Release Global
+  this.inventory.reserved = Math.max(0, this.inventory.reserved - quantity);
+
+  // Release Outlet
+  if (outletId && this.outletStock) {
+    const outletData = this.outletStock.find((os: IOutletStock) => os.outlet.toString() === outletId);
+    if (outletData) {
+      outletData.reserved = Math.max(0, outletData.reserved - quantity);
+    }
+  }
+
+  this.updateStockStatus();
+};
+
+productInventorySchema.methods['addStock'] = function (this: IProductInventoryDocument, quantity: number, outletId?: string): void {
+  // Add to Global
+  this.inventory.stock += quantity;
+
+  // Add to Outlet
+  if (outletId) {
+    // Check if outlet entry exists, if not create it
+    let outletData = this.outletStock?.find((os: IOutletStock) => os.outlet.toString() === outletId);
+
+    if (outletData) {
+      outletData.stock += quantity;
+    } else {
+      // Create new outlet entry
+      if (!this.outletStock) this.outletStock = [];
+      this.outletStock.push({
+        outlet: new Schema.Types.ObjectId(outletId), // We might need to handle casting carefully or assume it's passed as ID
+        stock: quantity,
+        reserved: 0,
+        sold: 0
+      } as any);
+    }
+  }
+
+  this.updateStockStatus();
 };
 
 // ==================== HELPER METHODS ====================
 
-productInventorySchema.methods['updateStockStatus'] = function(): void {
-  const availableStock = this['inventory'].stock - this['inventory'].reserved;
-  
+productInventorySchema.methods['updateStockStatus'] = function (this: IProductInventoryDocument): void {
+  const availableStock = this.inventory.stock - this.inventory.reserved;
+
   if (availableStock <= 0) {
-    this['inventory'].stockStatus = 'out_of_stock';
-  } else if (availableStock <= this['inventory'].lowStockThreshold) {
-    this['inventory'].stockStatus = 'limited_stock';
+    this.inventory.stockStatus = 'out_of_stock';
+  } else if (availableStock <= this.inventory.lowStockThreshold) {
+    this.inventory.stockStatus = 'limited_stock';
   } else {
-    this['inventory'].stockStatus = 'in_stock';
+    this.inventory.stockStatus = 'in_stock';
   }
 };
 
 // ==================== PRE-SAVE MIDDLEWARE ====================
 
-productInventorySchema.pre('save', function(next) {
-  (this as any).updateStockStatus();
+productInventorySchema.pre('save', function (next) {
+  (this as unknown as IProductInventoryDocument).updateStockStatus();
   next();
 });
 

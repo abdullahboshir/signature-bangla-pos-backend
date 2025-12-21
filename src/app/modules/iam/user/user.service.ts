@@ -17,6 +17,18 @@ export const getUsersService = async (): Promise<IUser[]> => {
   const users = await User.find()
     .populate("roles")
     .populate("businessUnits")
+    .populate({
+      path: "permissions.role",
+      select: "name"
+    })
+    .populate({
+      path: "permissions.businessUnit",
+      select: "name"
+    })
+    .populate({
+      path: "permissions.outlet",
+      select: "name"
+    })
     .lean();
   return users;
 };

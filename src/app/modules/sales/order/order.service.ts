@@ -47,15 +47,26 @@ export const createOrderService = async (payload: IOrder) => {
 
             const inventoryData = inventoryDoc.inventory;
 
-            if (inventoryData.trackQuantity && inventoryData.stock < item.quantity) {
-                if (!inventoryData.allowBackorder) {
-                    throw new AppError(400, `Insufficient stock for product: ${product.name}. Available: ${inventoryData.stock}`);
+            if (!payload.outlet) {
+                throw new AppError(400, "Outlet ID is required for order creation");
+            }
+            const outletId = payload.outlet.toString();
+
+            if (inventoryData.trackQuantity) {
+                const canFulfill = inventoryDoc.canFulfillOrder(item.quantity, outletId);
+
+                if (!canFulfill) {
+                    throw new AppError(400, `Insufficient stock for product: ${product.name} at the selected outlet.`);
                 }
             }
 
             // Update Stock
             if (inventoryData.trackQuantity) {
-                inventoryDoc.inventory.stock -= item.quantity;
+                // reserveStock handles global and outlet-specific reservation and validity check again
+                const reserved = inventoryDoc.reserveStock(item.quantity, outletId);
+                if (!reserved) {
+                    throw new AppError(400, `Failed to reserve stock for product: ${product.name}`);
+                }
                 await inventoryDoc.save({ session });
             }
 

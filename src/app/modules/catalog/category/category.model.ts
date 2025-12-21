@@ -9,19 +9,17 @@ const CategorySchema = new Schema<ICategories>(
       type: String,
       required: true,
       trim: true,
-      unique: true,
       index: true,
       maxlength: 50,
     },
     slug: {
       type: String,
-      unique: true,
       index: true,
     },
     businessUnit: {
       type: Schema.Types.ObjectId,
       ref: "BusinessUnit",
-      required: true,
+      required: false,
     },
     description: {
       type: String,
@@ -46,5 +44,9 @@ CategorySchema.pre("save", function (next) {
   }
   next();
 });
+
+// Compound indexes for scoped uniqueness
+CategorySchema.index({ name: 1, businessUnit: 1 }, { unique: true });
+CategorySchema.index({ slug: 1, businessUnit: 1 }, { unique: true });
 
 export const Category = model<ICategories>("Category", CategorySchema);

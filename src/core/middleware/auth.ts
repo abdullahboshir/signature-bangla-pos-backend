@@ -7,7 +7,6 @@ import status from "http-status"
 import type { Request, Response } from "express"
 import type { JwtPayload } from "jsonwebtoken"
 import { User } from "@app/modules/iam/user/user.model.ts"
-import { Role } from "@app/modules/iam/role/role.model.ts"
 import { verifyToken } from "@app/modules/auth/auth.utils.ts"
 import AppError from "@shared/errors/app-error.ts"
 import catchAsync from "@core/utils/catchAsync.ts"
@@ -44,7 +43,7 @@ const auth = (...requiredRoles: string[]) => {
     }
 
     const decoded = verifyToken(token, config.jwt_access_secret as string);
-    const { email, role, iat } = decoded;
+    const { email, iat } = decoded;
 
 
     // Get user with populated roles
@@ -89,32 +88,70 @@ const auth = (...requiredRoles: string[]) => {
     }
 
 
-    const dbRoles = isUserExists.roles.map((roleInfo: any) => roleInfo.name);
-    const isRoleMatched = dbRoles.some((roleName: string) => Array.isArray(role) && role.includes(roleName))
 
-    if (!isRoleMatched) {
-      throw new AppError(status.FORBIDDEN, 'Role mismatch - user does not have this role');
-    }
+    // ========================================================================
+    // SCOPED PERMISSION & ROLE VALIDATION
+    // ========================================================================
 
-    // Fetch role details (fixed: removed incorrect object syntax)
-    const roleDetails = await Role.find({ name: { $in: role } });
+    const businessUnitId = req.headers['x-business-unit-id'] as string;
+    let effectiveRoleNames: string[] = [];
+    let activeRole: any = null;
 
-    if (!roleDetails) {
-      throw new AppError(status.NOT_FOUND, 'Role not found');
-    }
+    if (isUserExists.isSuperAdmin) {
+      // Super Admin has all access
+      effectiveRoleNames = ['super-admin', 'admin', ...requiredRoles];
+    } else if (businessUnitId) {
+      // 1. Check for specific Business Unit permission
+      // 1. Check for specific Business Unit permissions AND Global permissions
+      const scopedPermissions = isUserExists.permissions?.filter(p =>
+        (p.scopeType === 'business-unit' && p.scopeId?.toString() === businessUnitId) ||
+        (p.scopeType === 'global') // Global roles apply everywhere
+      );
 
+      if (scopedPermissions && scopedPermissions.length > 0) {
+        // Collect roles from ALL applicable permissions
+        scopedPermissions.forEach(p => {
+          if (p.role) {
+            effectiveRoleNames.push((p.role as any).name);
+          }
+        });
 
-    if (!roleDetails.some((role: any) => role.isActive)) {
-      throw new AppError(status.FORBIDDEN, 'Role is not active');
-    }
+        // For activeRole context, strictly speaking we might want the most specific one, 
+        // but for now let's just use the first specific one or first global if no specific.
+        // Or better, let's just set activeRole to the first found for backward compat, 
+        // but rely on effectiveRoleNames for checks.
+        activeRole = scopedPermissions.find(p => p.scopeType === 'business-unit') || scopedPermissions[0];
+      }
 
-    // Check if user has required role
-    if (requiredRoles.length > 0) {
-      const hasRequiredRole = role.some((role: any) => requiredRoles.includes(role));
-      if (!hasRequiredRole) {
-        throw new AppError(status.FORBIDDEN, 'User does not have required role');
+      // Legacy fallback: Include legacy roles as Global roles even in scoped context
+      if (isUserExists.roles && isUserExists.roles.length > 0) {
+        isUserExists.roles.forEach((r: any) => effectiveRoleNames.push(r.name));
+      }
+    } else {
+      // 2. Fallback: No Business Unit defined (e.g. /me or general routes)
+      // Load all global roles or legacy roles for backward compatibility
+      const globalPermissions = isUserExists.permissions?.filter(p => p.scopeType === 'global');
+      globalPermissions?.forEach(p => {
+        if (p.role) effectiveRoleNames.push((p.role as any).name);
+      });
+
+      // Legacy fallback
+      if (isUserExists.roles && isUserExists.roles.length > 0) {
+        isUserExists.roles.forEach((r: any) => effectiveRoleNames.push(r.name));
       }
     }
+
+    // 3. Validate against Required Roles
+    if (requiredRoles.length > 0) {
+      // If user is super admin, they pass. Otherwise check roles.
+      if (!isUserExists.isSuperAdmin) {
+        const hasRequiredRole = requiredRoles.some(reqRole => effectiveRoleNames.includes(reqRole));
+        if (!hasRequiredRole) {
+          throw new AppError(status.FORBIDDEN, `Access Denied. You do not have permission for this Business Unit.`);
+        }
+      }
+    }
+
 
     // Attach user info to request
     req.user = {
@@ -122,7 +159,8 @@ const auth = (...requiredRoles: string[]) => {
       userId: isUserExists._id?.toString(),
       id: isUserExists.id,
       email: isUserExists.email,
-      roleName: roleDetails.map((role: any) => role.name),
+      roleName: effectiveRoleNames, // Injected context-aware roles
+      permissions: activeRole?.permissions || [], // Injected context-aware permissions
       businessUnits: isUserExists.businessUnits,
       ...(isUserExists.branches !== undefined && { branches: isUserExists.branches }),
       ...(isUserExists.vendorId !== undefined && { vendorId: isUserExists.vendorId }),

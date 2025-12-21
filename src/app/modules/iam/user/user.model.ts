@@ -71,6 +71,25 @@ const LoginHistorySchema = new Schema({
   }
 }, { _id: false });
 
+// User Role Assignment Schema (Scoped Permissions)
+const UserRoleAssignmentSchema = new Schema({
+  role: {
+    type: Schema.Types.ObjectId,
+    ref: 'Role',
+    required: true
+  },
+  businessUnit: {
+    type: Schema.Types.ObjectId,
+    ref: 'BusinessUnit',
+    default: null
+  },
+  outlet: {
+    type: Schema.Types.ObjectId,
+    ref: 'Outlet',
+    default: null
+  }
+}, { _id: false });
+
 // Main User Schema
 const UserSchema = new Schema<IUser, UserStatic>({
   id: {
@@ -103,10 +122,19 @@ const UserSchema = new Schema<IUser, UserStatic>({
     minlength: 6,
     select: false // Default exclude from queries
   },
+  isSuperAdmin: {
+    type: Boolean,
+    default: false
+  },
+  permissions: {
+    type: [UserRoleAssignmentSchema],
+    default: []
+  },
+  // Deprecated: roles & businessUnits are now handled via 'permissions'
   roles: [{
     type: Schema.Types.ObjectId,
     ref: 'Role',
-    required: true
+    required: false
   }],
   businessUnits: [{
     type: Schema.Types.ObjectId,
@@ -233,17 +261,22 @@ UserSchema.statics["isUserExists"] = async function (email: string): Promise<IUs
   const user = await this["findOne"]({ email, isDeleted: false, isActive: true })
     .populate([
       {
-        path: 'roles', // Step 1: Populate the Role document(s)
-        // Nested population for permissions array inside the Role document
+        path: 'permissions.role', // Populate role in new permissions structure
         populate: {
-          path: 'permissions', // Step 2: Path to the array of permission IDs within the Role document
-          // CRITICAL: Ensure 'Permission' is the EXACT registered name of your Permission Model
-          // as defined in mongoose.model('Permission', ...). This guarantees Mongoose finds the collection.
+          path: 'permissions', // Populate permission IDs inside the Role
+          model: 'Permission'
+        }
+      },
+      // Keep populating deprecated fields for backward compatibility if needed
+      {
+        path: 'roles',
+        populate: {
+          path: 'permissions',
           model: 'Permission'
         }
       },
       {
-        path: 'businessUnits' // Keep existing population
+        path: 'businessUnits'
       }
     ])
     .select('+password');

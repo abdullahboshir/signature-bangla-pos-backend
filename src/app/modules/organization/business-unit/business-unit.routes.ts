@@ -14,7 +14,7 @@ const router = Router();
 
 router.get(
   '/',
-  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.BUSINESS_ADMIN),
   authorize(PermissionSourceObj.businessUnit, PermissionActionObj.view),
   getAllBusinessUnitsController
 );
@@ -36,7 +36,7 @@ router.delete(
 
 router.get(
   '/:businessUnitId',
-  auth(USER_ROLE.SUPER_ADMIN),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.BUSINESS_ADMIN),
   getBusinessUnitByIdController
 );
 

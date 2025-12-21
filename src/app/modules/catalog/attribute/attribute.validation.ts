@@ -6,7 +6,7 @@ export const createAttributeZodSchema = z.object({
             message: "Attribute Name is required",
         }),
         values: z.array(z.string()).min(1, "At least one value is required"),
-        businessUnit: z.string().optional(),
+        businessUnit: z.string().nullable().optional(),
         status: z.enum(["active", "inactive"]).optional(),
     }),
 });

@@ -15,6 +15,7 @@ const PurchaseSchema = new Schema<IPurchase>({
     dueDate: { type: Date },
     referenceNo: { type: String },
     businessUnit: { type: Schema.Types.ObjectId as any, ref: 'BusinessUnit', required: true },
+    outlet: { type: Schema.Types.ObjectId as any, ref: 'Outlet', required: true },
     status: { type: String, enum: ['pending', 'ordered', 'received'], default: 'pending' },
     items: [PurchaseItemSchema],
     subTotal: { type: Number, required: true },

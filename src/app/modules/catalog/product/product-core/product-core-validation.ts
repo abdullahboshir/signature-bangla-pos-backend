@@ -179,6 +179,9 @@ const productBodySchema = z.object({
   tags: z.array(z.string()).optional(),
   tagsBangla: z.array(z.string()).optional(),
 
+  // Dynamic Attributes
+  attributes: z.record(z.string(), z.any()).optional(),
+
   // Sub-modules (Nested Objects)
   pricing: pricingSchema,
   inventory: inventorySchema,

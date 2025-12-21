@@ -75,6 +75,11 @@ export const businessUnitCoreSchema = new Schema<
     },
     tags: [{ type: String, trim: true }],
     specialties: [{ type: String, trim: true }],
+    attributeGroup: {
+      type: Schema.Types.ObjectId,
+      ref: "AttributeGroup",
+      required: false
+    },
     businessUnitType: {
       type: String,
       enum: ["general", "boutique", "brand", "marketplace", "specialty"],
@@ -248,14 +253,15 @@ businessUnitCoreSchema.virtual("isSuspended").get(function (this: IBusinessUnitC
 });
 
 businessUnitCoreSchema.virtual("performanceScore").get(function (this: IBusinessUnitCoreDocument) {
-  return this.performance.overallScore;
+  return this.performance?.overallScore || 0;
 });
 
 businessUnitCoreSchema.virtual("totalEarnings").get(function (this: IBusinessUnitCoreDocument) {
-  return this.statistics.totalRevenue;
+  return this.statistics?.totalRevenue || 0;
 });
 
 businessUnitCoreSchema.virtual("daysSinceCreation").get(function (this: IBusinessUnitCoreDocument) {
+  if (!this.createdAt) return 0;
   const diffTime = Math.abs(
     new Date().getTime() - this.createdAt.getTime()
   );

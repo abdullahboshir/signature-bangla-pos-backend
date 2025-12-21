@@ -70,7 +70,8 @@ export const loginService = async (email: string, pass: string) => {
     email: isUserExists?.email,
     role: allRoles, // Array of strings (legacy/simple)
     roles: isUserExists.roles, // Array of objects (populated)
-    permissions: isUserExists?.directPermissions || [],
+    permissions: isUserExists.permissions || [], // Scoped permissions
+    isSuperAdmin: isUserExists.isSuperAdmin,
     businessUnits: businessUnits // sending full object array
   }
 
@@ -100,11 +101,13 @@ export const refreshTokenAuthService = async (token: string) => {
   const { userId, iat } = decoded
 
   // FIXED: find user by custom userId
-  const isUserExists = await User.findOne({ _id: userId }).populate([{ path: 'businessUnits', select: 'name id' }, {
-    path: 'roles',
-    select: 'name permissions',
-    populate: { path: 'permissions' }
-  }]).lean()
+  const isUserExists = await User.findOne({ _id: userId }).populate([
+    { path: 'businessUnits', select: 'name id' },
+    {
+      path: 'permissions.role',
+      populate: { path: 'permissions' }
+    }
+  ]).lean()
 
 
   if (!isUserExists) {
@@ -142,7 +145,8 @@ export const refreshTokenAuthService = async (token: string) => {
     id: isUserExists?.id,
     email: isUserExists?.email,
     role: allRoles,
-    roleIds: allRoles
+    roleIds: allRoles,
+    isSuperAdmin: isUserExists.isSuperAdmin
   };
 
   const accessToken = createToken(
@@ -157,11 +161,14 @@ export const refreshTokenAuthService = async (token: string) => {
 
 export const authMeService = async (userInfo: any) => {
 
-  const res = await User.findOne({ _id: userInfo.userId }).populate([{ path: 'businessUnits', select: 'name id slug' }, {
-    path: 'roles',
-    select: 'name permissions',
-    populate: { path: 'permissions' }
-  }]).lean();
+  const res = await User.findOne({ _id: userInfo.userId }).populate([
+    { path: 'businessUnits', select: 'name id slug' },
+    { path: 'roles', select: 'name slug' }, // Ensure roles are populated
+    {
+      path: 'permissions.role',
+      populate: { path: 'permissions' }
+    }
+  ]).lean();
 
   if (res) {
     // Standardize response: Add 'role' (string array) to match loginService

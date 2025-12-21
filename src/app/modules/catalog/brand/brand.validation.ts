@@ -9,7 +9,7 @@ export const createBrandValidationSchema = z.object({
         logo: z.string().optional(),
         website: z.string().url().optional().or(z.literal("")),
         status: z.enum(["active", "inactive"]).optional(),
-        businessUnit: z.string().optional(),
+        businessUnit: z.string().nullable().optional(),
     }),
 });
 
@@ -20,7 +20,7 @@ export const updateBrandValidationSchema = z.object({
         logo: z.string().optional(),
         website: z.string().url().optional().or(z.literal("")),
         status: z.enum(["active", "inactive"]).optional(),
-        businessUnit: z.string().optional(),
+        businessUnit: z.string().nullable().optional(),
     }),
 });
 

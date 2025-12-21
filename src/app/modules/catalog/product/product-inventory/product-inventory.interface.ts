@@ -1,12 +1,22 @@
 import type { Document, Types } from "mongoose";
 import type { InventoryBase } from "../product-shared/product-shared.interface.js";
 
+export interface IOutletStock {
+  outlet: Types.ObjectId;
+  stock: number;
+  reserved: number;
+  sold: number;
+}
+
 
 export interface IProductInventory {
   product: Types.ObjectId;
 
   // Stock Management (using shared base)
   inventory: InventoryBase;
+
+  // Multi-Outlet Stock
+  outletStock: IOutletStock[];
 
   // Supplier Management
   suppliers: {
@@ -33,8 +43,10 @@ export interface IProductInventory {
 
 export type IProductInventoryDocument = IProductInventory &
   Document & {
-    isInStock(): boolean;
-    canFulfillOrder(quantity: number): boolean;
-    reserveStock(quantity: number): boolean;
-    releaseStock(quantity: number): void;
+    isInStock(outletId?: string): boolean;
+    canFulfillOrder(quantity: number, outletId?: string): boolean;
+    reserveStock(quantity: number, outletId?: string): boolean;
+    releaseStock(quantity: number, outletId?: string): void;
+    addStock(quantity: number, outletId?: string): void;
+    updateStockStatus(): void;
   };

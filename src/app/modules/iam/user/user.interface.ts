@@ -6,6 +6,13 @@ import type { TName } from "@core/types/common.types.ts";
 
 export type TUserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
 
+export interface IPermissionAssignment {
+  role: Types.ObjectId;
+  scopeType: 'global' | 'business-unit' | 'outlet';
+  scopeId?: Types.ObjectId | null;
+  scopeModel?: 'BusinessUnit' | 'Outlet' | null;
+}
+
 export interface IUser {
   _id?: Types.ObjectId;
   id: string;
@@ -13,8 +20,11 @@ export interface IUser {
   email: string;
   phone?: string;
   password: string;
+  isSuperAdmin?: boolean;
+  permissions: IPermissionAssignment[];
+  // Deprecated fields (keeping for now to avoid immediate breakage until full migration)
   businessUnits?: Types.ObjectId[] | string[];
-  roles: Types.ObjectId[];
+  roles?: Types.ObjectId[];
   branches?: string[];
   vendorId?: string;
   region?: string;

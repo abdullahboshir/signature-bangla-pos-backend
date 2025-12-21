@@ -203,10 +203,17 @@ export class BusinessUnitService {
    * @returns Business unit document or null
    */
   static async getBusinessUnitById(
-    businessUnitId: string
+    idOrSlug: string
   ): Promise<IBusinessUnitCoreDocument | null> {
     try {
-      const businessUnit = await BusinessUnit.findById(businessUnitId);
+      // Check if it's a valid ObjectId (hex string of 24 chars)
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(idOrSlug);
+
+      const query = isObjectId
+        ? { _id: idOrSlug }
+        : { $or: [{ slug: idOrSlug }, { id: idOrSlug }] };
+
+      const businessUnit = await BusinessUnit.findOne(query).populate("attributeGroup");
 
       return businessUnit;
 

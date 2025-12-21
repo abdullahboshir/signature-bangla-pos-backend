@@ -17,6 +17,7 @@ export interface IOrder extends Document {
     orderId: string;
     customer?: Types.ObjectId; // Optional for walk-in customers
     businessUnit: Types.ObjectId;
+    outlet: Types.ObjectId;
 
     items: IOrderItem[];
 

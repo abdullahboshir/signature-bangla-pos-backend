@@ -14,7 +14,7 @@ const createOutlet = catchAsync(async (req: Request, res: Response) => {
 const getAllOutlets = catchAsync(async (req: Request, res: Response) => {
     // Assuming we filter by Business Unit. 
     // Usually businessUnitId comes from generic middleware or query params
-    const businessUnitId = (req.query['businessUnitId'] as string) || req.body.businessUnit;
+    const businessUnitId = (req.query['businessUnit'] as string) || (req.query['businessUnitId'] as string) || req.body?.businessUnit;
 
     // For now simplistic approach
     const result = await OutletService.getAllOutlets(businessUnitId);

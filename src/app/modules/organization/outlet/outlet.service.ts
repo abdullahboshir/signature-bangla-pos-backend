@@ -1,16 +1,20 @@
 import type { IOutlet } from "./outlet.interface.ts";
 import { Outlet } from "./outlet.model.ts";
-import BusinessUnit from "../business-unit/business-unit.model.ts";
-import { Types } from "mongoose";
+import { Types, model } from "mongoose";
 // import ApiError from "../../../../errors/ApiError.js";
 import httpStatus from "http-status";
 
 const createOutlet = async (payload: IOutlet): Promise<IOutlet> => {
-    // Resolve Business Unit ID if it's a string (ULID)
+    const BusinessUnit = model("BusinessUnit");
+
+    // Resolve Business Unit ID if it's a string (ULID) or Slug
     if (typeof payload.businessUnit === 'string' && !Types.ObjectId.isValid(payload.businessUnit)) {
-        const bu = await BusinessUnit.findOne({ id: payload.businessUnit });
+        const identifier = (payload.businessUnit as string).trim();
+        const bu = await BusinessUnit.findOne({
+            $or: [{ id: identifier }, { slug: identifier }]
+        });
         if (!bu) {
-            throw new Error("Business Unit not found with the provided ID");
+            throw new Error(`Business Unit not found with the provided ID or Slug: '${identifier}'`);
         }
         payload.businessUnit = bu._id as Types.ObjectId;
     }
@@ -25,21 +29,34 @@ const createOutlet = async (payload: IOutlet): Promise<IOutlet> => {
 };
 
 const getAllOutlets = async (businessUnitId: string): Promise<IOutlet[]> => {
-    let query: any = { businessUnit: businessUnitId };
+    let query: any = {};
 
-    // Resolve Business Unit ID if it's a string (ULID)
-    if (businessUnitId && !Types.ObjectId.isValid(businessUnitId)) {
-        const bu = await BusinessUnit.findOne({ id: businessUnitId });
-        if (bu) {
-            query = { businessUnit: bu._id };
+    // Helper to check if a value is effectively valid
+    const isValidId = (id: any) => id && id !== 'undefined' && id !== 'null';
+
+    // Resolve Business Unit ID if it's a string (ULID) or Slug
+    if (isValidId(businessUnitId)) {
+        if (!Types.ObjectId.isValid(businessUnitId)) {
+            const identifier = (businessUnitId as string).trim();
+            const BusinessUnit = model("BusinessUnit");
+            const bu = await BusinessUnit.findOne({
+                $or: [{ id: identifier }, { slug: identifier }]
+            });
+
+            if (bu) {
+                query.businessUnit = bu._id;
+            } else {
+                // If invalid ID/Slug passed, assuming we want results for that SPECIFIC invalid ID which are none
+                return [];
+            }
         } else {
-            // If invalid ID passed, return empty or throw? Return empty is safer.
-            return [];
+            query.businessUnit = businessUnitId;
         }
     }
 
     const result = await Outlet.find(query)
         .populate("manager", "name email")
+        .populate("businessUnit", "name id")
         .sort({ createdAt: -1 });
     return result;
 };

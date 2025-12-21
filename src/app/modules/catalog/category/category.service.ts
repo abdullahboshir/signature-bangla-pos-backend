@@ -45,7 +45,14 @@ export const getCategoriesService = async (
         $or: [{ id: businessUnit }, { slug: businessUnit }]
       });
       if (buDoc) {
-        filters['businessUnit'] = buDoc._id;
+        // Include categories for this Business Unit OR Global (null)
+        filters['$or'] = [
+          { businessUnit: buDoc._id },
+          { businessUnit: null },
+          { businessUnit: { $exists: false } }
+        ];
+        // Remove the direct businessUnit match to avoid conflict (though $or takes precedence usually)
+        delete filters['businessUnit'];
       } else {
         return [];
       }
@@ -57,12 +64,12 @@ export const getCategoriesService = async (
     filters['name'] = { $regex: searchTerm, $options: 'i' };
   }
 
-  const result = await Category.find(filters);
+  const result = await Category.find(filters).populate('businessUnit', 'name slug');
   return result;
 };
 
 export const getCategoryByIdService = async (id: string) => {
-  const result = await Category.findById(id);
+  const result = await Category.findById(id).populate('businessUnit', 'name slug');
   return result;
 };
 export const updateCategoryService = async (id: string, payload: Partial<ICategories>) => {

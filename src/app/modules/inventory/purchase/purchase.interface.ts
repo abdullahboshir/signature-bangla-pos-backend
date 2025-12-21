@@ -12,6 +12,7 @@ export interface IPurchase {
     dueDate?: Date;
     referenceNo?: string;
     businessUnit: string; // ObjectId
+    outlet: string; // ObjectId
     status: 'pending' | 'ordered' | 'received';
     items: IPurchaseItem[];
     subTotal: number;

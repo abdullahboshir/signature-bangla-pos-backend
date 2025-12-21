@@ -26,6 +26,7 @@ export interface IBusinessUnitCore {
   primaryCategory: Types.ObjectId;
   tags: string[];
   specialties: string[];
+  attributeGroup?: Types.ObjectId;
   businessUnitType: "general" | "boutique" | "brand" | "marketplace" | "specialty";
 
   // ====== CONTACT & LOCATION ======
