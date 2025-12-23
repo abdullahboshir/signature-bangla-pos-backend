@@ -5,6 +5,7 @@ import { connectDB } from "./core/database/mongoose/connection.ts";
 import { runRolePermissionSeeder } from "./core/database/mongoose/seeders/authorization.seeder.ts";
 import { seedSuperAdmin } from "./core/database/mongoose/seeders/superAdmin.seeder.ts";
 import appConfig from "./shared/config/app.config.ts";
+import { startCleanupJob } from "./app/jobs/cleanup.job.ts";
 
 let server: Server;
 
@@ -16,6 +17,9 @@ async function main() {
     // Run seeders
     await runRolePermissionSeeder();
     await seedSuperAdmin();
+
+    // Start Background Jobs
+    startCleanupJob();
 
     server = app.listen(appConfig.port, () => {
       console.log(`🚀 Server running on port ${appConfig.port}`.green);

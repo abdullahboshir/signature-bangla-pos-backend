@@ -64,3 +64,21 @@ export const updateBusinessUnitController = catchAsync(async (req, res) => {
     data,
   });
 });
+
+export const getBusinessUnitStatsController = catchAsync(async (req, res) => {
+  const { businessUnitId } = req.params;
+  const { outletId } = req.query;
+
+  if (!businessUnitId) {
+    throw new Error("Business Unit ID is required");
+  }
+
+  const data = await BusinessUnitService.getDashboardStats(businessUnitId, outletId as string);
+
+  ApiResponse.success(res, {
+    success: true,
+    statusCode: status.OK,
+    message: 'Business Unit stats retrieved successfully',
+    data,
+  });
+});

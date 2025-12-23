@@ -154,6 +154,19 @@ export interface IBusinessUnitSettings {
     enableCredit: boolean;
     receiptLayout: "simple" | "detailed" | "thermal";
     soundEffects: boolean;
+    // Receipt Customization
+    receiptHeader?: string;
+    receiptFooter?: string;
+    showLogo: boolean;
+    logoPosition: "top" | "bottom";
+  };
+
+  // Inventory Settings
+  inventory: {
+    allowNegativeStock: boolean;
+    enableLowStockAlerts: boolean;
+    lowStockThreshold: number;
+    barcodeFormat: "EAN13" | "UPCA" | "CODE128";
   };
 
   // Reward Points

@@ -80,6 +80,10 @@ export const businessUnitCoreSchema = new Schema<
       ref: "AttributeGroup",
       required: false
     },
+    attributeGroups: [{
+      type: Schema.Types.ObjectId,
+      ref: "AttributeGroup"
+    }],
     businessUnitType: {
       type: String,
       enum: ["general", "boutique", "brand", "marketplace", "specialty"],
@@ -90,7 +94,8 @@ export const businessUnitCoreSchema = new Schema<
     // ====== CONTACT & LOCATION ======
     contact: {
       email: { type: String, required: true },
-      phone: { type: String, required: true },
+      phone: { type: String },
+      website: String,
       supportHours: { type: String, default: "9 AM - 6 PM" },
       supportPhone: { type: String },
       socialMedia: {
@@ -137,6 +142,17 @@ export const businessUnitCoreSchema = new Schema<
       dimensionUnit: { type: String, enum: ["cm", "inch"], default: "cm" },
       inventoryManagement: { type: Boolean, default: true },
       lowStockAlert: { type: Boolean, default: true },
+    },
+
+    features: {
+      hasInventory: { type: Boolean, default: true },
+      hasVariants: { type: Boolean, default: true },
+      hasAttributeGroups: { type: Boolean, default: true },
+      hasShipping: { type: Boolean, default: true },
+      hasSeo: { type: Boolean, default: true },
+      hasCompliance: { type: Boolean, default: true },
+      hasBundles: { type: Boolean, default: true },
+      hasWarranty: { type: Boolean, default: true }
     },
 
     // ====== POLICIES & SEO ======
@@ -215,6 +231,9 @@ export const businessUnitCoreSchema = new Schema<
     publishedAt: { type: Date },
     lastOrderAt: { type: Date },
     lastReviewAt: { type: Date },
+
+    isDeleted: { type: Boolean, default: false, select: false },
+    deletedAt: { type: Date },
   },
   {
     timestamps: true,

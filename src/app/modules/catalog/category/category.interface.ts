@@ -10,4 +10,7 @@ export interface ICategories {
   isActive?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+
+  isDeleted?: boolean;
+  deletedAt?: Date;
 }

@@ -23,10 +23,11 @@ import { TaxRoutes } from "@app/modules/catalog/tax/tax.routes.ts";
 import { attributeRoutes } from "@app/modules/catalog/attribute/attribute.routes.js";
 import { AttributeGroupRoutes } from "@app/modules/catalog/attribute-group/attribute-group.route.js";
 import { BusinessUnitSettingsRoutes } from "@app/modules/organization/business-unit-setting/business-unit-settings.routes.js";
+import { storefrontRoutes } from "@app/modules/storefront/storefront.routes.ts";
 
 // Inventory & Supplier Imports
 import { SupplierRoutes } from "@app/modules/suppliers/supplier/supplier.routes.js";
-import { PurchaseRoutes } from "@app/modules/inventory/purchase/purchase.routes.js";
+import { PurchaseRoutes } from "@app/modules/purchase/purchase.routes.js";
 
 const superAdminRoutes = Router();
 
@@ -54,5 +55,6 @@ superAdminRoutes.use("/attribute-groups", AttributeGroupRoutes);
 superAdminRoutes.use("/suppliers", SupplierRoutes);
 superAdminRoutes.use("/purchases", PurchaseRoutes);
 superAdminRoutes.use("/settings", BusinessUnitSettingsRoutes);
+superAdminRoutes.use("/storefront", storefrontRoutes);
 
 export const adminGroupRoutes = superAdminRoutes;

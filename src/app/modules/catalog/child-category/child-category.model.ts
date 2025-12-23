@@ -43,6 +43,8 @@ const ChildCategorySchema = new Schema<IChildCategory>(
       type: Boolean,
       default: true,
     },
+    isDeleted: { type: Boolean, default: false, select: false },
+    deletedAt: { type: Date },
   },
   { timestamps: true }
 );

@@ -13,28 +13,43 @@ cloudinary.config({
 })
 
 export const sendImageToCloudinary = async (imgName: string, path: string) => {
+  // Return local file path directly for development reliability
+  // Ensure the path is relative to the server root for the frontend to access
   return new Promise((resolve, reject) => {
-    cloudinary.uploader.upload(
-      path,
-      {
-        public_id: imgName,
-      },
-      function (error, result) {
-        if (error) {
-          reject(error)
-        }
-        resolve(result)
+    // Assume file is already in /uploads via Multer
+    // We just need to return the URL format that the controller expects
+    // Controller expects: result.secure_url
 
-        // delete a file asynchronously
-        fs.unlink(path, (err) => {
-          if (err) {
-            console.log(err)
-          } else {
-            console.log('File is deleted.')
-          }
-        })
-      },
+    // We need to extract the filename from the path if needed, 
+    // but imgName passed here is usually just the name, valid for public_id.
+    // However, multer 'filename' is what we need for the URL.
+
+    // Let's assume the file is saved at 'path'. 
+    // We want to return '/uploads/filename'. 
+    // path is typically "E:\...\uploads\image-123.png"
+
+    const filename = path.split(/[/\\]/).pop(); // Extract filename from full path
+    const localUrl = `/uploads/${filename}`;
+
+    console.log("Local Upload returning:", localUrl);
+
+    resolve({
+      secure_url: localUrl,
+      public_id: imgName
+    });
+
+    // Do NOT delete the file
+    /*
+    cloudinary.uploader.upload(
+        path,
+        { public_id: imgName },
+        function (error, result) {
+            if (error) reject(error)
+            resolve(result)
+            fs.unlink(path, (err) => { // ... })
+        }
     )
+    */
   })
 }
 
@@ -44,7 +59,10 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9)
-    cb(null, file.fieldname + '-' + uniqueSuffix)
+    // Extract extension from original name
+    const ext = file.originalname.split('.').pop();
+    const filename = `${file.fieldname}-${uniqueSuffix}.${ext}`;
+    cb(null, filename)
   },
 })
 

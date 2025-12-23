@@ -107,6 +107,17 @@ export const createBusinessUnitValidationSchema = z.object({
     structuredData: z.object({}).optional(),
   }),
 
+  features: z.object({
+    hasInventory: z.boolean().optional(),
+    hasVariants: z.boolean().optional(),
+    hasAttributeGroups: z.boolean().optional(),
+    hasShipping: z.boolean().optional(),
+    hasSeo: z.boolean().optional(),
+    hasCompliance: z.boolean().optional(),
+    hasBundles: z.boolean().optional(),
+    hasWarranty: z.boolean().optional(),
+  }).optional(),
+
   // Optional fields with defaults
   status: z.enum(["draft", "under_review", "published", "suspended", "archived"]).optional(),
   visibility: z.enum(["public", "private", "unlisted"]).optional(),

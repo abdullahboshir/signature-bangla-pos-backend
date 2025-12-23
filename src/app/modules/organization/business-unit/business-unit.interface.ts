@@ -26,7 +26,8 @@ export interface IBusinessUnitCore {
   primaryCategory: Types.ObjectId;
   tags: string[];
   specialties: string[];
-  attributeGroup?: Types.ObjectId;
+  attributeGroup?: Types.ObjectId; // Deprecated: Use attributeGroups instead
+  attributeGroups?: Types.ObjectId[];
   businessUnitType: "general" | "boutique" | "brand" | "marketplace" | "specialty";
 
   // ====== CONTACT & LOCATION ======
@@ -46,9 +47,19 @@ export interface IBusinessUnitCore {
     lowStockAlert: boolean;
   };
 
-  // ====== POLICIES & SEO ======
+  // ====== POLICIES & SEO & FEATURES ======
   policies?: IBusinessUnitPolicy;
   seo: IBusinessUnitSeo;
+  features: {
+    hasInventory: boolean;
+    hasVariants: boolean;
+    hasAttributeGroups: boolean;
+    hasShipping: boolean;
+    hasSeo: boolean;
+    hasCompliance: boolean;
+    hasBundles: boolean;
+    hasWarranty: boolean;
+  };
 
   // ====== PERFORMANCE & RATINGS ======
   performance: IBusinessUnitPerformance;
@@ -93,6 +104,9 @@ export interface IBusinessUnitCore {
   publishedAt?: Date;
   lastOrderAt?: Date;
   lastReviewAt?: Date;
+
+  isDeleted?: boolean;
+  deletedAt?: Date;
 }
 
 // ==================== DOCUMENT INTERFACE ====================

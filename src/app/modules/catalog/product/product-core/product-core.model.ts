@@ -13,8 +13,8 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
 
   outlet: {
     type: Schema.Types.ObjectId,
-    ref: "Outlet", // Updated ref from Outlet to Outlet
-    required: true,
+    ref: "Outlet",
+    required: false, // Updated to allow global products
     index: true,
   },
   businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
@@ -84,6 +84,9 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
 
   // Status & Workflow
   statusInfo: { type: ProductStatusSchema, default: () => ({}) },
+
+  isDeleted: { type: Boolean, default: false, select: false },
+  deletedAt: { type: Date },
 
   lastRestockedAt: { type: Date }
 }, {

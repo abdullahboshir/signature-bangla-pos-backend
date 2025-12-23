@@ -15,9 +15,9 @@ import appConfig from "./shared/config/app.config.ts";
 
 const app = express();
 
-app.use(helmet());
-app.use(compression());
-
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
 app.use(
   cors({
     origin: ["http://localhost:3000", "http://localhost:5173", "http://localhost:3001"],
@@ -26,6 +26,13 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "x-business-unit-id", "x-outlet-id"],
   })
 );
+app.use(compression());
+
+// Serve Static Files
+import path from "path";
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+
+
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

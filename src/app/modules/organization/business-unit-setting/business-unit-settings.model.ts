@@ -174,7 +174,20 @@ const businessUnitSettingsSchema = new Schema<IBusinessUnitSettingsDocument, IBu
     disableSuspend: { type: Boolean, default: false },
     enableCredit: { type: Boolean, default: false },
     receiptLayout: { type: String, enum: ["simple", "detailed", "thermal"], default: "thermal" },
-    soundEffects: { type: Boolean, default: true }
+    soundEffects: { type: Boolean, default: true },
+    // Receipt Customization
+    receiptHeader: { type: String },
+    receiptFooter: { type: String },
+    showLogo: { type: Boolean, default: true },
+    logoPosition: { type: String, enum: ["top", "bottom"], default: "top" }
+  },
+
+  // Inventory Settings
+  inventory: {
+    allowNegativeStock: { type: Boolean, default: false },
+    enableLowStockAlerts: { type: Boolean, default: true },
+    lowStockThreshold: { type: Number, default: 5 },
+    barcodeFormat: { type: String, enum: ["EAN13", "UPCA", "CODE128"], default: "CODE128" }
   },
 
   // Reward Points
@@ -295,7 +308,17 @@ businessUnitSettingsSchema.statics['getDefaultSettings'] = function (): Partial<
       disableSuspend: false,
       enableCredit: false,
       receiptLayout: "thermal",
-      soundEffects: true
+      soundEffects: true,
+      receiptHeader: "",
+      receiptFooter: "",
+      showLogo: true,
+      logoPosition: "top"
+    },
+    inventory: {
+      allowNegativeStock: false,
+      enableLowStockAlerts: true,
+      lowStockThreshold: 5,
+      barcodeFormat: "CODE128"
     },
     rewardPoints: {
       enabled: false,

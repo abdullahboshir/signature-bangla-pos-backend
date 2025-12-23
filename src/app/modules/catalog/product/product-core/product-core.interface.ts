@@ -69,6 +69,9 @@ export interface IProductCore {
   createdAt: Date;
   updatedAt: Date;
   lastRestockedAt?: Date;
+
+  isDeleted?: boolean; // Should be select: false in schema, so optional here for general usage
+  deletedAt?: Date;
 }
 
 export type IProductDocument = IProductCore &

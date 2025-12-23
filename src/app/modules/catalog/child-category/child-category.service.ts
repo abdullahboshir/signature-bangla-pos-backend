@@ -61,9 +61,11 @@ export const getChildCategoriesService = async (subCategoryId: Types.ObjectId) =
 };
 
 export const getAllChildCategoriesService = async (query: any) => {
+    const { limit, page, sortBy, sortOrder, searchTerm, fields, ...filters } = query;
+
     // Resolve Business Unit if present in query
-    if (query.businessUnit) {
-        let { businessUnit } = query;
+    if (filters.businessUnit) {
+        let { businessUnit } = filters;
         if (typeof businessUnit === "string") businessUnit = businessUnit.trim();
         const isBuObjectId = mongoose.Types.ObjectId.isValid(businessUnit) || /^[0-9a-fA-F]{24}$/.test(businessUnit);
 
@@ -73,16 +75,19 @@ export const getAllChildCategoriesService = async (query: any) => {
                 $or: [{ id: businessUnit }, { slug: businessUnit }]
             });
             if (buDoc) {
-                query.businessUnit = buDoc._id;
+                filters.businessUnit = buDoc._id;
             } else {
                 // If invalid BU provided, return empty or handle error. 
-                // Returning empty array seems appropriate for a filter
                 return [];
             }
         }
     }
 
-    const result = await ChildCategory.find(query).populate('subCategory');
+    if (searchTerm) {
+        filters['name'] = { $regex: searchTerm, $options: 'i' };
+    }
+
+    const result = await ChildCategory.find(filters).populate('subCategory');
     return result;
 };
 

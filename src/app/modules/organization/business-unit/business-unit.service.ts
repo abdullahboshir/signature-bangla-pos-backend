@@ -213,7 +213,9 @@ export class BusinessUnitService {
         ? { _id: idOrSlug }
         : { $or: [{ slug: idOrSlug }, { id: idOrSlug }] };
 
-      const businessUnit = await BusinessUnit.findOne(query).populate("attributeGroup");
+      const businessUnit = await BusinessUnit.findOne(query)
+        .populate("attributeGroup")
+        .populate("attributeGroups");
 
       return businessUnit;
 
@@ -376,6 +378,58 @@ export class BusinessUnitService {
         "Failed to delete business unit",
         "BU_DELETE_002"
       );
+    }
+  }
+
+  /**
+   * Get Dashboard Stats for Business Unit
+   */
+  static async getDashboardStats(businessUnitId: string, outletId?: string) {
+    try {
+      // Import dynamically to avoid circular dependency if Order imports BU
+      const { Order } = await import("@app/modules/sales/order/order.model.ts");
+      const { User } = await import("@app/modules/iam/user/user.model.ts"); // Assuming usage for user count
+
+      const matchStage: any = { businessUnit: new (await import("mongoose")).Types.ObjectId(businessUnitId) };
+      if (outletId && outletId !== 'all') {
+        matchStage.outlet = new (await import("mongoose")).Types.ObjectId(outletId);
+      }
+
+      // 1. Total Revenue & Sales Count
+      const revenueStats = await Order.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: null,
+            totalRevenue: { $sum: "$totalAmount" },
+            totalSales: { $count: {} }
+          }
+        }
+      ]);
+
+      // 2. Active Users (Mock logic or check users assigned to this BU)
+      // Since User model has businessUnits array, we can count users with this BU
+      const activeUsers = await User.countDocuments({
+        businessUnits: businessUnitId,
+        isActive: true // Assuming there's an isActive field
+      });
+      // Or if no isActive, just count:
+      // const activeUsers = await User.countDocuments({ businessUnits: businessUnitId });
+
+
+      // 3. Growth (Mock for now or compare with last month)
+      // Let's just return 0 for growth for now or calculate simple MoM
+
+      return {
+        revenue: revenueStats[0]?.totalRevenue || 0,
+        activeSales: revenueStats[0]?.totalSales || 0,
+        activeUsers: activeUsers || 0,
+        growth: 0 // TODO: Implement growth logic
+      };
+
+    } catch (error: any) {
+      log.error("Failed to get dashboard stats", { error: error.message });
+      throw new AppError(500, "Failed to get dashboard stats", "BU_STATS_001");
     }
   }
 }

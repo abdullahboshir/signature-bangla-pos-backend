@@ -6,15 +6,15 @@ import { validateRequest } from '@core/middleware/validateRequest.ts';
 import { Router } from 'express';
 
 import type { AnyZodObject } from 'zod/v3';
-import { createBusinessUnitValidationSchema } from './business-unit.validation.ts';
-import { createBusinessUnitController, getAllBusinessUnitsController, deleteBusinessUnitController, getBusinessUnitByIdController, updateBusinessUnitController } from './business-unit.controller.ts';
+import { createBusinessUnitValidationSchema, updateBusinessUnitSchema } from './business-unit.validation.ts';
+import { createBusinessUnitController, getAllBusinessUnitsController, deleteBusinessUnitController, getBusinessUnitByIdController, updateBusinessUnitController, getBusinessUnitStatsController } from './business-unit.controller.ts';
 
 
 const router = Router();
 
 router.get(
   '/',
-  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.BUSINESS_ADMIN),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
   authorize(PermissionSourceObj.businessUnit, PermissionActionObj.view),
   getAllBusinessUnitsController
 );
@@ -36,14 +36,21 @@ router.delete(
 
 router.get(
   '/:businessUnitId',
-  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.BUSINESS_ADMIN),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
   getBusinessUnitByIdController
 );
 
 router.patch(
   '/:businessUnitId',
   auth(USER_ROLE.SUPER_ADMIN),
+  validateRequest(updateBusinessUnitSchema as unknown as AnyZodObject),
   updateBusinessUnitController
+);
+
+router.get(
+  '/:businessUnitId/dashboard',
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.MANAGER),
+  getBusinessUnitStatsController
 );
 
 

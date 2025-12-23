@@ -229,7 +229,33 @@ export const updateProductService = async (id: string, payload: any) => {
   }
 }
 
-export const deleteProductService = async (id: string) => {
+export const deleteProductService = async (id: string, force: boolean = false) => {
+  // Soft Delete Logic (Default)
+  if (!force) {
+    const product = await Product.findByIdAndUpdate(
+      id,
+      {
+        isDeleted: true,
+        deletedAt: new Date(),
+        'statusInfo.status': 'archived' // Optional: auto-archive on soft delete? Or just hide?
+        // User asked for "soft delete", often implies hidden.
+        // Let's strictly set isDeleted. If they want status change I can add it.
+        // Actually, setting status to archived as well is a good visual indicator if isDeleted is not shown in normal UI.
+        // But for "Soft Delete" vs "Archive" distinction:
+        // Archive = user action to hide. Soft Delete = user clicked "Delete".
+        // Let's just set isDeleted: true.
+      },
+      { new: true }
+    );
+
+    if (!product) {
+      throw new AppError(404, "Product not found");
+    }
+
+    return { message: "Product moved to trash (Soft Delete)" };
+  }
+
+  // Hard Delete Logic (Force = true)
   const session = await startSession();
   session.startTransaction();
   try {
@@ -251,7 +277,7 @@ export const deleteProductService = async (id: string) => {
 
     await session.commitTransaction();
     session.endSession();
-    return { message: "Product deleted successfully" };
+    return { message: "Product permanently deleted" };
   } catch (error) {
     await session.abortTransaction();
     session.endSession();

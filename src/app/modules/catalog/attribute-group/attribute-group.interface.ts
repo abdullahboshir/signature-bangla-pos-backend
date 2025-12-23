@@ -10,7 +10,7 @@ export interface IAttributeField {
 }
 
 export interface IAttributeGroup {
-    name: string;         // e.g. "Pharmacy Template"
+    name: string;
     description?: string;
     fields: IAttributeField[];
     isActive: boolean;

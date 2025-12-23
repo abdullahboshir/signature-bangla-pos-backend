@@ -10,15 +10,15 @@ const uploadImage = catchAsync(async (req: Request, res: Response) => {
     }
     const result: any = await sendImageToCloudinary(req.file.filename, req.file.path);
 
-    ApiResponse.success(res, {
-        statusCode: httpStatus.OK,
-        success: true,
-        message: 'Image uploaded successfully',
-        data: {
+    ApiResponse.success(
+        res,
+        {
             url: result.secure_url,
             public_id: result.public_id
-        }
-    });
+        },
+        'Image uploaded successfully',
+        httpStatus.OK
+    );
 });
 
 export const UploadController = {

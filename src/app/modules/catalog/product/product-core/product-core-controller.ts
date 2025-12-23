@@ -29,6 +29,14 @@ export const createProductController = catchAsync(async (req, res) => {
     }
   }
 
+  // Sanitize payload: Remove empty strings for optional ObjectId fields
+  const fieldsToClean = ['childCategory', 'subCategory', 'primaryCategory', 'unit', 'outlet'];
+  fieldsToClean.forEach(field => {
+    if (req.body[field] === "") {
+      req.body[field] = undefined;
+    }
+  });
+
   const data = await createProductService(req?.body)
 
   ApiResponse.success(res, {
@@ -108,6 +116,14 @@ export const updateProductController = catchAsync(async (req, res) => {
     }
   }
 
+  // Sanitize payload: Remove empty strings for optional ObjectId fields
+  const fieldsToClean = ['childCategory', 'subCategory', 'primaryCategory', 'unit', 'outlet'];
+  fieldsToClean.forEach(field => {
+    if (req.body[field] === "") {
+      req.body[field] = undefined;
+    }
+  });
+
   const data = await updateProductService(id as string, req.body);
   ApiResponse.success(res, {
     success: true,
@@ -119,11 +135,12 @@ export const updateProductController = catchAsync(async (req, res) => {
 
 export const deleteProductController = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const data = await deleteProductService(id as string);
+  const force = req.query.force === 'true';
+  const data = await deleteProductService(id as string, force);
   ApiResponse.success(res, {
     success: true,
     statusCode: status.OK,
-    message: 'Product deleted successfully',
+    message: force ? 'Product permanently deleted' : 'Product moved to trash',
     data,
   });
 });

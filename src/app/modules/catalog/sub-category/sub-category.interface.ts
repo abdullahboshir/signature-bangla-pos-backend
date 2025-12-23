@@ -11,4 +11,7 @@ export interface ISubCategory extends Document {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+
+  isDeleted?: boolean;
+  deletedAt?: Date;
 }

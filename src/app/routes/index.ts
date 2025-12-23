@@ -8,7 +8,12 @@ const router = Router();
 
 
 
+
+import { SystemSettingsRoutes } from "../modules/settings/system-settings/system-settings.routes.js";
+
 router.use("/v1", v1Routes);
+router.use("/v1/system-settings", SystemSettingsRoutes);
+
 
 router.get("health", (_req, res) => {
   res.status(status.OK).json({
