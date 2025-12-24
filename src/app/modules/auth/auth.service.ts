@@ -8,6 +8,9 @@ import "../iam/permission/permission.model.ts";
 import appConfig from "@shared/config/app.config.ts";
 import AppError from "@shared/errors/app-error.ts";
 import status from "http-status";
+import { PermissionService } from "../iam/permission/permission.service.js";
+
+const permissionService = new PermissionService();
 
 export const loginService = async (email: string, pass: string) => {
   const isUserExists = await User.isUserExists(email);
@@ -38,11 +41,15 @@ export const loginService = async (email: string, pass: string) => {
 
   const allRoles = isUserExists.roles?.map((r: any) => r.name) ?? [];
 
+  // Get Effective Permissions & Limits (Context)
+  const authContext = await permissionService.getAuthorizationContext(isUserExists as any);
+
   const jwtPayload: any = {
     userId: isUserExists?._id,
     id: isUserExists?.id,
     email: isUserExists?.email,
-    role: allRoles
+    role: allRoles,
+    // Add context to token payload if needed, or keep token light. Keeping token light.
   };
 
   const accessToken = createToken(
@@ -71,6 +78,12 @@ export const loginService = async (email: string, pass: string) => {
     role: allRoles, // Array of strings (legacy/simple)
     roles: isUserExists.roles, // Array of objects (populated)
     permissions: isUserExists.permissions || [], // Scoped permissions
+
+    // Authorization Context Injection
+    maxDataAccess: authContext.maxDataAccess,
+    hierarchyLevel: authContext.hierarchyLevel,
+    effectivePermissions: authContext.permissions,
+
     isSuperAdmin: isUserExists.isSuperAdmin,
     businessUnits: businessUnits // sending full object array
   }
@@ -159,7 +172,10 @@ export const refreshTokenAuthService = async (token: string) => {
 }
 
 
-export const authMeService = async (userInfo: any) => {
+export const authMeService = async (
+  userInfo: any,
+  scope?: { businessUnitId?: string; outletId?: string }
+) => {
 
   const res = await User.findOne({ _id: userInfo.userId }).populate([
     { path: 'businessUnits', select: 'name id slug' },
@@ -173,6 +189,17 @@ export const authMeService = async (userInfo: any) => {
   if (res) {
     // Standardize response: Add 'role' (string array) to match loginService
     (res as any).role = res.roles?.map((r: any) => r.name) || [];
+
+    // Inject Authorization Context
+    try {
+      const authContext = await permissionService.getAuthorizationContext(res as any, scope);
+      (res as any).maxDataAccess = authContext.maxDataAccess;
+      (res as any).hierarchyLevel = authContext.hierarchyLevel;
+      (res as any).effectivePermissions = authContext.permissions;
+    } catch (e) {
+      console.error("Failed to calculate auth context", e);
+      // Fallback or ignore
+    }
   }
 
   return res;

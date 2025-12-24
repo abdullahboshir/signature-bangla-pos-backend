@@ -3,6 +3,7 @@ import type { ISupplier } from './supplier.interface.ts';
 
 export const createSupplierService = async (data: ISupplier) => {
     // Generate simple ID if not present
+
     if (!data.id) {
         data.id = `SUP-${Date.now()}`;
     }

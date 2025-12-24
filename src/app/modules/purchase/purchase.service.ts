@@ -1,37 +1,68 @@
-import { startSession } from 'mongoose';
+import { startSession, isValidObjectId, Types } from 'mongoose';
 import AppError from "../../../shared/errors/app-error.js";
 import { Purchase } from './purchase.model.js';
 import type { IPurchase } from './purchase.interface.js';
 import { Product } from "../catalog/product/product-core/product-core.model.js";
+import { addLedgerEntryService } from "../inventory/ledger/ledger.service.js";
 
-const updateStockForPurchase = async (purchase: any, session: any) => {
+// Helper to update stock
+// Helper to update stock
+const updateStockForPurchase = async (purchase: any, session: any, action: 'add' | 'remove' = 'add') => {
     if (!purchase.outlet) {
         throw new AppError(400, "Purchase must have an outlet to update stock");
     }
-    const outletId = purchase.outlet.toString();
+    const outletId = (purchase.outlet && typeof purchase.outlet === 'object' && '_id' in purchase.outlet)
+        ? (purchase.outlet as any)._id.toString()
+        : purchase.outlet.toString();
 
     for (const item of purchase.items) {
         const product = await Product.findById(item.product).populate('inventory').session(session);
         if (product && product.inventory) {
             const inventoryDoc = product.inventory as any;
 
-            // Ensure method exists before calling (runtime safety)
-            if (typeof inventoryDoc.addStock === 'function') {
-                inventoryDoc.addStock(item.quantity, outletId);
-                await inventoryDoc.save({ session });
+            if (action === 'add') {
+                if (typeof inventoryDoc.addStock === 'function') {
+                    inventoryDoc.addStock(item.quantity, outletId);
+                } else {
+                    console.error(`addStock method missing on inventory for product ${product._id}`);
+                }
             } else {
-                console.error(`addStock method missing on inventory for product ${product._id}`);
+                if (typeof inventoryDoc.removeStock === 'function') {
+                    inventoryDoc.removeStock(item.quantity, outletId);
+                } else {
+                    console.error(`removeStock method missing on inventory for product ${product._id}`);
+                }
             }
+
+            await inventoryDoc.save({ session });
+
+            // Add to Ledger
+            await addLedgerEntryService({
+                product: item.product,
+                outlet: new Types.ObjectId(outletId),
+                type: 'purchase',
+                quantity: action === 'add' ? item.quantity : -item.quantity,
+                reference: purchase.referenceNo || purchase._id.toString(),
+                referenceType: 'Purchase',
+                remarks: action === 'add'
+                    ? `Received via Purchase ${purchase.referenceNo || ''}`
+                    : `Stock Reversal (Purchase Status Changed) - ${purchase.referenceNo || ''}`
+            }, session);
         }
     }
 };
 
-export const createPurchaseService = async (data: IPurchase) => {
+export const createPurchaseService = async (data: IPurchase, user?: any) => {
     const session = await startSession();
     session.startTransaction();
     try {
+        console.log('Purchase Data:', data);
         if (!data.id) {
             data.id = `PUR-${Date.now()}`;
+        }
+
+        if (user && user._id) {
+            data.createdBy = user._id;
         }
 
         const result = await Purchase.create([data], { session });
@@ -42,7 +73,7 @@ export const createPurchaseService = async (data: IPurchase) => {
         }
 
         if (createdPurchase.status === 'received') {
-            await updateStockForPurchase(createdPurchase, session);
+            await updateStockForPurchase(createdPurchase, session, 'add');
         }
 
         await session.commitTransaction();
@@ -78,19 +109,37 @@ export const getAllPurchasesService = async (filters: any) => {
 
     const whereConditions = andConditions.length > 0 ? { $and: andConditions } : {};
 
-    // Populate supplier and business unit details
     const result = await Purchase.find(whereConditions)
         .populate('supplier', 'name email')
         .populate('businessUnit', 'name')
+        .populate({
+            path: 'items.product',
+            select: 'name unit',
+            populate: {
+                path: 'unit',
+                select: 'name'
+            }
+        })
         .sort({ createdAt: -1 });
 
     return result;
 };
 
 export const getPurchaseByIdService = async (id: string) => {
-    const result = await Purchase.findById(id)
+    let query;
+    if (isValidObjectId(id)) {
+        query = Purchase.findById(id);
+    } else {
+        query = Purchase.findOne({ id });
+    }
+
+    const result = await query
         .populate('supplier')
         .populate('items.product', 'name sku');
+
+    if (!result) {
+        throw new AppError(404, "Purchase not found");
+    }
     return result;
 };
 
@@ -98,13 +147,16 @@ export const updatePurchaseService = async (id: string, payload: Partial<IPurcha
     const session = await startSession();
     session.startTransaction();
     try {
-        const existingPurchase = await Purchase.findById(id).session(session);
+        let query = isValidObjectId(id) ? { _id: id } : { id: id };
+
+        const existingPurchase = await Purchase.findOne(query).session(session);
         if (!existingPurchase) throw new AppError(404, "Purchase not found");
 
         const previousStatus = existingPurchase.status;
+        const realId = existingPurchase._id;
 
         // Update the purchase
-        const updatedPurchase = await Purchase.findByIdAndUpdate(id, payload, {
+        const updatedPurchase = await Purchase.findByIdAndUpdate(realId, payload, {
             new: true,
             runValidators: true,
             session
@@ -113,12 +165,12 @@ export const updatePurchaseService = async (id: string, payload: Partial<IPurcha
         if (!updatedPurchase) throw new AppError(404, "Purchase not found after update");
 
         // If status changed to 'received', add stock
-        // Note: This simple logic assumes we only add stock ONCE when it hits 'received'. 
-        // If it goes received -> pending -> received, it might double count. 
-        // For a robust system, we should track 'stockAdded' flag or similar. 
-        // For this iteration, we assume strict flow: pending -> ordered -> received.
         if (previousStatus !== 'received' && updatedPurchase.status === 'received') {
-            await updateStockForPurchase(updatedPurchase, session);
+            await updateStockForPurchase(updatedPurchase, session, 'add');
+        }
+        // If status changed FROM 'received' to something else (e.g. pending/ordered), remove stock
+        else if (previousStatus === 'received' && updatedPurchase.status !== 'received') {
+            await updateStockForPurchase(updatedPurchase, session, 'remove');
         }
 
         await session.commitTransaction();
@@ -132,6 +184,7 @@ export const updatePurchaseService = async (id: string, payload: Partial<IPurcha
 };
 
 export const deletePurchaseService = async (id: string) => {
-    const result = await Purchase.findByIdAndDelete(id);
+    let query = isValidObjectId(id) ? { _id: id } : { id: id };
+    const result = await Purchase.findOneAndDelete(query);
     return result;
 };

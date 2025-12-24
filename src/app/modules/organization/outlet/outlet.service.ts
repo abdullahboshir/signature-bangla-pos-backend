@@ -2,7 +2,6 @@ import type { IOutlet } from "./outlet.interface.ts";
 import { Outlet } from "./outlet.model.ts";
 import { Types, model } from "mongoose";
 // import ApiError from "../../../../errors/ApiError.js";
-import httpStatus from "http-status";
 
 const createOutlet = async (payload: IOutlet): Promise<IOutlet> => {
     const BusinessUnit = model("BusinessUnit");
@@ -20,10 +19,25 @@ const createOutlet = async (payload: IOutlet): Promise<IOutlet> => {
     }
 
     // Check if code exists in the same business unit
-    const isExist = await Outlet.isCodeTaken(payload.code, payload.businessUnit.toString());
-    if (isExist) {
-        throw new Error("Outlet code already exists in this Business Unit");
+    if (payload.code) {
+        const isExist = await Outlet.isCodeTaken(payload.code, payload.businessUnit.toString());
+        if (isExist) {
+            throw new Error("Outlet code already exists in this Business Unit");
+        }
+    } else {
+        // Auto-generate code if not provided
+        // Pattern: [NAME_PREFIX]-[SEQ] (e.g. DHM-01)
+        const namePrefix = payload.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, "OUT");
+        let sequence = 1;
+        let generatedCode = `${namePrefix}-${String(sequence).padStart(2, '0')}`;
+
+        while (await Outlet.isCodeTaken(generatedCode, payload.businessUnit.toString())) {
+            sequence++;
+            generatedCode = `${namePrefix}-${String(sequence).padStart(2, '0')}`;
+        }
+        payload.code = generatedCode;
     }
+
     const result = await Outlet.create(payload);
     return result;
 };

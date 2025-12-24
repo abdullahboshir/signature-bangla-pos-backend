@@ -25,6 +25,8 @@ export interface IPurchase {
     paymentMethod?: 'cash' | 'card' | 'bank_transfer' | 'mobile_banking' | 'cheque' | 'credit';
     paymentStatus?: 'pending' | 'partial' | 'paid';
     notes?: string;
+    attachment?: string; // URL/Path to invoice image
+    createdBy?: string; // ObjectId of the user who created it
     createdAt?: Date;
     updatedAt?: Date;
 }

@@ -57,8 +57,11 @@ export const refreshTokenController = catchAsync(async (req, res) => {
 
 export const authMeController = catchAsync(async (req, res) => {
   const userInfo = req.user;
+  const { businessUnitId } = req.query;
 
-  const result = await authMeService(userInfo);
+  const scope = businessUnitId ? { businessUnitId: String(businessUnitId) } : undefined;
+
+  const result = await authMeService(userInfo, scope);
 
   ApiResponse.success(
     res,

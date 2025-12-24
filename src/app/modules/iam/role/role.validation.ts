@@ -79,6 +79,8 @@ export const createRoleValidation = z.object({
   })
 });
 
-export const updateRoleValidation = createRoleValidation.partial();
+export const updateRoleValidation = z.object({
+  body: createRoleValidation.shape.body.partial()
+});
 
 export type RoleInput = z.infer<typeof createRoleValidation>['body'];

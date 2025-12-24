@@ -3,65 +3,127 @@ import { ApiResponse } from "@core/utils/api-response.ts";
 import status from "http-status";
 import { User } from "./user.model.ts";
 import mongoose from "mongoose";
+import { createCustomerService, createStaffService } from "./user.service.ts";
+import { sendImageToCloudinary } from "@core/utils/file-upload.ts";
+import { USER_ROLE } from "./user.constant.ts";
 
 export const createUserController = catchAsync(async (req, res) => {
     const userData = req.body;
+    const file = req.file;
 
-    console.log("=== CREATE USER DEBUG ===");
-    console.log("Received userData:", JSON.stringify(userData, null, 2));
+    console.log("=== CREATE USER CONTROLLER ===");
+    console.log("Role:", userData.role);
 
-    // Generate unique user ID if not provided
-    if (!userData.id) {
-        const timestamp = Date.now().toString(36);
-        const random = Math.random().toString(36).substring(2, 7);
-        userData.id = `USER_${timestamp}_${random}`.toUpperCase();
+    // Check Role Name (Frontend sends role ID, but we might need to fetch name if logic depends on "CUSTOMER" string)
+    // However, usually specific roles have specific flows.
+    // For now, let's try to detect intent.
+
+    // 1. If it's a Customer (Role Check)
+    // We need to fetch the role name first to be sure, OR assume frontend sends 'role' as ID.
+    // Let's assume we need to check the role object.
+
+    let roleId = userData.role;
+    // Fallback: Check if role is inside permissions array (Frontend sends this structure)
+    if (!roleId && userData.permissions && Array.isArray(userData.permissions) && userData.permissions.length > 0) {
+        roleId = userData.permissions[0].role;
     }
 
-    // Resolve businessUnits from slugs/IDs to ObjectIds
-    if (userData.businessUnits && Array.isArray(userData.businessUnits)) {
-        const BusinessUnit = mongoose.model("BusinessUnit");
-        const resolvedUnits = [];
+    let roleName = "";
+    const Role = mongoose.model('Role');
+    if (roleId) {
+        const roleDoc = await Role.findById(roleId);
+        if (roleDoc) roleName = roleDoc.name.toUpperCase();
+    }
 
-        for (const unit of userData.businessUnits) {
-            console.log(`Checking business unit: ${unit}`);
+    let result;
 
-            // Check if it's already an ObjectId
-            const isObjectId = mongoose.Types.ObjectId.isValid(unit) && /^[0-9a-fA-F]{24}$/.test(unit);
+    if (roleName === 'CUSTOMER') {
+        console.log(">> Creating Customer Profile...");
+        // Map userData to ICustomer
+        const customerPayload = {
+            ...userData,
+            name: {
+                firstName: userData.firstName,
+                lastName: userData.lastName
+            },
+            // Mapping businessUnits? Customers usually don't have BU assignments in the same way, or just 'customer'
+        };
+        result = await createCustomerService(customerPayload, userData.password, file);
 
-            if (isObjectId) {
-                console.log(`  → Already ObjectId: ${unit}`);
-                resolvedUnits.push(unit);
-            } else {
-                // Look up by id or slug
-                const buDoc = await BusinessUnit.findOne({
-                    $or: [{ id: unit }, { slug: unit }]
-                });
+    } else if (
+        [USER_ROLE.SUPER_ADMIN, USER_ROLE.GUEST, USER_ROLE.VENDOR].map(r => r.toUpperCase()).includes(roleName)
+    ) {
+        console.log(">> Creating Generic User (Super Admin, Guest, or Vendor)...");
 
-                if (buDoc) {
-                    console.log(`  → Found BU: ${buDoc.name} (${buDoc.id}) → ObjectId: ${buDoc._id}`);
-                    resolvedUnits.push(buDoc._id);
-                } else {
-                    console.log(`  → NOT FOUND for: ${unit}`);
-                }
-            }
+        // Generate unique user ID if not provided
+        if (!userData.id) {
+            const timestamp = Date.now().toString(36);
+            const random = Math.random().toString(36).substring(2, 7);
+            userData.id = `USER_${timestamp}_${random}`.toUpperCase();
         }
 
-        console.log("Resolved business units:", resolvedUnits);
-        userData.businessUnits = resolvedUnits;
+        // Apply Name Schema structure if flattened
+        if (!userData.name && userData.firstName) {
+            userData.name = {
+                firstName: userData.firstName,
+                lastName: userData.lastName
+            };
+        }
+
+        // Resolve businessUnits
+        if (userData.businessUnits && Array.isArray(userData.businessUnits)) {
+            const BusinessUnit = mongoose.model("BusinessUnit");
+            const resolvedUnits = [];
+            for (const unit of userData.businessUnits) {
+                const isObjectId = mongoose.Types.ObjectId.isValid(unit) && /^[0-9a-fA-F]{24}$/.test(unit);
+                if (isObjectId) resolvedUnits.push(unit);
+                else {
+                    const buDoc = await BusinessUnit.findOne({ $or: [{ id: unit }, { slug: unit }] });
+                    if (buDoc) resolvedUnits.push(buDoc._id);
+                }
+            }
+            userData.businessUnits = resolvedUnits;
+        }
+
+        // Handle Image if generic user
+        if (file) {
+            const { secure_url } = (await sendImageToCloudinary(
+                `USER-${userData.id}`,
+                file.path
+            )) as any;
+            userData.avatar = secure_url;
+        }
+
+        // Create user
+        result = await User.create(userData);
+
+    } else {
+        // DEFAULT: All other roles (Manager, Admin, Cashier, Sales Associate, and ANY DYNAMIC ROLE)
+        // are treated as STAFF and get a Staff Profile.
+        console.log(`>> Creating Staff Profile for Role: ${roleName}`);
+
+        // Map userData to IStaff
+        const staffPayload = {
+            ...userData,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            businessUnit: userData.businessUnit, // ID
+            // Ensure designation is set (fallback to Role Name if missing)
+            designation: userData.designation || roleName,
+        };
+
+        // If outlet is passed as single string 'outlet'
+        if (userData.outlet) {
+            (staffPayload as any).assignedOutlets = [userData.outlet];
+        }
+
+        result = await createStaffService(staffPayload, userData.password, file);
     }
-
-    console.log("Final userData before create:", JSON.stringify(userData, null, 2));
-
-    // Create user
-    const newUser = await User.create(userData);
-
-    console.log("Created user with businessUnits:", newUser.businessUnits);
-    console.log("=== END DEBUG ===");
 
     ApiResponse.success(res, {
         success: true,
         statusCode: status.CREATED,
-        message: "User created successfully",
-        data: newUser,
+        message: "User and Profile created successfully",
+        data: result,
     });
 });

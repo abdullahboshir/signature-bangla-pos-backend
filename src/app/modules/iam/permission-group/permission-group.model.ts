@@ -1,6 +1,6 @@
 // modules/permission/permissionGroup.model.ts
 import mongoose, { Schema } from 'mongoose';
-import type { IPermissionGroup } from './permission.interface.js';
+import type { IPermissionGroup } from '../permission/permission.interface.js';
 
 const PermissionGroupSchema = new Schema<IPermissionGroup>({
   name: {
@@ -27,8 +27,8 @@ const PermissionGroupSchema = new Schema<IPermissionGroup>({
     priority: { type: Number, default: 0 },
     inheritFrom: [{ type: String }],
     override: { type: Boolean, default: false },
-    fallback: { 
-      type: String, 
+    fallback: {
+      type: String,
       enum: ["allow", "deny"],
       default: "deny"
     }

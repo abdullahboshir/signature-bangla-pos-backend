@@ -1,5 +1,5 @@
 import type z from "zod";
-import type { PermissionActionTypeSchema, PermissionConditionSchema, PermissionEffectSchema, PermissionResolverSchema, PermissionScopeSchema, ResourceTypeSchema } from "./permission.validation.js";
+import { PermissionActionTypeSchema, PermissionEffectSchema, PermissionResolverSchema, PermissionScopeSchema, ResourceTypeSchema, ConditionOperatorSchema } from "./permission.validation.js";
 
 export const PermissionResourceType = [
   "product",
@@ -13,6 +13,14 @@ export const PermissionResourceType = [
   "supplier",
   "promotion",
   "content",
+  "staff",
+  "attribute",
+  "attributeGroup",
+  "unit",
+  "tax",
+  "warehouse",
+  "storefront",
+  "purchase",
   "user",
   "role",
   "payment",
@@ -37,7 +45,32 @@ export const PermissionResourceType = [
   "chat",
   "fraudDetection",
   "auditLog",
+  "attendance",
+  "leave",
+  "payroll",
+  "department",
+  "designation",
+  "asset",
+  "expense",
+  "budget",
+  "account",
+  "transaction",
+  "cashRegister",
+  "terminal",
+  "currency",
+  "language",
+  "zone",
+  "backup",
+  "apiKey",
+  "webhook",
+  "wishlist",
+  "cart",
+  "theme",
+  "plugin",
+  "emailTemplate",
+  "smsTemplate",
   "seo",
+
 ] as const;
 
 
@@ -61,6 +94,10 @@ export const PermissionActionType = [
   "publish",
   "unpublish",
   "escalate",
+  "print",
+  "cancel",
+  "verify",
+  "download",
 ] as const;
 
 
@@ -75,7 +112,9 @@ export const PermissionScope = [
   "team",
   "branch",
   "warehouse",
-  "between",
+  "department", // Added for HRM
+  "self",       // Critical for accessing own data
+  "between",    // This was misplaced in existing code, but kept if used as a scope? Typically 'between' is an operator.
   "regex",
   "like",
 ];
@@ -99,6 +138,9 @@ export const PermissionConditionOperator = [
   "in",
   "not-in",
   "contains",
+  "starts-with",
+  "ends-with",
+  "between",
 ];
 
 // for typescript types only
@@ -107,7 +149,7 @@ export type ActionType = z.infer<typeof PermissionActionTypeSchema>;
 export type PermissionScope = z.infer<typeof PermissionScopeSchema>;
 export type PermissionEffectType = z.infer<typeof PermissionEffectSchema>;
 export type ResolveStrategy = z.infer<typeof PermissionResolverSchema>;
-export type PermissionConditionOperatorType = z.infer<typeof PermissionConditionSchema>;
+export type PermissionConditionOperatorType = z.infer<typeof ConditionOperatorSchema>;
 
 
 

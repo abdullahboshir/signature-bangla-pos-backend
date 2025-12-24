@@ -82,6 +82,10 @@ export interface IPermissionContext {
     category?: string;
     region?: string;
   };
+  scope?: {
+    businessUnitId?: string;
+    outletId?: string;
+  };
   environment?: {
     ip?: string;
     userAgent?: string;

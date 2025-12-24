@@ -22,7 +22,7 @@ const SupplierSchema = new Schema<ISupplier>({
     toJSON: {
         virtuals: true,
         transform: function (doc, ret) {
-            delete (ret as any)._id;
+            // delete (ret as any)._id;
             delete (ret as any).__v;
         }
     }

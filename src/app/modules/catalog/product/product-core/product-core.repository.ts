@@ -15,7 +15,13 @@ export class ProductRepository {
             .populate('businessUnit')
             .populate('primaryCategory')
             .populate('pricing')
-            .populate('inventory')
+            .populate({
+                path: 'inventory',
+                populate: {
+                    path: 'outletStock.outlet',
+                    select: 'name'
+                }
+            })
             .populate('details') // Needed for images
             .populate('unit')
             .populate('brands')

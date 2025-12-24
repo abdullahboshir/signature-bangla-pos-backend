@@ -27,7 +27,9 @@ const PurchaseSchema = new Schema<IPurchase>({
     dueAmount: { type: Number, default: 0 },
     paymentMethod: { type: String, enum: ['cash', 'card', 'bank_transfer', 'mobile_banking', 'cheque', 'credit'] },
     paymentStatus: { type: String, enum: ['pending', 'partial', 'paid'], default: 'pending' },
-    notes: { type: String }
+    notes: { type: String },
+    attachment: { type: String },
+    createdBy: { type: Schema.Types.ObjectId as any, ref: 'User' }
 }, {
     timestamps: true,
     toJSON: {

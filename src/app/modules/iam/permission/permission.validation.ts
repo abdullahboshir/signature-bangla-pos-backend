@@ -2,21 +2,27 @@
 import { z } from 'zod';
 
 export const ResourceTypeSchema = z.enum([
-  'product', 'order', 'customer', 'category', 'brand', 'vendor', 
-  'supplier', 'promotion', 'content', 'user', 'role', 'payment', 
-  'shipping', 'report', 'analytics', 'system', 'inventory', 
-  'coupon', 'review', 'return', 'ticket', 'delivery'
+  'product', 'order', 'customer', 'category', 'brand', 'vendor',
+  'supplier', 'promotion', 'content', 'user', 'role', 'payment',
+  'shipping', 'report', 'analytics', 'system', 'inventory',
+  'coupon', 'review', 'return', 'ticket', 'delivery',
+  'staff', 'attribute', 'attributeGroup', 'unit', 'tax',
+  'warehouse', 'storefront', 'purchase', 'dispute', 'settlement',
+  'payout', 'chat', 'fraudDetection', 'auditLog', 'seo', 'notification', 'loyalty', 'subscription', 'affiliate', 'adCampaign',
+  'attendance', 'leave', 'payroll', 'department', 'designation', 'asset', 'expense', 'budget', 'account', 'transaction',
+  'cashRegister', 'terminal', 'currency', 'language', 'zone', 'backup', 'apiKey', 'webhook', 'wishlist', 'cart',
+  'theme', 'plugin', 'emailTemplate', 'smsTemplate'
 ]);
 
 export const PermissionActionTypeSchema = z.enum([
-  'create', 'read', 'update', 'delete', 'approve', 'reject', 
-  'export', 'import', 'manage', 'view', 'ship', 'refund', 
-  'dispatch', 'assign'
+  'create', 'read', 'update', 'delete', 'approve', 'reject',
+  'export', 'import', 'manage', 'view', 'ship', 'refund',
+  'dispatch', 'assign', 'print', 'cancel', 'verify', 'download'
 ]);
 
 export const PermissionScopeSchema = z.enum([
-  'global', 'vendor', 'category', 'region', 'businessUnit', 
-  'team', 'branch', 'warehouse'
+  'global', 'vendor', 'category', 'region', 'businessUnit',
+  'team', 'branch', 'warehouse', 'department', 'self'
 ]);
 
 export const PermissionEffectSchema = z.enum(['allow', 'deny']);
@@ -29,7 +35,8 @@ export const ResolveStrategySchema = z.enum([
 ]);
 
 export const ConditionOperatorSchema = z.enum([
-  'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'not-in', 'contains'
+  'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'not-in', 'contains',
+  'starts-with', 'ends-with', 'between'
 ]);
 
 export const PermissionConditionSchema = z.object({
@@ -121,10 +128,10 @@ export const PermissionContextSchema = z.object({
 });
 
 // Validation for creating new permissions
-export const CreatePermissionSchema = PermissionSchema.omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
+export const CreatePermissionSchema = PermissionSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
 }).extend({
   id: z.string().uuid().optional()
 });

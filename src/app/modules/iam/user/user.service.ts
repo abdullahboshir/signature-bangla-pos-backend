@@ -11,6 +11,9 @@ import appConfig from "@shared/config/app.config.ts";
 import AppError from "@shared/errors/app-error.ts";
 import type { ICustomer } from "@app/modules/customer/customer.interface.ts";
 import Customer from "@app/modules/customer/customer.model.ts";
+
+import { Staff } from "@app/modules/staff/staff.model.ts";
+import type { IStaff } from "@app/modules/staff/staff.interface.ts";
 import { sendImageToCloudinary } from "@core/utils/file-upload.ts";
 
 export const getUsersService = async (): Promise<IUser[]> => {
@@ -162,6 +165,114 @@ export const createCustomerService = async (
       throw error;
     }
     throw new AppError(500, `Failed to create customer: ${error.message}`);
+  } finally {
+    await session.endSession();
+  }
+};
+
+export const createStaffService = async (
+  staffData: IStaff,
+  password: string,
+  file: any | undefined
+) => {
+  const session = await startSession();
+  try {
+    session.startTransaction();
+
+    // 1. Check if user exists
+    // We assume staffData has an email or phone to identify
+    // But IStaff interface uses 'user' ref. The controller should pass a combined payload or we extract user fields.
+    // For now, let's assume staffData comes with an 'email' field attached (even if not in IStaff strictly, but usually passed from controller)
+    const email = (staffData as any).email;
+    const phone = (staffData as any).phone;
+
+    if (email) {
+      const isUserExists = await User.findOne({ email }).session(session);
+      if (isUserExists) throw new AppError(400, "User with this email already exists!");
+    }
+
+    if (phone) {
+      const isPhoneExists = await User.findOne({ phone }).session(session);
+      if (isPhoneExists) throw new AppError(400, "User with this phone already exists!");
+    }
+
+    // 2. Resolve Role
+    // The controller should pass the Role ID or Name. 
+    // If passed as name string in staffData.role
+    let roleId = (staffData as any).role;
+
+    // If role is not provided or just a string name, try to find it
+    if (!roleId || typeof roleId === 'string') {
+      const roleName = typeof roleId === 'string' ? roleId : (staffData.designation || 'STAFF').toUpperCase();
+      // fallback to designation if no role provided? Or Controller handles it.
+      // Better: Controller must ensure role is valid.
+      // Let's assume controller provides a valid Role ID in the user payload part.
+
+      // Use a default Staff role if not provided
+      const staffRole = await Role.findOne({ name: roleName }).session(session);
+      if (staffRole) roleId = staffRole._id;
+      else {
+        // Fallback to strict check
+        const defaultRole = await Role.findOne({ name: 'STAFF' }).session(session);
+        if (!defaultRole) throw new AppError(404, "Role not found for staff creation");
+        roleId = defaultRole._id;
+      }
+    }
+
+    // 3. Generate ID
+    const userId = await genereteCustomerId(email, roleId.toString());
+
+    // 4. Handle Avatar
+    let avatarUrl = "";
+    if (file) {
+      try {
+        const imgName = `${staffData.firstName}-${userId}`;
+        const { secure_url } = (await sendImageToCloudinary(imgName, file.path)) as any;
+        avatarUrl = secure_url;
+      } catch (e) {
+        console.error("Avatar upload failed", e);
+      }
+    }
+
+    // 5. Create User
+    const userData: Partial<IUser> = {
+      id: userId,
+      email: email,
+      phone: phone,
+      password: password || (appConfig.default_pass as string),
+      roles: [roleId],
+      businessUnits: [staffData.businessUnit], // Initial BU
+      status: "pending",
+      needsPasswordChange: !password,
+      avatar: avatarUrl,
+      name: {
+        firstName: staffData.firstName,
+        lastName: staffData.lastName
+      }
+    };
+
+    const newUser = await User.create([userData], { session });
+    if (!newUser || !newUser.length) throw new AppError(500, "Failed to create user account");
+
+    // 6. Create Staff Profile
+    const staffPayload: Partial<IStaff> = {
+      ...staffData,
+      user: newUser[0]._id,
+      isActive: true,
+      isDeleted: false
+    };
+
+    const newStaff = await Staff.create([staffPayload], { session });
+    if (!newStaff || !newStaff.length) throw new AppError(500, "Failed to create staff profile");
+
+    await session.commitTransaction();
+    console.log(`✅ Staff created: ${email} (${newStaff[0]._id})`);
+
+    return await Staff.findById(newStaff[0]._id).populate('user').populate('businessUnit');
+
+  } catch (error: any) {
+    if (session.inTransaction()) await session.abortTransaction();
+    throw new AppError(500, error.message);
   } finally {
     await session.endSession();
   }

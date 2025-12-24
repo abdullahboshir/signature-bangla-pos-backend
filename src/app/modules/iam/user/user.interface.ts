@@ -36,16 +36,6 @@ export interface IUser {
   passwordChangedAt?: Date;
   isDeleted: boolean;
   directPermissions?: IPermission[];
-  restrictions?: {
-    maxDiscountPercentage?: number;
-    allowedCategories?: Types.ObjectId[];
-    allowedVendors?: Types.ObjectId[];
-    workingHours?: {
-      start: string;
-      end: string;
-      timezone: string;
-    };
-  };
   isActive: boolean;
   lastLogin?: Date;
   loginHistory: {

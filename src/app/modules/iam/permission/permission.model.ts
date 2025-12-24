@@ -76,7 +76,6 @@ const PermissionSchema = new Schema<IPermission>(
       type: String,
       required: true,
       unique: true,
-      index: true
     },
     resource: {
       type: String,

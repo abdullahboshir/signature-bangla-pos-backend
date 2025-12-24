@@ -1,6 +1,6 @@
 import { Permission } from "@app/modules/iam/permission/permission.model.ts";
 import { Role } from "@app/modules/iam/role/role.model.ts";
-import { USER_ROLE } from "@app/modules/iam/user/user.constant.ts";
+import { USER_ROLE, USER_STATUS } from "@app/modules/iam/user/user.constant.ts";
 import { User } from "@app/modules/iam/user/user.model.ts";
 import appConfig from "@shared/config/app.config.ts";
 import mongoose from "mongoose";
@@ -105,6 +105,7 @@ export const seedSuperAdmin = async () => {
       description: "Full system access with all permissions",
       descriptionBangla: "সম্পূর্ণ সিস্টেমে অ্যাক্সেস",
       isActive: true,
+      status: USER_STATUS.ACTIVE,
       isEmailVerified: true,
       isPhoneVerified: true,
       hierarchyLevel: 100,

@@ -21,39 +21,6 @@ const NameSchema = new Schema({
   }
 }, { _id: false });
 
-// Working Hours Schema
-const WorkingHoursSchema = new Schema({
-  start: {
-    type: String,
-    required: true,
-    match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/ // HH:MM format
-  },
-  end: {
-    type: String,
-    required: true,
-    match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/ // HH:MM format
-  },
-  timezone: {
-    type: String,
-    required: true,
-    default: 'UTC'
-  }
-}, { _id: false });
-
-// Restrictions Schema
-const RestrictionsSchema = new Schema({
-  maxDiscountPercentage: {
-    type: Number,
-    min: 0,
-    max: 100
-  },
-  allowedCategories: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Category'
-  }],
-  workingHours: WorkingHoursSchema
-}, { _id: false });
-
 // Login History Schema
 const LoginHistorySchema = new Schema({
   date: {
@@ -175,9 +142,7 @@ const UserSchema = new Schema<IUser, UserStatic>({
     type: Schema.Types.ObjectId,
     ref: 'Permission'
   }],
-  restrictions: {
-    type: RestrictionsSchema
-  },
+
   settings: {
     theme: { type: String, default: 'system' },
     tableHeight: { type: String, default: '56' }

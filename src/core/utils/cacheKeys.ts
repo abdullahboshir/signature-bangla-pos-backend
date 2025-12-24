@@ -7,17 +7,29 @@ const versionKey = (entity: string) => `cache:ver:${entity}`;
 
 export async function getVersion(entity: string): Promise<number> {
   const key = versionKey(entity);
-  const v = await client.get(key);
-  if (!v) {
-    await client.set(key, '1');
+  try {
+    if (!client.isOpen) return 1;
+    const v = await client.get(key);
+    if (!v) {
+      await client.set(key, '1');
+      return 1;
+    }
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 1;
+  } catch (e) {
+    // console.warn(`Redis Error (getVersion:${entity}):`, e);
+    // Fallback gracefully without crashing
     return 1;
   }
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 1;
 }
 
 export async function bumpVersion(entity: string): Promise<number> {
-  return client.incr(versionKey(entity));
+  try {
+    if (!client.isOpen) return 1;
+    return await client.incr(versionKey(entity));
+  } catch (e) {
+    return 1;
+  }
 }
 
 export function hashPayload(payload: unknown): string {

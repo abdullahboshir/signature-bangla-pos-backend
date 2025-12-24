@@ -3,9 +3,10 @@ import status from 'http-status';
 import { Role } from './role.model.js';
 import type { IRole } from './role.interface.js';
 import { Permission } from '../permission/permission.model.js';
+import { PermissionGroup } from '../permission-group/permission-group.model.js';
 import type { JwtPayload } from 'jsonwebtoken';
 import AppError from '@shared/errors/app-error.ts';
-import { bumpVersion } from '@core/utils/cacheKeys.ts';
+
 
 class RoleService {
   // Get all roles
@@ -65,6 +66,18 @@ class RoleService {
       }
     }
 
+    // Validate permission groups
+    if (payload.permissionGroups && payload.permissionGroups.length > 0) {
+      const validGroups = await PermissionGroup.find({
+        _id: { $in: payload.permissionGroups },
+        isActive: true,
+      });
+
+      if (validGroups.length !== payload.permissionGroups.length) {
+        throw new AppError(status.BAD_REQUEST, 'Some permission groups are invalid or inactive');
+      }
+    }
+
     // Validate inherited roles
     if (payload.inheritedRoles && payload.inheritedRoles.length > 0) {
       const validRoles = await Role.find({
@@ -77,7 +90,7 @@ class RoleService {
       }
     }
 
-    const userId = user.userId || user.id || user._id || user.sub;
+    const userId = user['userId'] || user['id'] || user['_id'] || user['sub'];
 
     if (!userId) {
       throw new AppError(status.UNAUTHORIZED, "User ID missing from token");
@@ -102,9 +115,14 @@ class RoleService {
       throw new AppError(status.NOT_FOUND, 'Role not found');
     }
 
-    // Prevent updating system roles
-    if (role.isSystemRole && !payload.isSystemRole) {
-      throw new AppError(status.FORBIDDEN, 'Cannot modify system roles');
+    // Prevent unsetting system roles
+    if (role.isSystemRole && payload.isSystemRole === false) {
+      throw new AppError(status.FORBIDDEN, 'Cannot unset system role status');
+    }
+
+    // Prevent renaming system roles
+    if (role.isSystemRole && payload.name && payload.name !== role.name) {
+      throw new AppError(status.FORBIDDEN, 'Cannot rename system roles');
     }
 
     // Check if new name already exists
@@ -127,11 +145,23 @@ class RoleService {
       }
     }
 
+    // Validate permission groups if provided
+    if (payload.permissionGroups && payload.permissionGroups.length > 0) {
+      const validGroups = await PermissionGroup.find({
+        _id: { $in: payload.permissionGroups },
+        isActive: true,
+      });
+
+      if (validGroups.length !== payload.permissionGroups.length) {
+        throw new AppError(status.BAD_REQUEST, 'Some permission groups are invalid or inactive');
+      }
+    }
+
     const updatedRole = await Role.findByIdAndUpdate(
       id,
       {
         ...payload,
-        updatedBy: user[`userId`],
+        updatedBy: user['userId'],
       },
       { new: true, runValidators: true }
     ).populate('permissions');

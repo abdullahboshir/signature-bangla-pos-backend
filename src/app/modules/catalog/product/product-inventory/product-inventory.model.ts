@@ -140,11 +140,26 @@ productInventorySchema.methods['addStock'] = function (this: IProductInventoryDo
       // Create new outlet entry
       if (!this.outletStock) this.outletStock = [];
       this.outletStock.push({
-        outlet: new Schema.Types.ObjectId(outletId), // We might need to handle casting carefully or assume it's passed as ID
+        outlet: outletId,
         stock: quantity,
         reserved: 0,
         sold: 0
       } as any);
+    }
+  }
+
+  this.updateStockStatus();
+};
+
+productInventorySchema.methods['removeStock'] = function (this: IProductInventoryDocument, quantity: number, outletId?: string): void {
+  // Remove from Global
+  this.inventory.stock -= quantity;
+
+  // Remove from Outlet
+  if (outletId && this.outletStock) {
+    const outletData = this.outletStock.find((os: IOutletStock) => os.outlet.toString() === outletId);
+    if (outletData) {
+      outletData.stock -= quantity;
     }
   }
 
