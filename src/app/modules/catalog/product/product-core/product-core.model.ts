@@ -9,6 +9,14 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
   nameBangla: { type: String, trim: true },
   slug: { type: String, required: true, unique: true, index: true },
   sku: { type: String, required: true, unique: true, index: true },
+  barcode: { type: String, unique: true, sparse: true, index: true },
+  translations: [{
+    lang: { type: String, required: true },
+    field: { type: String, required: true },
+    value: { type: String, required: true }
+  }],
+  images: [{ type: String, required: true }],
+  videos: [{ type: String, trim: true }],
   unit: { type: Schema.Types.ObjectId, ref: 'Unit' },
 
   outlet: {
@@ -28,6 +36,8 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
   primaryCategory: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
   subCategory: { type: Schema.Types.ObjectId, ref: 'SubCategory' },
   childCategory: { type: Schema.Types.ObjectId, ref: 'ChildCategory' },
+  crossSellProducts: [{ type: Schema.Types.ObjectId, ref: 'Product' }],
+  upsellProducts: [{ type: Schema.Types.ObjectId, ref: 'Product' }],
   brands: [{ type: Schema.Types.ObjectId, ref: 'Brand' }],
   tags: [{ type: String, trim: true }],
   tagsBangla: [{ type: String, trim: true }],
@@ -55,7 +65,7 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
   delivery: { type: DeliveryOptionsSchema, required: true },
 
   // Product Attributes (Dynamic)
-  attributes: { type: Schema.Types.Mixed, default: {} },
+  attributes: { type: ProductAttributesSchema, default: () => ({}) },
 
   // Origin & Manufacturing
   productmodel: { type: String },
@@ -280,7 +290,11 @@ productSchema.statics['findLowStock'] = async function (): Promise<IProductDocum
 
 productSchema.statics['searchProducts'] = async function (query: string, filters: any = {}): Promise<IProductDocument[]> {
   const searchFilter: any = {
-    $text: { $search: query },
+    $or: [
+      { $text: { $search: query } },
+      { sku: query },
+      { barcode: query } // Exact match for barcode
+    ],
     'statusInfo.status': 'published'
   };
 

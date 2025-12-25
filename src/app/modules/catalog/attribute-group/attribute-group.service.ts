@@ -7,9 +7,30 @@ const createAttributeGroup = async (payload: IAttributeGroup) => {
     return result;
 };
 
-const getAllAttributeGroups = async () => {
-    const result = await AttributeGroup.find({ isActive: true });
-    return result;
+import { QueryBuilder } from "../../../../core/database/QueryBuilder.js";
+import { resolveBusinessUnitQuery } from "../../../../core/utils/query-helper.js";
+
+// ...
+
+const getAllAttributeGroups = async (query: Record<string, unknown> = {}) => {
+    // 1. Resolve Business Unit Logic
+    const finalQuery = await resolveBusinessUnitQuery(query);
+
+    // 2. Build Query
+    const attributeGroupQuery = new QueryBuilder(AttributeGroup.find(), finalQuery)
+        .search(['name'])
+        .filter()
+        .sort()
+        .paginate()
+        .fields();
+
+    const result = await attributeGroupQuery.modelQuery;
+    const meta = await attributeGroupQuery.countTotal();
+
+    return {
+        meta,
+        result
+    };
 };
 
 const getAttributeGroupById = async (id: string) => {

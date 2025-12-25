@@ -22,12 +22,12 @@ export const createCustomerController = catchAsync(async (req: any, res) => {
     req?.file
   );
 
-  ApiResponse.success(res, {
-    success: true,
-    statusCode: 201,
-    message: "Account has been Created Successfully",
-    data: newUser,
-  });
+  ApiResponse.success(
+    res,
+    newUser,
+    "Account has been Created Successfully",
+    201
+  );
 });
 
 
@@ -38,12 +38,12 @@ export const deleteUserController = catchAsync(async (req: any, res) => {
   const { id } = req.params;
   await deleteUserService(id);
 
-  ApiResponse.success(res, {
-    success: true,
-    statusCode: status.OK,
-    message: "User deleted successfully",
-    data: null,
-  });
+  ApiResponse.success(
+    res,
+    null,
+    "User deleted successfully",
+    status.OK
+  );
 });
 
 
@@ -62,50 +62,62 @@ export const deleteUserController = catchAsync(async (req: any, res) => {
 // });
 
 export const getUsersController = catchAsync(async (req: any, res) => {
-  const data = await getUsersService();
+  const result = await getUsersService(req.query);
 
-  ApiResponse.success(res, {
-    success: true,
-    statusCode: status.OK,
-    message: "Users has been retrieved Successfully",
-    data,
-  });
+  if (result && result.meta) {
+    ApiResponse.paginated(
+      res,
+      result.result,
+      result.meta.page,
+      result.meta.limit,
+      result.meta.total,
+      "Users retrieved successfully",
+      status.OK
+    );
+  } else {
+    ApiResponse.success(
+      res,
+      result,
+      "Users retrieved successfully",
+      status.OK
+    );
+  }
 });
 
 export const getSingleUserController = catchAsync(async (req: any, res) => {
   const { id } = req.params;
   const result = await getSingleUserService(id);
 
-  ApiResponse.success(res, {
-    success: true,
-    statusCode: status.OK,
-    message: "User retrieved successfully",
-    data: result,
-  });
+  ApiResponse.success(
+    res,
+    result,
+    "User retrieved successfully",
+    status.OK
+  );
 });
 
 export const updateUserController = catchAsync(async (req: any, res) => {
   const { id } = req.params;
   const updatedUser = await updateUserService(id, req.body, req.file);
 
-  ApiResponse.success(res, {
-    success: true,
-    statusCode: status.OK,
-    message: "User updated successfully",
-    data: updatedUser,
-  });
+  ApiResponse.success(
+    res,
+    updatedUser,
+    "User updated successfully",
+    status.OK
+  );
 });
 
 export const updateProfileController = catchAsync(async (req: any, res) => {
   const { userId } = req.user;
   const updatedUser = await updateProfileService(userId, req.body, req.file);
 
-  ApiResponse.success(res, {
-    success: true,
-    statusCode: status.OK,
-    message: "Profile updated successfully",
-    data: updatedUser,
-  });
+  ApiResponse.success(
+    res,
+    updatedUser,
+    "Profile updated successfully",
+    status.OK
+  );
 });
 
 
@@ -113,22 +125,22 @@ export const getUserSettingsController = catchAsync(async (req: any, res) => {
   const { id } = req.user; // Assuming user ID is in req.user from auth middleware
   const data = await getUserSettingsService(id);
 
-  ApiResponse.success(res, {
-    success: true,
-    statusCode: status.OK,
-    message: "Settings retrieved successfully",
+  ApiResponse.success(
+    res,
     data,
-  });
+    "Settings retrieved successfully",
+    status.OK
+  );
 });
 
 export const updateUserSettingsController = catchAsync(async (req: any, res) => {
   const { id } = req.user;
   const data = await updateUserSettingsService(id, req.body);
 
-  ApiResponse.success(res, {
-    success: true,
-    statusCode: status.OK,
-    message: "Settings updated successfully",
+  ApiResponse.success(
+    res,
     data,
-  });
+    "Settings updated successfully",
+    status.OK
+  );
 });

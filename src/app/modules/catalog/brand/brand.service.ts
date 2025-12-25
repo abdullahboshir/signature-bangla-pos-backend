@@ -1,74 +1,40 @@
 import type { IBrand } from "./brand.interface.ts";
 import { Brand } from "./brand.model.ts";
-import mongoose from "mongoose";
 
 const createBrand = async (payload: IBrand) => {
     // Resolve Business Unit
     if (payload.businessUnit) {
-        let businessUnit = payload.businessUnit as any;
-        if (typeof businessUnit === "string") businessUnit = businessUnit.trim();
-        const isBuObjectId = mongoose.Types.ObjectId.isValid(businessUnit) || /^[0-9a-fA-F]{24}$/.test(businessUnit);
-
-        if (!isBuObjectId) {
-            const BusinessUnit = mongoose.model("BusinessUnit"); // Dynamic import
-            const buDoc = await BusinessUnit.findOne({
-                $or: [{ id: businessUnit }, { slug: businessUnit }]
-            });
-            if (buDoc) {
-                payload.businessUnit = buDoc._id as any;
-            } else {
-                throw new Error(`Business Unit Not Found: '${businessUnit}'`);
-            }
-        }
+        payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit as any) as any;
     }
     const result = await Brand.create(payload);
     return result;
 };
 
+import { QueryBuilder } from "../../../../core/database/QueryBuilder.ts";
+import { resolveBusinessUnitQuery } from "../../../../core/utils/query-helper.ts";
+import { resolveBusinessUnitId } from "../../../../core/utils/mutation-helper.ts";
+
+// ...
+
 const getAllBrands = async (query: any) => {
-    const { limit, page, sortBy, sortOrder, searchTerm, fields, ...filters } = query;
+    // 1. Resolve Business Unit Logic
+    const finalQuery = await resolveBusinessUnitQuery(query);
 
-    // Resolve Business Unit if present in filters
-    if (filters['businessUnit']) {
-        let businessUnit = filters['businessUnit'];
-        if (typeof businessUnit === "string") businessUnit = businessUnit.trim();
-        const isBuObjectId = mongoose.Types.ObjectId.isValid(businessUnit) || /^[0-9a-fA-F]{24}$/.test(businessUnit);
+    // 2. Build Query
+    const brandQuery = new QueryBuilder(Brand.find().populate('businessUnit', 'name slug'), finalQuery)
+        .search(['name'])
+        .filter()
+        .sort()
+        .paginate()
+        .fields();
 
-        if (!isBuObjectId) { // Check if valid ObjectId
-            const BusinessUnit = mongoose.model("BusinessUnit"); // Dynamic import
-            const buDoc = await BusinessUnit.findOne({
-                $or: [{ id: businessUnit }, { slug: businessUnit }]
-            });
-            if (buDoc) {
-                // Include brands for this Business Unit OR Global (null)
-                filters['$or'] = [
-                    { businessUnit: buDoc._id },
-                    { businessUnit: null },
-                    { businessUnit: { $exists: false } }
-                ];
-                delete filters['businessUnit'];
-            } else {
-                return [];
-            }
-        } else {
-            // Even if valid ObjectID, we usually want Global too if we are in that context?
-            // But usually frontend sends slug for scoping. If ID is sent, assume loose valid.
-            // But for consistency with Category service:
-            filters['$or'] = [
-                { businessUnit: businessUnit },
-                { businessUnit: null },
-                { businessUnit: { $exists: false } }
-            ];
-            delete filters['businessUnit'];
-        }
-    }
+    const result = await brandQuery.modelQuery;
+    const meta = await brandQuery.countTotal();
 
-    if (searchTerm) {
-        filters['name'] = { $regex: searchTerm, $options: 'i' };
-    }
-
-    const result = await Brand.find(filters).populate('businessUnit', 'name slug');
-    return result;
+    return {
+        meta,
+        result
+    };
 };
 
 const getBrandById = async (id: string) => {

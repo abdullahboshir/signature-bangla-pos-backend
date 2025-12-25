@@ -25,11 +25,20 @@ import { attributeRoutes } from "@app/modules/catalog/attribute/attribute.routes
 import { AttributeGroupRoutes } from "@app/modules/catalog/attribute-group/attribute-group.route.js";
 import { BusinessUnitSettingsRoutes } from "@app/modules/organization/business-unit-setting/business-unit-settings.routes.js";
 import { storefrontRoutes } from "@app/modules/storefront/storefront.routes.ts";
+import { ProductReviewRoutes } from "@app/modules/catalog/product/product-reviews/product-reviews.routes.js";
+import { ProductQARoutes } from "@app/modules/catalog/product/product-questions/product-questions.routes.js";
 
 // Inventory & Supplier Imports
 import { SupplierRoutes } from "@app/modules/suppliers/supplier/supplier.routes.js";
 import { PurchaseRoutes } from "@app/modules/purchase/purchase.routes.js";
 import { InventoryRoutes } from "@app/modules/inventory/inventory.routes.js";
+import { ExpenseRoutes } from "@app/modules/cash/expense/expense.routes.js";
+import { ExpenseCategoryRoutes } from "@app/modules/cash/expense/expense-category.routes.js";
+import { CashRegisterRoutes } from "@app/modules/cash/cash-register/cash-register.routes.js";
+import { SalesReportRoutes } from "@app/modules/reports/sales-report/sales-report.routes.js";
+import { PurchaseReportRoutes } from "@app/modules/reports/purchase-report/purchase-report.routes.js";
+import { StockReportRoutes } from "@app/modules/reports/stock-report/stock-report.routes.js";
+import { ProfitLossRoutes } from "@app/modules/reports/profit-loss/profit-loss.routes.js";
 
 const superAdminRoutes = Router();
 
@@ -52,6 +61,8 @@ superAdminRoutes.use("/units", UnitRoutes);
 superAdminRoutes.use("/taxes", TaxRoutes);
 superAdminRoutes.use("/attributes", attributeRoutes);
 superAdminRoutes.use("/attribute-groups", AttributeGroupRoutes);
+superAdminRoutes.use("/product-questions", ProductQARoutes);
+superAdminRoutes.use("/reviews", ProductReviewRoutes);
 
 
 // Inventory & Supplier Mounts
@@ -61,5 +72,14 @@ superAdminRoutes.use("/inventory", InventoryRoutes);
 superAdminRoutes.use("/settings", BusinessUnitSettingsRoutes);
 superAdminRoutes.use("/storefront", storefrontRoutes);
 superAdminRoutes.use("/permission-groups", PermissionGroupRoutes);
+superAdminRoutes.use("/expenses", ExpenseRoutes);
+superAdminRoutes.use("/expense-categories", ExpenseCategoryRoutes);
+superAdminRoutes.use("/cash-registers", CashRegisterRoutes);
+
+// Reports
+superAdminRoutes.use("/reports/sales", SalesReportRoutes);
+superAdminRoutes.use("/reports/purchases", PurchaseReportRoutes);
+superAdminRoutes.use("/reports/stock", StockReportRoutes);
+superAdminRoutes.use("/reports/profit-loss", ProfitLossRoutes);
 
 export const adminGroupRoutes = superAdminRoutes;

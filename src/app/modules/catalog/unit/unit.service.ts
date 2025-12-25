@@ -1,70 +1,39 @@
 import type { IUnit } from './unit.interface.ts';
 import { Unit } from './unit.model.ts';
 
-import mongoose from "mongoose"; // Added import
+import { resolveBusinessUnitId } from "../../../../core/utils/mutation-helper.js";
 
 const createUnit = async (payload: IUnit) => {
     // Resolve BU if needed
     if (payload.businessUnit) {
-        let businessUnit = payload.businessUnit as any;
-        if (typeof businessUnit === "string") businessUnit = businessUnit.trim();
-        const isBuObjectId = mongoose.Types.ObjectId.isValid(businessUnit) || /^[0-9a-fA-F]{24}$/.test(businessUnit);
-
-        if (!isBuObjectId) {
-            const BusinessUnit = mongoose.model("BusinessUnit");
-            const buDoc = await BusinessUnit.findOne({ $or: [{ id: businessUnit }, { slug: businessUnit }] });
-            if (buDoc) payload.businessUnit = buDoc._id as any;
-            else throw new Error(`Business Unit Not Found: '${businessUnit}'`);
-        }
+        payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit as any) as any;
     }
     const result = await Unit.create(payload);
     return result;
 };
 
+import { QueryBuilder } from "../../../../core/database/QueryBuilder.js";
+import { resolveBusinessUnitQuery } from "../../../../core/utils/query-helper.js";
+
 const getAllUnits = async (query: Record<string, unknown> = {}) => {
-    const { businessType, businessUnitId, businessUnit, ...rest } = query;
-    const filter: any = { isDeleted: false };
+    // 1. Resolve Business Unit Logic
+    const finalQuery = await resolveBusinessUnitQuery(query);
 
-    // Normalize BU input
-    let targetBU = businessUnitId || businessUnit;
+    // 2. Build Query
+    const unitQuery = new QueryBuilder(Unit.find().populate('businessUnit'), finalQuery)
+        .search(['name'])
+        .filter()
+        .sort()
+        .paginate()
+        .fields();
 
-    if (targetBU) {
-        if (typeof targetBU === "string") targetBU = targetBU.trim();
-        const isBuObjectId = mongoose.Types.ObjectId.isValid(targetBU as string) || /^[0-9a-fA-F]{24}$/.test(targetBU as string);
+    const result = await unitQuery.modelQuery;
+    const meta = await unitQuery.countTotal();
 
-        let buId = targetBU;
-        if (!isBuObjectId) {
-            const BusinessUnit = mongoose.model("BusinessUnit");
-            const buDoc = await BusinessUnit.findOne({ $or: [{ id: targetBU }, { slug: targetBU }] });
-            if (buDoc) buId = buDoc._id;
-            else return [];
-        }
-
-        // Global + Specific
-        filter.$or = [
-            { businessUnit: buId },
-            {
-                businessUnit: null,
-                ...(businessType ? {
-                    $or: [
-                        { relatedBusinessTypes: { $in: [businessType] } },
-                        { relatedBusinessTypes: { $size: 0 } },
-                        { relatedBusinessTypes: { $exists: false } }
-                    ]
-                } : {})
-            },
-            { businessUnit: { $exists: false } }
-        ];
-    } else if (businessType) {
-        filter.$or = [
-            { relatedBusinessTypes: { $in: [businessType] } },
-            { relatedBusinessTypes: { $size: 0 } },
-            { relatedBusinessTypes: { $exists: false } }
-        ];
-    }
-
-    const result = await Unit.find(filter).populate('businessUnit');
-    return result;
+    return {
+        meta,
+        result
+    };
 };
 
 const getUnitById = async (id: string) => {

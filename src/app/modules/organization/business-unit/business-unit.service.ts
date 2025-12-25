@@ -15,6 +15,7 @@ import { generateIncreament, makeSlug } from "@core/utils/utils.common.ts";
 import { User } from "@app/modules/iam/user/user.model.ts";
 import { USER_ROLE } from "@app/modules/iam/user/user.constant.ts";
 import { Role } from "@app/modules/iam/role/role.model.ts";
+import { QueryBuilder } from "../../../../core/database/QueryBuilder.js";
 
 
 /**
@@ -344,9 +345,27 @@ export class BusinessUnitService {
     }
   }
 
-  static async getAllBusinessUnits(): Promise<IBusinessUnitCoreDocument[]> {
+  static async getAllBusinessUnits(query: Record<string, unknown> = {}): Promise<any> {
     try {
-      return await BusinessUnit.find().sort({ createdAt: -1 });
+      // 1. Resolve Business Unit Logic
+      // Usually BUs are not filtered by BU (they ARE the BU), but maybe if hierarchical?
+      // For now, standard filter is enough.
+
+      // 2. Build Query
+      const buQuery = new QueryBuilder(BusinessUnit.find(), query)
+        .search(['branding.name', 'slug'])
+        .filter()
+        .sort()
+        .paginate()
+        .fields();
+
+      const result = await buQuery.modelQuery;
+      const meta = await buQuery.countTotal();
+
+      return {
+        meta,
+        result
+      };
     } catch (error: any) {
       log.error("Failed to fetch all business units", { error: error.message });
       throw new AppError(500, "Failed to fetch all business units", "BU_FETCH_ALL_001");

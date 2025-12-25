@@ -1,13 +1,8 @@
 import type { Types } from "mongoose";
 import type { IChildCategory } from "./child-category.interface.js";
 import { ChildCategory } from "./child-category.model.js";
-
-
-
-
-import status from 'http-status';
+import { resolveBusinessUnitId } from "../../../../core/utils/mutation-helper.js";
 import mongoose from 'mongoose';
-import { ApiResponse } from '@core/utils/api-response.ts'; // You might not need this here if you throw errors instead
 
 export const createChildCategoryService = async (payload: IChildCategory) => {
     const result = await ChildCategory.create(payload)
@@ -15,38 +10,24 @@ export const createChildCategoryService = async (payload: IChildCategory) => {
 }
 
 export const createChildCategoryWithResolution = async (payload: any) => {
-    let { subCategory, businessUnit } = payload;
-
     // Resolve SubCategory
-    if (subCategory) {
-        const isSubObjectId = mongoose.Types.ObjectId.isValid(subCategory) || /^[0-9a-fA-F]{24}$/.test(subCategory);
+    if (payload.subCategory) {
+        const isSubObjectId = mongoose.Types.ObjectId.isValid(payload.subCategory) && /^[0-9a-fA-F]{24}$/.test(payload.subCategory);
         if (!isSubObjectId) {
             const SubCategory = mongoose.model("SubCategory");
             const subDoc = await SubCategory.findOne({
-                $or: [{ id: subCategory }, { slug: subCategory }]
+                $or: [{ id: payload.subCategory }, { slug: payload.subCategory }]
             });
             if (!subDoc) {
-                throw new Error(`SubCategory Not Found: '${subCategory}'`);
+                throw new Error(`SubCategory Not Found: '${payload.subCategory}'`);
             }
             payload.subCategory = subDoc._id;
         }
     }
 
-    // Resolve Business Unit
-    if (businessUnit) {
-        if (typeof businessUnit === "string") businessUnit = businessUnit.trim();
-        const isBuObjectId = mongoose.Types.ObjectId.isValid(businessUnit) || /^[0-9a-fA-F]{24}$/.test(businessUnit);
-
-        if (!isBuObjectId) {
-            const BusinessUnit = mongoose.model("BusinessUnit"); // Dynamic import
-            const buDoc = await BusinessUnit.findOne({
-                $or: [{ id: businessUnit }, { slug: businessUnit }]
-            });
-            if (!buDoc) {
-                throw new Error(`Business Unit Not Found: '${businessUnit}'`);
-            }
-            payload.businessUnit = buDoc._id;
-        }
+    // Resolve Business Unit using helper
+    if (payload.businessUnit) {
+        payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit);
     }
 
     return await createChildCategoryService(payload);
@@ -60,35 +41,30 @@ export const getChildCategoriesService = async (subCategoryId: Types.ObjectId) =
     return result;
 };
 
+import { QueryBuilder } from "../../../../core/database/QueryBuilder.js";
+import { resolveBusinessUnitQuery } from "../../../../core/utils/query-helper.js";
+
+// ...
+
 export const getAllChildCategoriesService = async (query: any) => {
-    const { limit, page, sortBy, sortOrder, searchTerm, fields, ...filters } = query;
+    // 1. Resolve Business Unit Logic
+    const finalQuery = await resolveBusinessUnitQuery(query);
 
-    // Resolve Business Unit if present in query
-    if (filters.businessUnit) {
-        let { businessUnit } = filters;
-        if (typeof businessUnit === "string") businessUnit = businessUnit.trim();
-        const isBuObjectId = mongoose.Types.ObjectId.isValid(businessUnit) || /^[0-9a-fA-F]{24}$/.test(businessUnit);
+    // 2. Build Query
+    const childCatQuery = new QueryBuilder(ChildCategory.find().populate('subCategory'), finalQuery)
+        .search(['name'])
+        .filter()
+        .sort()
+        .paginate()
+        .fields();
 
-        if (!isBuObjectId) {
-            const BusinessUnit = mongoose.model("BusinessUnit"); // Dynamic import
-            const buDoc = await BusinessUnit.findOne({
-                $or: [{ id: businessUnit }, { slug: businessUnit }]
-            });
-            if (buDoc) {
-                filters.businessUnit = buDoc._id;
-            } else {
-                // If invalid BU provided, return empty or handle error. 
-                return [];
-            }
-        }
-    }
+    const result = await childCatQuery.modelQuery;
+    const meta = await childCatQuery.countTotal();
 
-    if (searchTerm) {
-        filters['name'] = { $regex: searchTerm, $options: 'i' };
-    }
-
-    const result = await ChildCategory.find(filters).populate('subCategory');
-    return result;
+    return {
+        meta,
+        result
+    };
 };
 
 export const getChildCategoryByIdService = async (id: string) => {

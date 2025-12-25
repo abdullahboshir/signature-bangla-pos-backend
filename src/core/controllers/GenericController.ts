@@ -28,12 +28,27 @@ export class GenericController<T> {
 
     getAll = catchAsync(async (req: Request, res: Response) => {
         const result = await this.service.getAll(req.query);
-        ApiResponse.success(
-            res,
-            result,
-            `${this.entityName}s retrieved successfully`,
-            httpStatus.OK
-        );
+
+        // Check if result matches QueryBuilder output format { meta, result }
+        if (result && result.meta && Array.isArray(result.result)) {
+            ApiResponse.paginated(
+                res,
+                result.result,
+                result.meta.page,
+                result.meta.limit,
+                result.meta.total,
+                `${this.entityName}s retrieved successfully`,
+                httpStatus.OK
+            );
+        } else {
+            // Standard array response
+            ApiResponse.success(
+                res,
+                result,
+                `${this.entityName}s retrieved successfully`,
+                httpStatus.OK
+            );
+        }
     });
 
     getById = catchAsync(async (req: Request, res: Response) => {

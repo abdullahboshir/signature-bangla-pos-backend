@@ -46,11 +46,20 @@ const mapFrontendToBackendVariant = (frontendVariant: any, parentId: string, par
 
 const productRepository = new ProductRepository();
 
+import { resolveBusinessUnitId } from "../../../../../core/utils/mutation-helper.js";
+
+// ... (existing imports)
+
 export const createProductService = async (payload: any) => {
   const session = await startSession();
   session.startTransaction();
 
   try {
+    // 0. Resolve Business Unit First
+    if (payload.businessUnit) {
+      payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit);
+    }
+
     // 1. Validate Category to generate SKU prefix
     const category = await Category.findOne({ _id: payload?.primaryCategory || payload?.categories?.[0] });
     if (!category) {
@@ -126,23 +135,38 @@ export const createProductService = async (payload: any) => {
   }
 }
 
+import { QueryBuilder } from "../../../../../core/database/QueryBuilder.js";
+import { resolveBusinessUnitQuery } from "../../../../../core/utils/query-helper.js";
+
+// ...
+
 export const getAllProductsService = async (query: any) => {
-  const filter: any = {};
+  // 1. Resolve Business Unit Logic
+  const finalQuery = await resolveBusinessUnitQuery(query);
 
-  if (query.businessUnit) {
-    filter.businessUnit = query.businessUnit;
-  }
+  // 2. Build Query
+  // Populate essential fields for list view
+  const productQuery = new QueryBuilder(
+    Product.find()
+      .populate('primaryCategory')
+      .populate('brand')
+      .populate('pricing')
+      .populate('inventory'),
+    finalQuery
+  )
+    .search(['name', 'sku']) // Searchable fields
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
 
-  if (query.search) {
-    const searchRegex = new RegExp(query.search, 'i');
-    filter.$or = [
-      { name: searchRegex },
-      { sku: searchRegex },
-    ];
-  }
+  const result = await productQuery.modelQuery;
+  const meta = await productQuery.countTotal();
 
-  // Add other filters as needed
-  return await productRepository.findAll(filter);
+  return {
+    meta,
+    result
+  };
 }
 
 
@@ -158,6 +182,10 @@ export const updateProductService = async (id: string, payload: any) => {
     const product = await Product.findById(id);
     if (!product) {
       throw new AppError(404, "Product not found");
+    }
+
+    if (payload.businessUnit) {
+      payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit);
     }
 
     // Update Sub-documents

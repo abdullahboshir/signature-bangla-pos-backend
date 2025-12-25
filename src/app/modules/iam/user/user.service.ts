@@ -16,24 +16,51 @@ import { Staff } from "@app/modules/staff/staff.model.ts";
 import type { IStaff } from "@app/modules/staff/staff.interface.ts";
 import { sendImageToCloudinary } from "@core/utils/file-upload.ts";
 
-export const getUsersService = async (): Promise<IUser[]> => {
-  const users = await User.find()
-    .populate("roles")
-    .populate("businessUnits")
-    .populate({
-      path: "permissions.role",
-      select: "name"
-    })
-    .populate({
-      path: "permissions.businessUnit",
-      select: "name"
-    })
-    .populate({
-      path: "permissions.outlet",
-      select: "name"
-    })
-    .lean();
-  return users;
+import { QueryBuilder } from "../../../../core/database/QueryBuilder.js";
+import mongoose from "mongoose";
+
+// ...
+
+export const getUsersService = async (query: Record<string, unknown>) => {
+  const { searchTerm, businessUnit, ...filterData } = query;
+
+  // Handle Business Unit Filter (Array Match)
+  if (businessUnit) {
+    let buId = businessUnit as string;
+    // Resolve Slug if needed, or assume ID if verified
+    // For Users, strict ID check is safer, or consistent with others
+    // Let's assume passed as ID or Slug
+    if (!mongoose.Types.ObjectId.isValid(buId) && !/^[0-9a-fA-F]{24}$/.test(buId)) {
+      const BusinessUnit = mongoose.model("BusinessUnit");
+      const bu = await BusinessUnit.findOne({ slug: buId });
+      if (bu) buId = bu._id.toString();
+      // else ignore or fail? for filter, ignore means no match
+    }
+
+    // Users store businessUnits as array
+    (filterData as any).businessUnits = { $in: [buId] };
+  }
+
+  const userQuery = new QueryBuilder(
+    User.find()
+      .populate("roles")
+      .populate("businessUnits") // Minimal populate to keep list fast
+      .select("-password"), // safe
+    filterData
+  )
+    .search(['email', 'phone', 'name.firstName', 'name.lastName']) // Searchable fields
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  const result = await userQuery.modelQuery;
+  const meta = await userQuery.countTotal();
+
+  return {
+    meta,
+    result
+  };
 };
 
 export const createCustomerService = async (

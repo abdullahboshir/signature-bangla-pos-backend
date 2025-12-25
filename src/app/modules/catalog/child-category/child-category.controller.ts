@@ -1,4 +1,3 @@
-
 import status from 'http-status'
 import {
   createChildCategoryService,
@@ -14,96 +13,40 @@ import { ApiResponse } from '@core/utils/api-response.ts'
 import catchAsync from '@core/utils/catchAsync.ts'
 import { GenericController } from "@core/controllers/GenericController.ts";
 
-
+// Use service with resolution (no duplicate logic needed)
 export const createChildCategoryController = catchAsync(async (req, res) => {
-  let { subCategory, businessUnit } = req.body;
-
-  // Resolve SubCategory
-  if (subCategory) {
-    const isSubObjectId = mongoose.Types.ObjectId.isValid(subCategory) || /^[0-9a-fA-F]{24}$/.test(subCategory);
-    if (!isSubObjectId) {
-      const SubCategory = mongoose.model("SubCategory");
-      const subDoc = await SubCategory.findOne({
-        $or: [{ id: subCategory }, { slug: subCategory }]
-      });
-      if (!subDoc) {
-        return ApiResponse.success(res, {
-          success: false,
-          statusCode: status.NOT_FOUND,
-          message: `SubCategory Not Found: '${subCategory}'`,
-          data: null,
-        });
-      }
-      req.body.subCategory = subDoc._id;
-    }
-  }
-
-  // Resolve Business Unit
-  if (businessUnit) {
-    if (typeof businessUnit === "string") businessUnit = businessUnit.trim();
-    const isBuObjectId = mongoose.Types.ObjectId.isValid(businessUnit) || /^[0-9a-fA-F]{24}$/.test(businessUnit);
-
-    if (!isBuObjectId) {
-      const BusinessUnit = mongoose.model("BusinessUnit"); // Dynamic import
-      const buDoc = await BusinessUnit.findOne({
-        $or: [{ id: businessUnit }, { slug: businessUnit }]
-      });
-      if (!buDoc) {
-        return ApiResponse.success(res, {
-          success: false,
-          statusCode: status.NOT_FOUND,
-          message: `Business Unit Not Found: '${businessUnit}'`,
-          data: null,
-        });
-      }
-      req.body.businessUnit = buDoc._id;
-    }
-  }
-
-  const data = await createChildCategoryService(req.body);
-
-  ApiResponse.success(res, {
-    success: true,
-    statusCode: status.OK,
-    message: 'Sub Category has been Created Successfully',
-    data,
-  })
+  const data = await createChildCategoryWithResolution(req.body);
+  ApiResponse.success(res, data, 'Child Category has been Created Successfully', status.OK);
 })
-
 
 export const getChildCategoriesController = catchAsync(async (req, res) => {
   const { subCategoryId } = req.params;
 
   if (!subCategoryId) {
-    return ApiResponse.success(res, {
-      success: false,
-      statusCode: status.BAD_REQUEST,
-      message: "Child-Category ID is required",
-      data: null,
-    });
+    throw new Error("SubCategory ID is required");
   }
-  console.log(subCategoryId);
   const objectId = new mongoose.Types.ObjectId(subCategoryId);
-  const data = await getChildCategoriesService(objectId)
+  const data = await getChildCategoriesService(objectId);
 
-
-  ApiResponse.success(res, {
-    success: true,
-    statusCode: status.OK,
-    message: ' Child Category has been retrieved Successfully',
-    data,
-  })
+  ApiResponse.success(res, data, 'Child Category has been retrieved Successfully', status.OK);
 })
 
 export const getAllChildCategoriesController = catchAsync(async (req, res) => {
-  const data = await getAllChildCategoriesService(req.query);
+  const result = await getAllChildCategoriesService(req.query);
 
-  ApiResponse.success(res, {
-    success: true,
-    statusCode: status.OK,
-    message: "All Child Categories retrieved Successfully",
-    data,
-  });
+  if (result && result.meta) {
+    ApiResponse.paginated(
+      res,
+      result.result,
+      result.meta.page,
+      result.meta.limit,
+      result.meta.total,
+      "All Child Categories retrieved Successfully",
+      status.OK
+    );
+  } else {
+    ApiResponse.success(res, result, "All Child Categories retrieved Successfully", status.OK);
+  }
 });
 
 const childCategoryServiceMap = {

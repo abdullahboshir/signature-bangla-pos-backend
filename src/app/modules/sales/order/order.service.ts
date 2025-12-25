@@ -99,9 +99,37 @@ export const createOrderService = async (payload: IOrder) => {
     }
 };
 
+import { Order } from "./order.model.js";
+import { QueryBuilder } from "../../../../core/database/QueryBuilder.js";
+import { resolveBusinessUnitQuery } from "../../../../core/utils/query-helper.js";
+
+// ...
+
 export const getAllOrdersService = async (query: any) => {
-    // Add filters logic here
-    return await orderRepository.findAll(query);
+    // 1. Resolve Business Unit Logic
+    const finalQuery = await resolveBusinessUnitQuery(query);
+
+    // 2. Build Query
+    const orderQuery = new QueryBuilder(
+        Order.find()
+            .populate("customer")
+            .populate("outlet")
+            .populate("businessUnit"),
+        finalQuery
+    )
+        .search(['orderId', 'customer.name', 'paymentMethod']) // Searchable fields (customer.name might not work if not via aggregate, but kept for now. OrderId is main)
+        .filter()
+        .sort()
+        .paginate()
+        .fields();
+
+    const result = await orderQuery.modelQuery;
+    const meta = await orderQuery.countTotal();
+
+    return {
+        meta,
+        result
+    };
 };
 
 export const getOrderByIdService = async (id: string) => {

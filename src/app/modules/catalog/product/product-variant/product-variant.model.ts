@@ -7,27 +7,27 @@ import { PhysicalPropertiesSchema } from "../product-shared/product-shared.model
 const productVariantSchema = new Schema<IProductVariantDocument>({
   product: { type: Schema.Types.ObjectId, ref: 'Product', required: true, unique: true },
   hasVariants: { type: Boolean, default: false },
-  
+
   variantAttributes: [{
     name: { type: String, required: true },
     values: [{ type: String, required: true }],
-    displayType: { 
-      type: String, 
+    displayType: {
+      type: String,
       enum: ["text", "color", "image"],
-      default: "text" 
+      default: "text"
     },
     sortOrder: { type: Number, default: 0 }
   }],
-  
+
   variants: [{
     variantId: { type: String, required: true },
     parentProduct: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
     sku: { type: String, required: true, unique: true },
-    barcode: { type: String },
-    
+    barcode: { type: String, unique: true, sparse: true }, // Changed to Unique
+
     // Attributes
     attributes: { type: Map, of: String }, // { size: "XL", color: "Red" }
-    
+
     // Pricing
     pricing: {
       basePrice: { type: Number, required: true, min: 0 },
@@ -35,7 +35,7 @@ const productVariantSchema = new Schema<IProductVariantDocument>({
       costPrice: { type: Number, required: true, min: 0 },
       currency: { type: String, enum: ["BDT", "USD"], default: "BDT" }
     },
-    
+
     // Inventory
     inventory: {
       stock: { type: Number, default: 0, min: 0 },
@@ -44,17 +44,17 @@ const productVariantSchema = new Schema<IProductVariantDocument>({
       lowStockThreshold: { type: Number, default: 5 },
       allowBackorder: { type: Boolean, default: false }
     },
-    
+
     // Media
     images: [{ type: String }],
-    
+
     // Physical Properties
     physicalProperties: { type: PhysicalPropertiesSchema },
-    
-    status: { 
-      type: String, 
+
+    status: {
+      type: String,
       enum: ["active", "inactive"],
-      default: "active" 
+      default: "active"
     },
     isDefault: { type: Boolean, default: false },
     sortOrder: { type: Number, default: 0 }
@@ -65,38 +65,38 @@ const productVariantSchema = new Schema<IProductVariantDocument>({
 
 // ==================== INSTANCE METHODS ====================
 
-productVariantSchema.methods['findVariantByAttributes'] = function(attributes: Record<string, string>) {
+productVariantSchema.methods['findVariantByAttributes'] = function (attributes: Record<string, string>) {
   return this['variants'].find((variant: any) => {
-    return Object.keys(attributes).every(key => 
+    return Object.keys(attributes).every(key =>
       variant.attributes.get(key) === attributes[key]
     );
   });
 };
 
-productVariantSchema.methods['getAvailableVariants'] = function() {
-  return this['variants'].filter((variant: any) => 
-    variant.status === 'active' && 
+productVariantSchema.methods['getAvailableVariants'] = function () {
+  return this['variants'].filter((variant: any) =>
+    variant.status === 'active' &&
     (variant.inventory.stock > 0 || variant.inventory.allowBackorder)
   );
 };
 
-productVariantSchema.methods['getDefaultVariant'] = function() {
+productVariantSchema.methods['getDefaultVariant'] = function () {
   return this['variants'].find((variant: any) => variant.isDefault) || this['variants'][0];
 };
 
 // ==================== VIRTUAL PROPERTIES ====================
 
-productVariantSchema.virtual('availableVariants').get(function() {
+productVariantSchema.virtual('availableVariants').get(function () {
   return (this as any)['getAvailableVariants']();
 });
 
-productVariantSchema.virtual('defaultVariant').get(function() {
+productVariantSchema.virtual('defaultVariant').get(function () {
   return (this as any)['getDefaultVariant']();
 });
 
 // ==================== PRE-SAVE MIDDLEWARE ====================
 
-productVariantSchema.pre('save', function(next) {
+productVariantSchema.pre('save', function (next) {
   // Ensure only one variant is set as default
   if (this['variants'].filter((v: any) => v.isDefault).length > 1) {
     const defaultVariants = this['variants'].filter((v: any) => v.isDefault);

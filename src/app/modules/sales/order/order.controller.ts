@@ -14,7 +14,19 @@ export const createOrderController = catchAsync(async (req: Request, res: Respon
 
 export const getAllOrdersController = catchAsync(async (req: Request, res: Response, _next: NextFunction) => {
     const result = await getAllOrdersService(req.query);
-    ApiResponse.success(res, result, "Orders retrieved successfully");
+
+    if (result && result.meta) {
+        ApiResponse.paginated(
+            res,
+            result.result,
+            result.meta.page,
+            result.meta.limit,
+            result.meta.total,
+            "Orders retrieved successfully"
+        );
+    } else {
+        ApiResponse.success(res, result, "Orders retrieved successfully");
+    }
 });
 
 export const getOrderByIdController = catchAsync(async (req: Request, res: Response, _next: NextFunction) => {

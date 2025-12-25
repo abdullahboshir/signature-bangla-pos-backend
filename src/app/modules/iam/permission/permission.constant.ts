@@ -52,10 +52,15 @@ export const PermissionResourceType = [
   "designation",
   "asset",
   "expense",
+  "expenseCategory",
   "budget",
   "account",
   "transaction",
   "cashRegister",
+  "salesReport",
+  "purchaseReport",
+  "stockReport",
+  "profitLossReport",
   "terminal",
   "currency",
   "language",
@@ -70,7 +75,22 @@ export const PermissionResourceType = [
   "emailTemplate",
   "smsTemplate",
   "seo",
-
+  "question",
+  "courier",
+  "parcel",
+  "invoice",
+  "blacklist",
+  "pixel",
+  "event",
+  "landingPage",
+  "adjustment",
+  "transfer",
+  "abandonedCart",
+  "dashboard",
+  "reconciliation",
+  "riskRule",
+  "audience",
+  "riskProfile",
 ] as const;
 
 
@@ -98,6 +118,11 @@ export const PermissionActionType = [
   "cancel",
   "verify",
   "download",
+  "reply",
+  "block",
+  "restrict",
+  "adjust",
+  "track",
 ] as const;
 
 
@@ -117,6 +142,10 @@ export const PermissionScope = [
   "between",    // This was misplaced in existing code, but kept if used as a scope? Typically 'between' is an operator.
   "regex",
   "like",
+  "channel",
+  "segment",
+  "ip",
+  "device",
 ];
 
 export const PermissionEffect = ["allow", "deny"];
@@ -141,6 +170,8 @@ export const PermissionConditionOperator = [
   "starts-with",
   "ends-with",
   "between",
+  "regex",
+  "like",
 ];
 
 // for typescript types only

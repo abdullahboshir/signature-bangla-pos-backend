@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import { createCustomerService, createStaffService } from "./user.service.ts";
 import { sendImageToCloudinary } from "@core/utils/file-upload.ts";
 import { USER_ROLE } from "./user.constant.ts";
+import { resolveBusinessUnitIds } from "@core/utils/mutation-helper.ts";
 
 export const createUserController = catchAsync(async (req, res) => {
     const userData = req.body;
@@ -70,19 +71,9 @@ export const createUserController = catchAsync(async (req, res) => {
             };
         }
 
-        // Resolve businessUnits
+        // Resolve businessUnits using helper
         if (userData.businessUnits && Array.isArray(userData.businessUnits)) {
-            const BusinessUnit = mongoose.model("BusinessUnit");
-            const resolvedUnits = [];
-            for (const unit of userData.businessUnits) {
-                const isObjectId = mongoose.Types.ObjectId.isValid(unit) && /^[0-9a-fA-F]{24}$/.test(unit);
-                if (isObjectId) resolvedUnits.push(unit);
-                else {
-                    const buDoc = await BusinessUnit.findOne({ $or: [{ id: unit }, { slug: unit }] });
-                    if (buDoc) resolvedUnits.push(buDoc._id);
-                }
-            }
-            userData.businessUnits = resolvedUnits;
+            userData.businessUnits = await resolveBusinessUnitIds(userData.businessUnits);
         }
 
         // Handle Image if generic user

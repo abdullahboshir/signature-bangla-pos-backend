@@ -1,8 +1,8 @@
-import type { AnyZodObject } from "zod/v3"
+import type { ZodSchema } from "zod";
 import catchAsync from "../utils/catchAsync.js"
 
 
-export const validateRequest = (zodSchema: AnyZodObject) => {
+export const validateRequest = (zodSchema: ZodSchema) => {
   return catchAsync(async (req, _res, next) => {
     console.log("ValidateRequest Input Body:", JSON.stringify(req.body, null, 2));
     console.log("Content-Type:", req.headers['content-type']);

@@ -1,96 +1,36 @@
-import mongoose from "mongoose";
 import type { IAttribute } from "./attribute.interface.js";
 import { Attribute } from "./attribute.model.js";
+import { resolveBusinessUnitId } from "../../../../core/utils/mutation-helper.js";
+import { QueryBuilder } from "../../../../core/database/QueryBuilder.js";
+import { resolveBusinessUnitQuery } from "../../../../core/utils/query-helper.js";
 
 export const createAttributeService = async (payload: IAttribute) => {
-    // Resolve Business Unit if passed as string (copying pattern from other services)
-    if (payload.businessUnit && typeof payload.businessUnit === 'string') {
-        const buId = payload.businessUnit as string;
-        const isBuObjectId = mongoose.Types.ObjectId.isValid(buId) || /^[0-9a-fA-F]{24}$/.test(buId);
-        if (!isBuObjectId) {
-            const BusinessUnit = mongoose.model("BusinessUnit"); // Dynamic
-            const buDoc = await BusinessUnit.findOne({
-                $or: [{ id: buId }, { slug: buId }]
-            });
-            if (buDoc) payload.businessUnit = buDoc._id;
-            else throw new Error(`Business Unit Not Found: '${buId}'`);
-        }
+    if (payload.businessUnit) {
+        payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit as any) as any;
     }
-
     const result = await Attribute.create(payload);
     return result;
 };
 
 export const getAllAttributesService = async (query: Record<string, any>) => {
-    const { searchTerm, page, limit, sortBy, sortOrder, fields, ...filters } = query;
+    // 1. Resolve Business Unit Logic
+    const finalQuery = await resolveBusinessUnitQuery(query);
 
-    // Pagination defaults
-    const pageNumber = Number(page) || 1;
-    const limitNumber = Number(limit) || 0; // 0 means no limit (all) if not specified, or use default e.g. 10
-    const skip = (pageNumber - 1) * limitNumber;
+    // 2. Build Query
+    const attributeQuery = new QueryBuilder(Attribute.find(), finalQuery)
+        .search(['name'])
+        .filter()
+        .sort()
+        .paginate()
+        .fields();
 
-    const andConditions = [];
+    const result = await attributeQuery.modelQuery;
+    const meta = await attributeQuery.countTotal();
 
-    if (searchTerm) {
-        andConditions.push({
-            name: { $regex: searchTerm, $options: "i" }
-        });
-    }
-
-    if (Object.keys(filters).length) {
-        // Special Handling for Business Unit: Include Global
-        if (filters['businessUnit']) {
-            let businessUnit = filters['businessUnit'];
-            if (typeof businessUnit === "string") businessUnit = businessUnit.trim();
-            const isBuObjectId = mongoose.Types.ObjectId.isValid(businessUnit) || /^[0-9a-fA-F]{24}$/.test(businessUnit);
-
-            let buId = businessUnit;
-            if (!isBuObjectId) {
-                const BusinessUnit = mongoose.model("BusinessUnit");
-                const buDoc = await BusinessUnit.findOne({ $or: [{ id: businessUnit }, { slug: businessUnit }] });
-                if (buDoc) buId = buDoc._id;
-                else return []; // BU not found
-            }
-
-            // Remove direct BU filter, add $or logic to AND conditions
-            delete filters['businessUnit'];
-            andConditions.push({
-                $or: [
-                    { businessUnit: buId },
-                    { businessUnit: null },
-                    { businessUnit: { $exists: false } }
-                ]
-            });
-        }
-
-        if (Object.keys(filters).length) {
-            andConditions.push({
-                $and: Object.entries(filters).map(([field, value]) => ({
-                    [field]: value
-                }))
-            });
-        }
-    }
-
-    const whereConditions = andConditions.length > 0 ? { $and: andConditions } : {};
-
-    // Sort logic
-    const sortConditions: { [key: string]: any } = {};
-    if (sortBy) {
-        sortConditions[sortBy as string] = sortOrder === 'desc' ? -1 : 1;
-    } else {
-        sortConditions['createdAt'] = -1;
-    }
-
-    const queryBuilder = Attribute.find(whereConditions)
-        .sort(sortConditions);
-
-    if (limitNumber > 0) {
-        queryBuilder.skip(skip).limit(limitNumber);
-    }
-
-    const result = await queryBuilder;
-    return result;
+    return {
+        meta,
+        result
+    };
 };
 
 export const getAttributeByIdService = async (id: string) => {

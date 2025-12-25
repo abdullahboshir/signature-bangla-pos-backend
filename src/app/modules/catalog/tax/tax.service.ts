@@ -1,56 +1,39 @@
 import type { ITax } from "./tax.interface.ts";
 import { Tax } from "./tax.model.ts";
-
-
-import mongoose from "mongoose";
+import { resolveBusinessUnitId } from "../../../../core/utils/mutation-helper.js";
+import { QueryBuilder } from "../../../../core/database/QueryBuilder.js";
+import { resolveBusinessUnitQuery } from "../../../../core/utils/query-helper.js";
 
 const create = async (payload: ITax) => {
-    // Resolve BU if needed
     if (payload.businessUnit) {
-        let businessUnit = payload.businessUnit as any;
-        if (typeof businessUnit === "string") businessUnit = businessUnit.trim();
-        const isBuObjectId = mongoose.Types.ObjectId.isValid(businessUnit) || /^[0-9a-fA-F]{24}$/.test(businessUnit);
-
-        if (!isBuObjectId) {
-            const BusinessUnit = mongoose.model("BusinessUnit");
-            const buDoc = await BusinessUnit.findOne({ $or: [{ id: businessUnit }, { slug: businessUnit }] });
-            if (buDoc) payload.businessUnit = buDoc._id as any;
-            else throw new Error(`Business Unit Not Found: '${businessUnit}'`);
-        }
+        payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit as any) as any;
     }
     const result = await Tax.create(payload);
     return result;
 };
 
 const getAll = async (query: Record<string, unknown> = {}) => {
-    const { businessUnitId, businessUnit, ...rest } = query;
-    const filter: any = { isDeleted: false };
+    // Use centralized BU resolution
+    const finalQuery = await resolveBusinessUnitQuery(query);
 
-    // Normalize BU input
-    let targetBU = businessUnitId || businessUnit;
+    // Build query with QueryBuilder
+    const taxQuery = new QueryBuilder(
+        Tax.find().populate('businessUnit', 'name slug'),
+        finalQuery
+    )
+        .search(['name', 'rate'])
+        .filter()
+        .sort()
+        .paginate()
+        .fields();
 
-    if (targetBU) {
-        if (typeof targetBU === "string") targetBU = targetBU.trim();
-        const isBuObjectId = mongoose.Types.ObjectId.isValid(targetBU as string) || /^[0-9a-fA-F]{24}$/.test(targetBU as string);
+    const result = await taxQuery.modelQuery;
+    const meta = await taxQuery.countTotal();
 
-        let buId = targetBU;
-        if (!isBuObjectId) {
-            const BusinessUnit = mongoose.model("BusinessUnit"); // Dynamic import
-            const buDoc = await BusinessUnit.findOne({ $or: [{ id: targetBU }, { slug: targetBU }] });
-            if (buDoc) buId = buDoc._id;
-            else return [];
-        }
-
-        // Fetch Global Taxes + Business Specific Taxes
-        filter.$or = [
-            { businessUnit: buId },
-            { businessUnit: null },
-            { businessUnit: { $exists: false } }
-        ];
-    }
-
-    const result = await Tax.find(filter).sort({ createdAt: -1 });
-    return result;
+    return {
+        meta,
+        result
+    };
 };
 
 const getById = async (id: string) => {

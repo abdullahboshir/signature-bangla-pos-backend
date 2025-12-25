@@ -14,6 +14,12 @@ export interface IProductCore {
   nameBangla?: string;
   slug: string;
   sku: string;
+  barcode?: string;
+  translations?: {
+    lang: string;
+    field: string;
+    value: string;
+  }[];
   unit?: Types.ObjectId;
   outlet: Types.ObjectId;
   businessUnit: Types.ObjectId;
@@ -27,9 +33,14 @@ export interface IProductCore {
   primaryCategory: Types.ObjectId;
   subCategory?: Types.ObjectId;
   childCategory?: Types.ObjectId;
+  crossSellProducts?: Types.ObjectId[];
+  upsellProducts?: Types.ObjectId[];
   brands: Types.ObjectId[];
   tags: string[];
   tagsBangla?: string[];
+  images: string[];
+  videos?: string[];
+
   pricing: Types.ObjectId;
   inventory: Types.ObjectId;
   shipping: Types.ObjectId;
