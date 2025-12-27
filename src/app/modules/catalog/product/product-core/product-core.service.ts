@@ -140,38 +140,46 @@ import { resolveBusinessUnitQuery } from "../../../../../core/utils/query-helper
 
 // ...
 
+import { CacheManager } from "../../../../../core/utils/caching/cache-manager.js";
+
 export const getAllProductsService = async (query: any) => {
-  // 1. Resolve Business Unit Logic
+  // Generate cache key based on query (before business unit resolution to avoid async issues in key gen if possible, but actually we need full query uniqueness)
+  // Actually, resolving BU first is safer for uniqueness if BU is injected.
   const finalQuery = await resolveBusinessUnitQuery(query);
+  const cacheKey = `product:list:${JSON.stringify(finalQuery)}`;
 
-  // 2. Build Query
-  // Populate essential fields for list view
-  const productQuery = new QueryBuilder(
-    Product.find()
-      .populate('primaryCategory')
-      .populate('brand')
-      .populate('pricing')
-      .populate('inventory'),
-    finalQuery
-  )
-    .search(['name', 'sku']) // Searchable fields
-    .filter()
-    .sort()
-    .paginate()
-    .fields();
+  return await CacheManager.wrap(cacheKey, async () => {
+    // 2. Build Query
+    // Populate essential fields for list view
+    const productQuery = new QueryBuilder(
+      Product.find()
+        .populate('primaryCategory')
+        .populate('brand')
+        .populate('pricing')
+        .populate('inventory'),
+      finalQuery
+    )
+      .search(['name', 'sku']) // Searchable fields
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
 
-  const result = await productQuery.modelQuery;
-  const meta = await productQuery.countTotal();
+    const result = await productQuery.modelQuery;
+    const meta = await productQuery.countTotal();
 
-  return {
-    meta,
-    result
-  };
+    return {
+      meta,
+      result
+    };
+  }, 60); // 60s TTL for lists
 }
 
 
 export const getProductByIdService = async (id: string) => {
-  return await productRepository.findById(id);
+  return await CacheManager.wrap(`product:id:${id}`, async () => {
+    return await productRepository.findById(id);
+  }, 300);
 }
 
 export const updateProductService = async (id: string, payload: any) => {
@@ -248,6 +256,10 @@ export const updateProductService = async (id: string, payload: any) => {
 
     await session.commitTransaction();
     session.endSession();
+
+    // Invalidate Cache
+    await CacheManager.del(`product:id:${id}`);
+
     return updatedProduct;
 
   } catch (error) {
@@ -280,6 +292,10 @@ export const deleteProductService = async (id: string, force: boolean = false) =
       throw new AppError(404, "Product not found");
     }
 
+
+    // Invalidate Cache
+    await CacheManager.del(`product:id:${id}`);
+
     return { message: "Product moved to trash (Soft Delete)" };
   }
 
@@ -305,6 +321,10 @@ export const deleteProductService = async (id: string, force: boolean = false) =
 
     await session.commitTransaction();
     session.endSession();
+
+    // Invalidate Cache
+    await CacheManager.del(`product:id:${id}`);
+
     return { message: "Product permanently deleted" };
   } catch (error) {
     await session.abortTransaction();

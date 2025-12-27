@@ -51,5 +51,7 @@ const unitSchema = new Schema<IUnit, UnitModel>(
 // Unique compound index: same unit name/symbol within same business unit should be unique
 unitSchema.index({ name: 1, businessUnit: 1 }, { unique: true });
 unitSchema.index({ symbol: 1, businessUnit: 1 }, { unique: true });
+unitSchema.index({ status: 1 });
+unitSchema.index({ businessUnit: 1 });
 
 export const Unit = model<IUnit, UnitModel>('Unit', unitSchema);

@@ -109,8 +109,8 @@ productVariantSchema.pre('save', function (next) {
 
 // ==================== INDEXES ====================
 
-productVariantSchema.index({ product: 1 });
-productVariantSchema.index({ 'variants.sku': 1 });
+// productVariantSchema.index({ product: 1 }); // Covered by unique: true
+// productVariantSchema.index({ 'variants.sku': 1 }); // Covered by unique: true nested
 productVariantSchema.index({ 'variants.status': 1 });
 productVariantSchema.index({ 'variants.isDefault': 1 });
 

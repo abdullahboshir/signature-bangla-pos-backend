@@ -203,17 +203,18 @@ const CustomerSchema = new Schema<ICustomer>(
 
 // Index for better query performance 
 CustomerSchema.index({ "name.firstName": 1, "name.lastName": 1 });
+CustomerSchema.index({ createdAt: -1 }); // New Customers Report
 CustomerSchema.index({ loyaltyPoints: -1 });
-CustomerSchema.index({ membershipTier: 1 }); 
+CustomerSchema.index({ membershipTier: 1 });
 
 // Virtual for full name
 CustomerSchema.virtual("fullName").get(function () {
- if(!this.name) return "";
+  if (!this.name) return "";
   return `${this.name.firstName} ${this.name.lastName}`;
 });
 
 CustomerSchema.virtual("fullNameBangla").get(function () {
-  if(!this.name) return "";
+  if (!this.name) return "";
   return `${this.name.firstNameBangla || ""} ${this.name.lastNameBangla || ""}`.trim();
 });
 

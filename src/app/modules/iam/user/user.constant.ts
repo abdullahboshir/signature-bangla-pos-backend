@@ -6,11 +6,13 @@ export const USER_ROLE = {
   CUSTOMER: 'customer',
   DELIVERY_MAN: 'delivery-man',
   SUPPORT_AGENT: 'support-agent',
-  GUEST: 'guest',
+  ACCOUNTANT: 'accountant',
+  HR_MANAGER: 'hr_manager',
+  STAFF: 'staff',
   CASHIER: 'cashier',
   SALES_ASSOCIATE: 'sales_associate',
   STORE_KEEPER: 'store_keeper',
-  STAFF: 'staff'
+  GUEST: 'guest',
 } as const;
 
 export const USER_STATUS = {

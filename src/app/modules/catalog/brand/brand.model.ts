@@ -43,6 +43,9 @@ const BrandSchema = new Schema<IBrand>(
     { timestamps: true }
 );
 
+BrandSchema.index({ businessUnit: 1 });
+BrandSchema.index({ status: 1 });
+
 BrandSchema.pre("save", function (next) {
     if (this.isModified("name")) {
         this.slug = makeSlug(this.name);

@@ -49,6 +49,11 @@ const ChildCategorySchema = new Schema<IChildCategory>(
   { timestamps: true }
 );
 
+ChildCategorySchema.index({ businessUnit: 1 });
+ChildCategorySchema.index({ subCategory: 1 });
+ChildCategorySchema.index({ isActive: 1 });
+ChildCategorySchema.index({ slug: 1, businessUnit: 1 }, { unique: true });
+
 
 
 ChildCategorySchema.pre('save', function (next) {

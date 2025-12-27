@@ -16,6 +16,7 @@ import { User } from "@app/modules/iam/user/user.model.ts";
 import { USER_ROLE } from "@app/modules/iam/user/user.constant.ts";
 import { Role } from "@app/modules/iam/role/role.model.ts";
 import { QueryBuilder } from "../../../../core/database/QueryBuilder.js";
+import { CacheManager } from "../../../../core/utils/caching/cache-manager.js";
 
 
 /**
@@ -206,28 +207,30 @@ export class BusinessUnitService {
   static async getBusinessUnitById(
     idOrSlug: string
   ): Promise<IBusinessUnitCoreDocument | null> {
-    try {
-      // Check if it's a valid ObjectId (hex string of 24 chars)
-      const isObjectId = /^[0-9a-fA-F]{24}$/.test(idOrSlug);
+    return await CacheManager.wrap(`businessUnit:${idOrSlug}`, async () => {
+      try {
+        // Check if it's a valid ObjectId (hex string of 24 chars)
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(idOrSlug);
 
-      const query = isObjectId
-        ? { _id: idOrSlug }
-        : { $or: [{ slug: idOrSlug }, { id: idOrSlug }] };
+        const query = isObjectId
+          ? { _id: idOrSlug }
+          : { $or: [{ slug: idOrSlug }, { id: idOrSlug }] };
 
-      const businessUnit = await BusinessUnit.findOne(query)
-        .populate("attributeGroup")
-        .populate("attributeGroups");
+        const businessUnit = await BusinessUnit.findOne(query)
+          .populate("attributeGroup")
+          .populate("attributeGroups");
 
-      return businessUnit;
+        return businessUnit;
 
-    } catch (error: any) {
-      log.error("Failed to fetch business unit", { error: error.message });
-      throw new AppError(
-        500,
-        "Failed to fetch business unit",
-        "BU_FETCH_001"
-      );
-    }
+      } catch (error: any) {
+        log.error("Failed to fetch business unit", { error: error.message });
+        throw new AppError(
+          500,
+          "Failed to fetch business unit",
+          "BU_FETCH_001"
+        );
+      }
+    }, 60); // 60s TTL
   }
 
 

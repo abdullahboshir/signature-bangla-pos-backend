@@ -78,7 +78,39 @@ app.get("/", (_req, res) => {
     version: "v1.0.0",
     documentation: "/api/v1/docs",
     timestamp: new Date().toISOString(),
+    processId: process.pid,
   });
+});
+
+import { QueueService } from "./app/modules/queue/queue.service.ts";
+import { QUEUE_NAMES } from "./app/modules/queue/queue.interface.ts";
+import { CacheManager } from "./core/utils/caching/cache-manager.ts";
+
+// TEMP: Verification Route
+app.get("/test-scalability", async (_req, res) => {
+  try {
+    // 1. Test Cache
+    await CacheManager.set("verification-check", { status: "Cache Working" }, 60);
+    const cacheResult = await CacheManager.get("verification-check");
+
+    // 2. Test Queue
+    await QueueService.addJob(QUEUE_NAMES.EMAIL, "verification-email", {
+      to: "admin@signature-bangla.com",
+      subject: "Verification",
+      body: `Processed by Worker ${process.pid}`,
+    });
+
+    res.json({
+      success: true,
+      message: "Scalability Verification Complete",
+      worker_process_id: process.pid,
+      cache_check: cacheResult,
+      queue_check: "Job Dispatched to 'email-queue'",
+      note: "Check terminal logs for '✅ Redis HIT' and '📨 Processing Email Job'",
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.use(notFound);

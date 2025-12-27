@@ -66,6 +66,8 @@ const outletSchema = new Schema<IOutlet, IOutletModel>(
 
 // Compound index to ensure unique code per business unit
 outletSchema.index({ code: 1, businessUnit: 1 }, { unique: true });
+outletSchema.index({ isActive: 1 });
+outletSchema.index({ manager: 1 });
 
 outletSchema.statics['isCodeTaken'] = async function (code: string, businessUnitId: string): Promise<boolean> {
     const existingOutlet = await this.findOne({ code, businessUnit: businessUnitId });

@@ -36,4 +36,8 @@ const inventoryAdjustmentSchema = new Schema<IInventoryAdjustment>({
     timestamps: true
 });
 
+inventoryAdjustmentSchema.index({ outlet: 1, date: -1 });
+inventoryAdjustmentSchema.index({ status: 1 });
+inventoryAdjustmentSchema.index({ 'items.product': 1 });
+
 export const InventoryAdjustment = model<IInventoryAdjustment>('InventoryAdjustment', inventoryAdjustmentSchema);

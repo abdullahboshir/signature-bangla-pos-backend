@@ -6,18 +6,18 @@ import { ApiResponse } from "@core/utils/api-response.ts";
 export class GenericController<T> {
     constructor(
         private service: {
-            create: (data: any) => Promise<any>;
-            getAll: (filters: any) => Promise<any>;
-            getById: (id: string) => Promise<any>;
-            update: (id: string, data: any) => Promise<any>;
-            delete: (id: string) => Promise<any>;
+            create: (data: any, user?: any) => Promise<any>;
+            getAll: (filters: any, user?: any) => Promise<any>;
+            getById: (id: string, user?: any) => Promise<any>;
+            update: (id: string, data: any, user?: any) => Promise<any>;
+            delete: (id: string, user?: any) => Promise<any>;
             [key: string]: any; // Allow other methods
         },
         private entityName: string
     ) { }
 
     create = catchAsync(async (req: Request, res: Response) => {
-        const result = await this.service.create(req.body);
+        const result = await this.service.create(req.body, (req as any).user);
         ApiResponse.success(
             res,
             result,
@@ -27,7 +27,7 @@ export class GenericController<T> {
     });
 
     getAll = catchAsync(async (req: Request, res: Response) => {
-        const result = await this.service.getAll(req.query);
+        const result = await this.service.getAll(req.query, (req as any).user);
 
         // Check if result matches QueryBuilder output format { meta, result }
         if (result && result.meta && Array.isArray(result.result)) {
@@ -54,7 +54,7 @@ export class GenericController<T> {
     getById = catchAsync(async (req: Request, res: Response) => {
         const { id } = req.params;
         if (!id) throw new Error("ID parameter is required");
-        const result = await this.service.getById(id);
+        const result = await this.service.getById(id, (req as any).user);
         ApiResponse.success(
             res,
             result,
@@ -66,7 +66,7 @@ export class GenericController<T> {
     update = catchAsync(async (req: Request, res: Response) => {
         const { id } = req.params;
         if (!id) throw new Error("ID parameter is required");
-        const result = await this.service.update(id, req.body);
+        const result = await this.service.update(id, req.body, (req as any).user);
         ApiResponse.success(
             res,
             result,
@@ -78,7 +78,7 @@ export class GenericController<T> {
     delete = catchAsync(async (req: Request, res: Response) => {
         const { id } = req.params;
         if (!id) throw new Error("ID parameter is required");
-        const result = await this.service.delete(id);
+        const result = await this.service.delete(id, (req as any).user);
         ApiResponse.success(
             res,
             result,

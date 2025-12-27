@@ -109,8 +109,10 @@ const businessUnitAnalyticsSchema = new Schema<IBusinessUnitAnalyticsDocument>({
 
 // Indexes
 businessUnitAnalyticsSchema.index({ businessUnit: 1, date: 1, period: 1 }, { unique: true });
-businessUnitAnalyticsSchema.index({ date: 1 });
+businessUnitAnalyticsSchema.index({ date: -1 });
 businessUnitAnalyticsSchema.index({ period: 1 });
+businessUnitAnalyticsSchema.index({ "sales.revenue": -1 });
+businessUnitAnalyticsSchema.index({ "traffic.sessions": -1 });
 
 export const BusinessUnitAnalytics = model<IBusinessUnitAnalyticsDocument>('BusinessUnitAnalytics', businessUnitAnalyticsSchema);
 

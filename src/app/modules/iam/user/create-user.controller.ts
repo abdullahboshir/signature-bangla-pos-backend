@@ -24,9 +24,15 @@ export const createUserController = catchAsync(async (req, res) => {
     // Let's assume we need to check the role object.
 
     let roleId = userData.role;
-    // Fallback: Check if role is inside permissions array (Frontend sends this structure)
+    // Fallback: Check if role is inside permissions array (Frontend sends this structure in Add User Page)
     if (!roleId && userData.permissions && Array.isArray(userData.permissions) && userData.permissions.length > 0) {
         roleId = userData.permissions[0].role;
+    }
+    // Fallback 2: Check if role is inside roles array (Frontend sends this in Staff Modal)
+    if (!roleId && userData.roles && Array.isArray(userData.roles) && userData.roles.length > 0) {
+        // user.roles can be array of IDs or Objects (if populated, but usually IDs in create payload)
+        const firstRole = userData.roles[0];
+        roleId = typeof firstRole === 'string' ? firstRole : firstRole._id || firstRole.id;
     }
 
     let roleName = "";

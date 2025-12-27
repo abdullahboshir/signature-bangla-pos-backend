@@ -1,5 +1,5 @@
 import { PermissionGroup } from "@app/modules/iam/permission-group/permission-group.model.ts";
-import { PermissionActionType, PermissionResourceType, type ActionType, type ResourceType } from "@app/modules/iam/permission/permission.constant.ts";
+import { PermissionActionType, PermissionResourceType, PermissionSourceObj, type ActionType, type ResourceType } from "@app/modules/iam/permission/permission.constant.ts";
 import { Permission } from "@app/modules/iam/permission/permission.model.ts";
 import { Role } from "@app/modules/iam/role/role.model.ts";
 import { USER_ROLE } from "@app/modules/iam/user/user.constant.ts";
@@ -109,9 +109,11 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
       resourceGroupsMap[resource] = newGroup._id;
       groupsCreated++;
     } else {
-      // Update permissions if needed (optional sync)
-      // For now, just track the ID
+      // Update permissions to ensure they are in sync (fix for stale IDs)
+      existingGroup.permissions = permIds as any;
+      await existingGroup.save();
       resourceGroupsMap[resource] = existingGroup._id;
+      // console.log(`🔄 Updated permissions for group: ${groupName}`);
     }
   }
   console.log(`✅ Verified/Created ${groupsCreated} Resource-Based Permission Groups.`);
@@ -133,8 +135,11 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
     fullGroupId = group._id;
     console.log("✅ Created Full Access PermissionGroup");
   } else {
+    // Sync full access permissions
+    fullAccessGroup.permissions = allPermissionIds as any;
+    await fullAccessGroup.save();
     fullGroupId = fullAccessGroup._id;
-    console.log("✅ Full Access PermissionGroup already exists");
+    console.log("✅ Updated Full Access PermissionGroup permissions");
   }
 
   // --------------------------
@@ -144,59 +149,165 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
   // Helpers to get group IDs safely
   const getGroupId = (res: string) => resourceGroupsMap[res] || null;
 
+  /* Use PermissionSourceObj for Type Safety */
   const roleConfigs = [
     {
       name: USER_ROLE.SUPER_ADMIN,
-      permissions: [], // Using Full Access Group instead
-      permissionGroups: [fullGroupId],
+      permissions: [],
+      permissionGroups: [fullGroupId], // 👑 God Mode
       hierarchyLevel: 100,
       isDefault: false
     },
     {
       name: USER_ROLE.ADMIN,
       permissions: [],
-      permissionGroups: [fullGroupId], // Admin gets full access too, or can be restricted
+      // 💼 Business Admin: Full Operational Access, No System/Dev ops
+      permissionGroups: [
+        getGroupId(PermissionSourceObj.product),
+        getGroupId(PermissionSourceObj.order),
+        getGroupId(PermissionSourceObj.inventory),
+        getGroupId(PermissionSourceObj.purchase),
+        getGroupId(PermissionSourceObj.supplier),
+        getGroupId(PermissionSourceObj.customer),
+        getGroupId(PermissionSourceObj.user),      // Manage Staff
+        getGroupId(PermissionSourceObj.role),      // Manage Business Roles
+        getGroupId(PermissionSourceObj.report),
+        getGroupId(PermissionSourceObj.finance),
+        getGroupId(PermissionSourceObj.expense),
+        getGroupId(PermissionSourceObj.payment),
+        getGroupId(PermissionSourceObj.department), // hrm/marketing might not exist, use department/leave etc
+        getGroupId(PermissionSourceObj.leave),
+        getGroupId(PermissionSourceObj.attendance),
+        getGroupId(PermissionSourceObj.storefront)
+      ].filter(id => id !== null) as Types.ObjectId[],
       hierarchyLevel: 90,
       isDefault: false
     },
     {
-      name: USER_ROLE.CUSTOMER,
+      name: USER_ROLE.MANAGER,
       permissions: [],
-      // Assign specific groups: Product, Review, maybe Profile/User
+      // 👔 Manager: Operations & Staff Management
       permissionGroups: [
-        getGroupId('product'),
-        getGroupId('review'),
-        getGroupId('cart'),
-        getGroupId('wishlist')
+        getGroupId(PermissionSourceObj.product),
+        getGroupId(PermissionSourceObj.order),
+        getGroupId(PermissionSourceObj.inventory),
+        getGroupId(PermissionSourceObj.purchase),
+        getGroupId(PermissionSourceObj.supplier),
+        getGroupId(PermissionSourceObj.customer),
+        getGroupId(PermissionSourceObj.user),
+        getGroupId(PermissionSourceObj.report),
+        getGroupId(PermissionSourceObj.expense),
+        getGroupId(PermissionSourceObj.attendance), // hrm decomposed
+        getGroupId(PermissionSourceObj.leave)
       ].filter(id => id !== null) as Types.ObjectId[],
-      hierarchyLevel: 10,
-      isDefault: true
+      hierarchyLevel: 50,
+      isDefault: false
     },
     {
-      name: USER_ROLE.SUPPORT_AGENT,
+      name: USER_ROLE.ACCOUNTANT,
       permissions: [],
-      // specific groups: Ticket, Customer, Order, Return
+      // 📊 Accountant: Strict Financial Access
       permissionGroups: [
-        getGroupId('ticket'),
-        getGroupId('customer'),
-        getGroupId('order'),
-        getGroupId('return'),
-        getGroupId('refund')
+        getGroupId(PermissionSourceObj.finance),
+        getGroupId(PermissionSourceObj.expense),
+        getGroupId(PermissionSourceObj.report),
+        getGroupId(PermissionSourceObj.payment),
+        getGroupId(PermissionSourceObj.account)
       ].filter(id => id !== null) as Types.ObjectId[],
-      hierarchyLevel: 30,
+      hierarchyLevel: 60,
+      isDefault: false
+    },
+    {
+      name: USER_ROLE.HR_MANAGER,
+      permissions: [],
+      // 👥 HR Manager: Staff & Payroll
+      permissionGroups: [
+        getGroupId(PermissionSourceObj.user),      // Manage Staff
+        getGroupId(PermissionSourceObj.role),      // Assign roles
+        getGroupId(PermissionSourceObj.department),
+        getGroupId(PermissionSourceObj.designation),
+        getGroupId(PermissionSourceObj.attendance),
+        getGroupId(PermissionSourceObj.leave),
+        getGroupId(PermissionSourceObj.payroll)
+      ].filter(id => id !== null) as Types.ObjectId[],
+      hierarchyLevel: 60,
+      isDefault: false
+    },
+    {
+      name: USER_ROLE.SALES_ASSOCIATE,
+      permissions: [],
+      // 🛍️ Sales Associate: CRM & Draft Orders
+      permissionGroups: [
+        getGroupId(PermissionSourceObj.customer),
+        getGroupId(PermissionSourceObj.product),
+        getGroupId(PermissionSourceObj.order),
+        getGroupId(PermissionSourceObj.storefront)
+      ].filter(id => id !== null) as Types.ObjectId[],
+      hierarchyLevel: 15,
+      isDefault: false
+    },
+    {
+      name: USER_ROLE.DELIVERY_MAN,
+      permissions: [],
+      // 🚚 Delivery: Order Status & Routes
+      permissionGroups: [
+        getGroupId(PermissionSourceObj.order),
+        getGroupId(PermissionSourceObj.courier),
+        getGroupId(PermissionSourceObj.customer)
+      ].filter(id => id !== null) as Types.ObjectId[],
+      hierarchyLevel: 10,
       isDefault: false
     },
     {
       name: USER_ROLE.CASHIER,
       permissions: [],
+      // 💰 Cashier: POS & Order Fulfillment
       permissionGroups: [
-        getGroupId('storefront'),
-        getGroupId('order'),
-        getGroupId('payment'),
-        getGroupId('customer'),
-        getGroupId('return')
+        getGroupId(PermissionSourceObj.storefront), // covers POS usually
+        getGroupId(PermissionSourceObj.order),
+        getGroupId(PermissionSourceObj.payment),
+        getGroupId(PermissionSourceObj.customer),
+        getGroupId(PermissionSourceObj.return),
+        getGroupId(PermissionSourceObj.product)
       ].filter(id => id !== null) as Types.ObjectId[],
       hierarchyLevel: 20,
+      isDefault: false
+    },
+    {
+      name: USER_ROLE.STORE_KEEPER,
+      permissions: [],
+      // 📦 Store Keeper: Inventory & Stock
+      permissionGroups: [
+        getGroupId(PermissionSourceObj.inventory),
+        getGroupId(PermissionSourceObj.purchase),
+        getGroupId(PermissionSourceObj.supplier),
+        getGroupId(PermissionSourceObj.product),
+        getGroupId(PermissionSourceObj.adjustment)
+      ].filter(id => id !== null) as Types.ObjectId[],
+      hierarchyLevel: 25,
+      isDefault: false
+    },
+    {
+      name: USER_ROLE.CUSTOMER,
+      permissions: [],
+      permissionGroups: [
+        getGroupId(PermissionSourceObj.cart),
+        getGroupId(PermissionSourceObj.wishlist),
+        getGroupId(PermissionSourceObj.order),
+        getGroupId(PermissionSourceObj.review)
+      ].filter(id => id !== null) as Types.ObjectId[],
+      hierarchyLevel: 10,
+      isDefault: true
+    },
+    {
+      name: USER_ROLE.STAFF,
+      permissions: [],
+      permissionGroups: [
+        getGroupId(PermissionSourceObj.attendance),
+        getGroupId(PermissionSourceObj.leave),
+        getGroupId(PermissionSourceObj.storefront)
+      ].filter(id => id !== null) as Types.ObjectId[],
+      hierarchyLevel: 15,
       isDefault: false
     }
   ];
@@ -221,7 +332,18 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
       rolesCreated++;
       console.log(`✅ Created role: ${roleConfig.name}`);
     } else {
-      console.log(`✅ Role already exists: ${roleConfig.name}`);
+      // Force update logic for System Roles to ensure they match the code definition
+      // This fixes the issue where Admin keeps old "Full Access" even after we changed code
+      existingRole.permissionGroups = roleConfig.permissionGroups as any;
+      existingRole.permissions = roleConfig.permissions as any;
+      existingRole.hierarchyLevel = roleConfig.hierarchyLevel;
+      existingRole.isDefault = roleConfig.isDefault;
+
+      // We don't overwrite name/description to allow some customization, 
+      // but permissions for system roles should ideally stay synced or be additive.
+      // Here we choose to SYNC (overwrite) to enforce the "Standard" definition.
+      await existingRole.save();
+      console.log(`🔄 Updated/Synced system role: ${roleConfig.name}`);
     }
   }
 

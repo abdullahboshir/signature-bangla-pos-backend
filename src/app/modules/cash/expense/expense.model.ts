@@ -28,9 +28,11 @@ const expenseSchema = new Schema<IExpenseDocument>({
 });
 
 // Indexes for reporting
+expenseSchema.index({ businessUnit: 1, date: -1 }); // Financial Reports
 expenseSchema.index({ date: 1 });
-expenseSchema.index({ businessUnit: 1 });
 expenseSchema.index({ category: 1 });
 expenseSchema.index({ outlet: 1 });
+expenseSchema.index({ status: 1 });
+expenseSchema.index({ paymentMethod: 1 });
 
 export const Expense = model<IExpenseDocument>('Expense', expenseSchema);

@@ -41,9 +41,12 @@ const taxSchema = new Schema<ITax>(
         },
     },
     {
-        timestamps: true,
     }
 );
+
+taxSchema.index({ businessUnit: 1 });
+taxSchema.index({ isActive: 1 });
+taxSchema.index({ isDefault: 1 });
 
 // Query middleware to filter out deleted docs
 taxSchema.pre(['find', 'findOne', 'findOneAndUpdate'], function (next) {

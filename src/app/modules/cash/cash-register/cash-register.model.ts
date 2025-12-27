@@ -35,5 +35,6 @@ cashRegisterSchema.index({ businessUnit: 1 });
 cashRegisterSchema.index({ outlet: 1 });
 cashRegisterSchema.index({ status: 1 });
 cashRegisterSchema.index({ openingDate: 1 });
+cashRegisterSchema.index({ openedBy: 1 });
 
 export const CashRegister = model<ICashRegisterDocument>('CashRegister', cashRegisterSchema);

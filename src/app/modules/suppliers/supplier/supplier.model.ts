@@ -21,11 +21,16 @@ const SupplierSchema = new Schema<ISupplier>({
     timestamps: true,
     toJSON: {
         virtuals: true,
-        transform: function (doc, ret) {
+        transform: function (_doc, ret) {
             // delete (ret as any)._id;
             delete (ret as any).__v;
         }
     }
 });
+
+SupplierSchema.index({ businessUnits: 1 });
+SupplierSchema.index({ status: 1 });
+SupplierSchema.index({ email: 1 });
+SupplierSchema.index({ name: 'text' }); // Text Search
 
 export const Supplier = model<ISupplier>('Supplier', SupplierSchema);

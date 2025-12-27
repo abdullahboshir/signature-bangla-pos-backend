@@ -34,4 +34,8 @@ const attributeSchema = new Schema<IAttributeDocument, IAttributeModel>({
     }
 });
 
+attributeSchema.index({ businessUnit: 1 });
+attributeSchema.index({ status: 1 });
+attributeSchema.index({ name: 1, businessUnit: 1 }, { unique: true });
+
 export const Attribute = model<IAttributeDocument, IAttributeModel>("Attribute", attributeSchema);

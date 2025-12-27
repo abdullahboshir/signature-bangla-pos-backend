@@ -136,6 +136,8 @@ const StorePageSchema = new Schema<IStorePage>(
 
 // Ensure unique slug per business unit
 StorePageSchema.index({ businessUnit: 1, slug: 1 }, { unique: true });
+StorePageSchema.index({ businessUnit: 1 });
+StorePageSchema.index({ isPublished: 1 });
 
 export const StorefrontConfig = model<IStorefrontConfig>("StorefrontConfig", StorefrontConfigSchema);
 export const StorePage = model<IStorePage>("StorePage", StorePageSchema);

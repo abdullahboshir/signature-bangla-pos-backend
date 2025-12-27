@@ -33,4 +33,9 @@ const stockLedgerSchema = new Schema<IStockLedger>({
     timestamps: true
 });
 
+stockLedgerSchema.index({ product: 1, date: -1 });
+stockLedgerSchema.index({ outlet: 1, date: -1 });
+stockLedgerSchema.index({ type: 1 });
+stockLedgerSchema.index({ reference: 1 });
+
 export const StockLedger = model<IStockLedger>('StockLedger', stockLedgerSchema);

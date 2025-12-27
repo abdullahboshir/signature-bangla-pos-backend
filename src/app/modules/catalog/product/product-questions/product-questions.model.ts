@@ -2,7 +2,7 @@ import { Schema, model } from "mongoose";
 import type { IProductQADocument } from "./product-questions.interface.js";
 
 const productQASchema = new Schema<IProductQADocument>({
-    product: { type: Schema.Types.ObjectId, ref: 'Product', required: true, index: true },
+    product: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     question: { type: String, required: true, trim: true, minlength: 5, maxlength: 500 },
 
@@ -25,5 +25,7 @@ const productQASchema = new Schema<IProductQADocument>({
 
 // Indexes for fast retrieval
 productQASchema.index({ product: 1, isPublic: 1, createdAt: -1 }); // Get public Q&A for a product
+productQASchema.index({ user: 1 });
+productQASchema.index({ answeredBy: 1 });
 
 export const ProductQA = model<IProductQADocument>('ProductQA', productQASchema);

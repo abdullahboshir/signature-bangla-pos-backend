@@ -158,7 +158,7 @@ productPricingSchema.methods['isDiscountActive'] = function (): boolean {
 
 // ==================== INDEXES ====================
 
-productPricingSchema.index({ product: 1 });
+// productPricingSchema.index({ product: 1 }); // Covered by unique: true
 productPricingSchema.index({ 'discount.isActive': 1 });
 productPricingSchema.index({ 'flashSale.startDate': 1, 'flashSale.endDate': 1 });
 

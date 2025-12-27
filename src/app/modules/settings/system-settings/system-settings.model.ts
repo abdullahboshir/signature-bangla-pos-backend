@@ -10,6 +10,18 @@ const systemSettingsSchema = new Schema<ISystemSettingsDocument, ISystemSettings
     isRetentionPolicyEnabled: {
         type: Boolean,
         default: true
+    },
+    licenseKey: {
+        type: String,
+        default: null
+    },
+    enabledModules: {
+        pos: { type: Boolean, default: true },
+        erp: { type: Boolean, default: true },
+        hrm: { type: Boolean, default: true },
+        ecommerce: { type: Boolean, default: true },
+        crm: { type: Boolean, default: true },
+        logistics: { type: Boolean, default: true }
     }
 }, {
     timestamps: true
@@ -21,7 +33,16 @@ systemSettingsSchema.statics['getSettings'] = async function () {
     if (!settings) {
         settings = await this.create({
             softDeleteRetentionDays: 365,
-            isRetentionPolicyEnabled: true
+            isRetentionPolicyEnabled: true,
+            licenseKey: null,
+            enabledModules: {
+                pos: true,
+                erp: true,
+                hrm: true,
+                ecommerce: true,
+                crm: true,
+                logistics: true
+            }
         });
     }
     return settings;

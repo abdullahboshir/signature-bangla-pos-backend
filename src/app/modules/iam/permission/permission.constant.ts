@@ -29,6 +29,7 @@ export const PermissionResourceType = [
   "analytics",
   "system",
   "inventory",
+  "quotation",
   "coupon",
   "review",
   "return",
@@ -91,6 +92,8 @@ export const PermissionResourceType = [
   "riskRule",
   "audience",
   "riskProfile",
+  "automation",
+  "workflow",
 ] as const;
 
 

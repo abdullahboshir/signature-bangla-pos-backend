@@ -7,9 +7,9 @@ import { BundleProductSchema, DeliveryOptionsSchema, ProductAttributesSchema, Pr
 const productSchema = new Schema<IProductDocument, IProductModel>({
   name: { type: String, required: true, trim: true, index: true },
   nameBangla: { type: String, trim: true },
-  slug: { type: String, required: true, unique: true, index: true },
-  sku: { type: String, required: true, unique: true, index: true },
-  barcode: { type: String, unique: true, sparse: true, index: true },
+  slug: { type: String, required: true, unique: true },
+  sku: { type: String, required: true, unique: true },
+  barcode: { type: String, unique: true, sparse: true },
   translations: [{
     lang: { type: String, required: true },
     field: { type: String, required: true },
@@ -25,7 +25,7 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
     required: false, // Updated to allow global products
     index: true,
   },
-  businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
+  businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true },
   vendor: {
     id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     name: { type: String, required: true },
@@ -107,6 +107,7 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
 
 // ==================== INDEXES ====================
 
+productSchema.index({ businessUnit: 1 }); // Tenant Isolation (Critical)
 productSchema.index({ 'vendor.id': 1, createdAt: -1 });
 productSchema.index({ categories: 1, status: 1 });
 productSchema.index({ brands: 1, status: 1 });

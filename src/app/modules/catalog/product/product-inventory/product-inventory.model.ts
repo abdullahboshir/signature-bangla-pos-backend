@@ -189,9 +189,11 @@ productInventorySchema.pre('save', function (next) {
 
 // ==================== INDEXES ====================
 
-productInventorySchema.index({ product: 1 });
-productInventorySchema.index({ 'inventory.stockStatus': 1 });
+// productInventorySchema.index({ product: 1 }); // Covered by unique: true
+productInventorySchema.index({ 'inventory.stockStatus': 1, lastRestockedAt: -1 }); // Sorted Dashboard Lists
 productInventorySchema.index({ 'inventory.stock': 1 });
 productInventorySchema.index({ lastRestockedAt: -1 });
+productInventorySchema.index({ 'outletStock.outlet': 1 }); // Outlet Stock Queries
+productInventorySchema.index({ 'suppliers.supplier': 1 }); // Supplier Relations
 
 export const ProductInventory = model<IProductInventoryDocument>('ProductInventory', productInventorySchema);

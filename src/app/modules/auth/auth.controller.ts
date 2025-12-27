@@ -25,6 +25,8 @@ export const loginController = catchAsync(async (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
+  console.log("LOGIN SUCCESS: Sending response to client");
+
   ApiResponse.success(
     res,
     { accessToken, needsPasswordChange, user },

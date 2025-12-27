@@ -52,4 +52,12 @@ companySchema.virtual('businessUnits', {
     foreignField: 'company'
 });
 
+companySchema.index({ isActive: 1 });
+companySchema.index({ contactEmail: 1 });
+companySchema.virtual('businessUnits', {
+    ref: 'BusinessUnit',
+    localField: '_id',
+    foreignField: 'company'
+});
+
 export const Company = model<ICompanyDocument, ICompanyModel>('Company', companySchema);

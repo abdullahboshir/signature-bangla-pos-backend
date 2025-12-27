@@ -3,6 +3,15 @@ import { Model, Document } from "mongoose";
 export interface ISystemSettings {
     softDeleteRetentionDays: number;
     isRetentionPolicyEnabled: boolean;
+    licenseKey?: string;
+    enabledModules: {
+        pos: boolean;
+        erp: boolean;
+        hrm: boolean;
+        ecommerce: boolean;
+        crm: boolean;
+        logistics: boolean;
+    };
 }
 
 export interface ISystemSettingsDocument extends ISystemSettings, Document {

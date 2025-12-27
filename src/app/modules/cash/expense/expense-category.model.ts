@@ -17,5 +17,7 @@ const expenseCategorySchema = new Schema<IExpenseCategoryDocument>({
 
 // Compound index to prevent duplicate names within the same Business Unit
 expenseCategorySchema.index({ name: 1, businessUnit: 1 }, { unique: true });
+expenseCategorySchema.index({ businessUnit: 1 });
+expenseCategorySchema.index({ isActive: 1 });
 
 export const ExpenseCategory = model<IExpenseCategoryDocument>('ExpenseCategory', expenseCategorySchema);

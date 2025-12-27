@@ -34,11 +34,18 @@ const PurchaseSchema = new Schema<IPurchase>({
     timestamps: true,
     toJSON: {
         virtuals: true,
-        transform: function (doc, ret) {
+        transform: function (_doc, ret) {
             delete (ret as any)._id;
             delete (ret as any).__v;
         }
     }
 });
+
+// Indexes for Reports & Dashboards
+PurchaseSchema.index({ businessUnit: 1, purchaseDate: -1 });
+PurchaseSchema.index({ supplier: 1, purchaseDate: -1 });
+PurchaseSchema.index({ outlet: 1, status: 1 });
+PurchaseSchema.index({ status: 1 });
+PurchaseSchema.index({ paymentStatus: 1 });
 
 export const Purchase = model<IPurchase>('Purchase', PurchaseSchema);

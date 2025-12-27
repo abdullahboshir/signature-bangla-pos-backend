@@ -224,25 +224,39 @@ export const createStaffService = async (
     }
 
     // 2. Resolve Role
-    // The controller should pass the Role ID or Name. 
-    // If passed as name string in staffData.role
+    // The controller passes the Role ID (usually) or Name. 
     let roleId = (staffData as any).role;
 
-    // If role is not provided or just a string name, try to find it
-    if (!roleId || typeof roleId === 'string') {
-      const roleName = typeof roleId === 'string' ? roleId : (staffData.designation || 'STAFF').toUpperCase();
-      // fallback to designation if no role provided? Or Controller handles it.
-      // Better: Controller must ensure role is valid.
-      // Let's assume controller provides a valid Role ID in the user payload part.
+    // Default to STAFF role from constant (lowercase 'staff')
+    const defaultRoleName = USER_ROLE.STAFF;
 
-      // Use a default Staff role if not provided
-      const staffRole = await Role.findOne({ name: roleName }).session(session);
-      if (staffRole) roleId = staffRole._id;
-      else {
-        // Fallback to strict check
-        const defaultRole = await Role.findOne({ name: 'STAFF' }).session(session);
-        if (!defaultRole) throw new AppError(404, "Role not found for staff creation");
-        roleId = defaultRole._id;
+    // If no roleId provided, try to find one by designation/default
+    if (!roleId) {
+      // Try finding role by Name (Designation) - assuming designation matches role slug loosely? 
+      // Or just fallback to default STAFF if designation doesn't map to a role.
+      // Usually designation is just a title (e.g. "Senior Dev"). It shouldn't strictly imply a system Role.
+      // Safest is to default to 'staff' unless specific role provided.
+
+      const defaultRole = await Role.findOne({ name: defaultRoleName }).session(session);
+      if (!defaultRole) throw new AppError(404, `Role not found for staff creation (Default '${defaultRoleName}' role missing)`);
+      roleId = defaultRole._id;
+
+    } else {
+      // Role ID IS provided.
+      // Check if it's a valid ObjectId (DB ID) or a Name String (e.g. "manager")
+      const isValidId = mongoose.isValidObjectId(roleId);
+
+      if (!isValidId) {
+        // It's a Name string
+        const roleByName = await Role.findOne({ name: roleId }).session(session);
+        if (!roleByName) {
+          // Fallback to default
+          const defaultRole = await Role.findOne({ name: defaultRoleName }).session(session);
+          if (!defaultRole) throw new AppError(404, `Role '${roleId}' not found and default '${defaultRoleName}' role missing`);
+          roleId = defaultRole._id;
+        } else {
+          roleId = roleByName._id;
+        }
       }
     }
 

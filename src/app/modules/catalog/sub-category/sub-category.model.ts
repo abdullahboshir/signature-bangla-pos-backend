@@ -49,6 +49,11 @@ const SubCategorySchema = new Schema<ISubCategory>(
   { timestamps: true }
 );
 
+SubCategorySchema.index({ businessUnit: 1 });
+SubCategorySchema.index({ category: 1 });
+SubCategorySchema.index({ isActive: 1 });
+SubCategorySchema.index({ slug: 1, businessUnit: 1 }, { unique: true });
+
 SubCategorySchema.pre("save", function (next) {
   if (this.isModified("name")) {
     this.slug = makeSlug(this.name);

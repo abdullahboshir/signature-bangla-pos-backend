@@ -2,10 +2,12 @@ import express from 'express';
 import { PurchaseController } from './purchase.controller.ts';
 import { validateRequest } from '../../../core/middleware/validateRequest.ts';
 import { createPurchaseZodSchema, updatePurchaseZodSchema } from './purchase.validation.ts';
-
+import moduleGuard from '@app/middlewares/moduleGuard.ts';
 
 
 const router = express.Router();
+
+router.use(moduleGuard('erp'));
 
 router.post('/create', validateRequest(createPurchaseZodSchema as any), PurchaseController.create);
 router.get('/', PurchaseController.getAll);

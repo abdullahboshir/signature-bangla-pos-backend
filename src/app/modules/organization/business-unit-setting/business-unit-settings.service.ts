@@ -1,7 +1,23 @@
+import BusinessUnit from "../business-unit/business-unit.model.js";
 import { BusinessUnitSettings } from "./business-unit-settings.model.js";
 
+import { Types } from "mongoose";
 
-export const getSettingsService = async (businessUnitId: string) => {
+// Helper to resolve ID or Slug
+const resolveBusinessUnitId = async (idOrSlug: string): Promise<string> => {
+    if (Types.ObjectId.isValid(idOrSlug)) {
+        return idOrSlug;
+    }
+    // Try to find by slug
+    const bu = await BusinessUnit.findOne({ slug: idOrSlug }).select('_id');
+    if (!bu) {
+        throw new Error(`Business Unit not found for: ${idOrSlug}`);
+    }
+    return bu._id.toString();
+};
+
+export const getSettingsService = async (businessUnitInput: string) => {
+    const businessUnitId = await resolveBusinessUnitId(businessUnitInput);
     let settings = await BusinessUnitSettings.findOne({ businessUnit: businessUnitId });
 
     if (!settings) {
@@ -15,7 +31,8 @@ export const getSettingsService = async (businessUnitId: string) => {
     return settings;
 };
 
-export const updateSettingsService = async (businessUnitId: string, payload: any) => {
+export const updateSettingsService = async (businessUnitInput: string, payload: any) => {
+    const businessUnitId = await resolveBusinessUnitId(businessUnitInput);
     const settings = await BusinessUnitSettings.findOneAndUpdate(
         { businessUnit: businessUnitId },
         payload,

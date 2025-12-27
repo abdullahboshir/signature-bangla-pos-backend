@@ -63,8 +63,14 @@ const orderSchema = new Schema<IOrder>({
     createdBy: { type: Schema.Types.ObjectId, ref: "User" }
 
 }, {
-    timestamps: true,
     versionKey: false
 });
+
+// Indexes for Scalability
+orderSchema.index({ businessUnit: 1, createdAt: -1 }); // Tenant Dashboard Performance
+orderSchema.index({ outlet: 1, status: 1 }); // Outlet Dashboard & Filtering
+orderSchema.index({ customer: 1, createdAt: -1 }); // Customer Order History
+orderSchema.index({ status: 1 }); // Admin Status Filters
+orderSchema.index({ createdBy: 1 }); // Staff Performance
 
 export const Order = model<IOrder>("Order", orderSchema);

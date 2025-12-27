@@ -32,6 +32,8 @@ import { validateRequest } from "@core/middleware/validateRequest.ts";
 
 import { roleRoutes } from "../role/role.routes.js";
 import { USER_ROLE } from "./user.constant.ts";
+import moduleGuard from "@app/middlewares/moduleGuard.ts";
+
 
 const router = Router();
 
@@ -63,13 +65,14 @@ router.post(
 router.post(
   "/create-customer",
   auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  moduleGuard('crm'),
   authorize(PermissionSourceObj.customer, PermissionActionObj.create),
   upload.single("file"),
   (req: Request, _res: Response, next: NextFunction) => {
     req.body = JSON.parse(req.body.data);
     next();
   },
-  validateRequest(createCustomerZodSchema as unknown as AnyZodObject),
+  validateRequest(createCustomerZodSchema),
   createCustomerController
 );
 

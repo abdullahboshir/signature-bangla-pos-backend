@@ -180,7 +180,10 @@ const UserSchema = new Schema<IUser, UserStatic>({
 // Indexes for better performance
 UserSchema.index({ roles: 1 });
 UserSchema.index({ businessUnits: 1 });
-UserSchema.index({ branches: 1 });
+UserSchema.index({ 'permissions.role': 1 }); // New Permission Structure
+UserSchema.index({ 'permissions.businessUnit': 1 });
+UserSchema.index({ 'permissions.outlet': 1 });
+UserSchema.index({ phone: 1 }); // Login Lookup
 UserSchema.index({ vendorId: 1 });
 UserSchema.index({ region: 1 });
 UserSchema.index({ status: 1 });
