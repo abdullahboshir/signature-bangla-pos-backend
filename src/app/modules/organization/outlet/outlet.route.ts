@@ -8,6 +8,7 @@ const router = express.Router();
 // Defined routes
 router.post("/", OutletController.createOutlet);
 router.get("/", OutletController.getAllOutlets);
+router.get("/:id/stats", OutletController.getOutletStats);
 router.get("/:id", OutletController.getOutletById);
 router.patch("/:id", OutletController.updateOutlet);
 router.delete("/:id", OutletController.deleteOutlet);

@@ -1,0 +1,152 @@
+
+> signature-bangla-pos-backend@1.0.0 build
+> tsc
+
+src/app/jobs/cleanup.job.ts(53,52): error TS18046: 'product._id' is of type 'unknown'.
+src/app/modules/auth/auth.controller.ts(11,1): error TS6133: 'appConfig' is declared but its value is never read.
+src/app/modules/auth/auth.routes.ts(8,10): error TS6133: 'USER_ROLE' is declared but its value is never read.
+src/app/modules/auth/auth.routes.ts(14,39): error TS2379: Argument of type 'AnyZodObject' is not assignable to parameter of type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'ZodObject<any, any, any, { [x: string]: any; }, { [x: string]: any; }>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 14 more.
+src/app/modules/automation/automation.service.ts(25,47): error TS6133: 'payload' is declared but its value is never read.
+src/app/modules/cash/cash-register/cash-register.service.ts(11,35): error TS6133: 'outletId' is declared but its value is never read.
+src/app/modules/cash/cash-register/cash-register.service.ts(76,36): error TS6133: 'userId' is declared but its value is never read.
+src/app/modules/cash/cash-register/cash-register.validation.ts(6,13): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(params?: string | { error?: string | $ZodErrorMap<$ZodIssueInvalidType<unknown>> | undefined; message?: string | undefined; } | undefined): ZodString', gave the following error.
+    Object literal may only specify known properties, and 'required_error' does not exist in type '{ error?: string | $ZodErrorMap<$ZodIssueInvalidType<unknown>> | undefined; message?: string | undefined; }'.
+  Overload 2 of 2, '(params?: string | { error?: string | $ZodErrorMap<$ZodIssueInvalidType<unknown>> | undefined; message?: string | undefined; } | undefined): $ZodType<...>', gave the following error.
+    Object literal may only specify known properties, and 'required_error' does not exist in type '{ error?: string | $ZodErrorMap<$ZodIssueInvalidType<unknown>> | undefined; message?: string | undefined; }'.
+src/app/modules/cash/cash-register/cash-register.validation.ts(9,13): error TS2353: Object literal may only specify known properties, and 'required_error' does not exist in type '{ error?: string | $ZodErrorMap<$ZodIssueInvalidType<unknown>> | undefined; message?: string | undefined; }'.
+src/app/modules/cash/cash-register/cash-register.validation.ts(20,13): error TS2353: Object literal may only specify known properties, and 'required_error' does not exist in type '{ error?: string | $ZodErrorMap<$ZodIssueInvalidType<unknown>> | undefined; message?: string | undefined; }'.
+src/app/modules/cash/expense/expense.service.ts(6,1): error TS6133: 'Types' is declared but its value is never read.
+src/app/modules/cash/expense/expense.service.ts(94,32): error TS6133: 'query' is declared but its value is never read.
+src/app/modules/cash/expense/expense.validation.ts(6,13): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(params?: string | { error?: string | $ZodErrorMap<$ZodIssueInvalidType<unknown>> | undefined; message?: string | undefined; } | undefined): ZodString', gave the following error.
+    Object literal may only specify known properties, and 'required_error' does not exist in type '{ error?: string | $ZodErrorMap<$ZodIssueInvalidType<unknown>> | undefined; message?: string | undefined; }'.
+  Overload 2 of 2, '(params?: string | { error?: string | $ZodErrorMap<$ZodIssueInvalidType<unknown>> | undefined; message?: string | undefined; } | undefined): $ZodType<...>', gave the following error.
+    Object literal may only specify known properties, and 'required_error' does not exist in type '{ error?: string | $ZodErrorMap<$ZodIssueInvalidType<unknown>> | undefined; message?: string | undefined; }'.
+src/app/modules/cash/expense/expense.validation.ts(9,13): error TS2353: Object literal may only specify known properties, and 'required_error' does not exist in type '{ error?: string | $ZodErrorMap<$ZodIssueInvalidType<unknown>> | undefined; message?: string | undefined; }'.
+src/app/modules/cash/expense/expense.validation.ts(12,13): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(params?: string | { error?: string | $ZodErrorMap<$ZodIssueInvalidType<unknown>> | undefined; message?: string | undefined; } | undefined): ZodString', gave the following error.
+    Object literal may only specify known properties, and 'required_error' does not exist in type '{ error?: string | $ZodErrorMap<$ZodIssueInvalidType<unknown>> | undefined; message?: string | undefined; }'.
+  Overload 2 of 2, '(params?: string | { error?: string | $ZodErrorMap<$ZodIssueInvalidType<unknown>> | undefined; message?: string | undefined; } | undefined): $ZodType<...>', gave the following error.
+    Object literal may only specify known properties, and 'required_error' does not exist in type '{ error?: string | $ZodErrorMap<$ZodIssueInvalidType<unknown>> | undefined; message?: string | undefined; }'.
+src/app/modules/cash/expense/expense.validation.ts(14,26): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: readonly ["cash", "bank", "mobile_money", "other"], params?: string | { error?: string | $ZodErrorMap<$ZodIssueInvalidValue<unknown>> | undefined; message?: string | undefined; } | undefined): ZodEnum<...>', gave the following error.
+    Object literal may only specify known properties, and 'required_error' does not exist in type '{ error?: string | $ZodErrorMap<$ZodIssueInvalidValue<unknown>> | undefined; message?: string | undefined; }'.
+  Overload 2 of 2, '(entries: Readonly<Record<string, EnumValue>>, params?: string | { error?: string | $ZodErrorMap<$ZodIssueInvalidValue<unknown>> | undefined; message?: string | undefined; } | undefined): ZodEnum<...>', gave the following error.
+    Argument of type 'string[]' is not assignable to parameter of type 'Readonly<Record<string, EnumValue>>'.
+      Index signature for type 'string' is missing in type 'string[]'.
+src/app/modules/catalog/attribute-group/attribute-group.controller.ts(12,49): error TS6133: 'req' is declared but its value is never read.
+src/app/modules/catalog/attribute/attribute.routes.ts(14,21): error TS2379: Argument of type 'AnyZodObject' is not assignable to parameter of type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'ZodObject<any, any, any, { [x: string]: any; }, { [x: string]: any; }>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 14 more.
+src/app/modules/catalog/attribute/attribute.routes.ts(33,21): error TS2379: Argument of type 'AnyZodObject' is not assignable to parameter of type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'ZodObject<any, any, any, { [x: string]: any; }, { [x: string]: any; }>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 14 more.
+src/app/modules/catalog/brand/brand.routes.ts(14,21): error TS2379: Argument of type 'AnyZodObject' is not assignable to parameter of type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'ZodObject<any, any, any, { [x: string]: any; }, { [x: string]: any; }>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 14 more.
+src/app/modules/catalog/brand/brand.routes.ts(25,21): error TS2379: Argument of type 'AnyZodObject' is not assignable to parameter of type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'ZodObject<any, any, any, { [x: string]: any; }, { [x: string]: any; }>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 14 more.
+src/app/modules/catalog/category/category.routes.ts(12,19): error TS2379: Argument of type 'AnyZodObject' is not assignable to parameter of type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'ZodObject<any, any, any, { [x: string]: any; }, { [x: string]: any; }>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 14 more.
+src/app/modules/catalog/child-category/child-category.controller.ts(3,3): error TS6133: 'createChildCategoryService' is declared but its value is never read.
+src/app/modules/catalog/child-category/child-category.routes.ts(8,3): error TS6133: 'getAllChildCategoriesController' is declared but its value is never read.
+src/app/modules/catalog/child-category/child-category.routes.ts(17,19): error TS2379: Argument of type 'AnyZodObject' is not assignable to parameter of type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'ZodObject<any, any, any, { [x: string]: any; }, { [x: string]: any; }>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 14 more.
+src/app/modules/catalog/product/product-core/product-core-routes.ts(1,23): error TS6133: 'Request' is declared but its value is never read.
+src/app/modules/catalog/product/product-core/product-core-routes.ts(1,37): error TS6133: 'Response' is declared but its value is never read.
+src/app/modules/catalog/product/product-core/product-core-routes.ts(1,52): error TS6133: 'NextFunction' is declared but its value is never read.
+src/app/modules/catalog/product/product-core/product-core-routes.ts(5,1): error TS6133: 'AnyZodObject' is declared but its value is never read.
+src/app/modules/catalog/product/product-core/product-core.service.ts(4,1): error TS6133: 'IProductCore' is declared but its value is never read.
+src/app/modules/catalog/product/product-details/product-details.model.ts(4,32): error TS6196: 'IProductDetailsDocument' is declared but never used.
+src/app/modules/catalog/product/product-inventory/product-inventory.service.ts(6,48): error TS6133: 'query' is declared but its value is never read.
+src/app/modules/catalog/product/product-questions/product-questions.service.ts(4,1): error TS6133: 'Types' is declared but its value is never read.
+src/app/modules/catalog/product/product-reviews/product-reviews.service.ts(3,1): error TS6133: 'Types' is declared but its value is never read.
+src/app/modules/catalog/sub-category/sub-category.controller.ts(4,3): error TS6133: 'createSubCategoryService' is declared but its value is never read.
+src/app/modules/catalog/sub-category/sub-category.routes.ts(7,3): error TS6133: 'getAllSubCategoriesController' is declared but its value is never read.
+src/app/modules/catalog/sub-category/sub-category.routes.ts(17,19): error TS2379: Argument of type 'AnyZodObject' is not assignable to parameter of type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'ZodObject<any, any, any, { [x: string]: any; }, { [x: string]: any; }>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 14 more.
+src/app/modules/catalog/tax/tax.routes.ts(16,21): error TS2379: Argument of type 'AnyZodObject' is not assignable to parameter of type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'ZodObject<any, any, any, { [x: string]: any; }, { [x: string]: any; }>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 14 more.
+src/app/modules/catalog/tax/tax.routes.ts(28,21): error TS2379: Argument of type 'AnyZodObject' is not assignable to parameter of type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'ZodObject<any, any, any, { [x: string]: any; }, { [x: string]: any; }>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 14 more.
+src/app/modules/catalog/unit/unit.routes.ts(14,21): error TS2379: Argument of type 'AnyZodObject' is not assignable to parameter of type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'ZodObject<any, any, any, { [x: string]: any; }, { [x: string]: any; }>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 14 more.
+src/app/modules/catalog/unit/unit.routes.ts(25,21): error TS2379: Argument of type 'AnyZodObject' is not assignable to parameter of type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'ZodObject<any, any, any, { [x: string]: any; }, { [x: string]: any; }>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 14 more.
+src/app/modules/customer/customer.interface.ts(2,28): error TS2307: Cannot find module '../../interface/common.interface.js' or its corresponding type declarations.
+src/app/modules/iam/permission-group/permission-group.routes.ts(11,1): error TS6133: 'USER_ROLE' is declared but its value is never read.
+src/app/modules/iam/permission/permission.service.ts(10,1): error TS6133: 'CacheManager' is declared but its value is never read.
+src/app/modules/iam/permission/permission.service.ts(27,7): error TS6133: 'CACHE_TTL_SECONDS' is declared but its value is never read.
+src/app/modules/iam/permission/permission.service.ts(67,11): error TS6133: 'cacheKey' is declared but its value is never read.
+src/app/modules/iam/role/role.model.ts(4,1): error TS6133: 'bumpVersion' is declared but its value is never read.
+src/app/modules/iam/role/role.routes.ts(40,19): error TS2379: Argument of type 'AnyZodObject' is not assignable to parameter of type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'ZodObject<any, any, any, { [x: string]: any; }, { [x: string]: any; }>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 14 more.
+src/app/modules/iam/role/role.routes.ts(48,19): error TS2379: Argument of type 'AnyZodObject' is not assignable to parameter of type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'ZodObject<any, any, any, { [x: string]: any; }, { [x: string]: any; }>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 14 more.
+src/app/modules/iam/role/role.validation.ts(5,7): error TS6133: 'permissionSchema' is declared but its value is never read.
+src/app/modules/iam/user/user.routes.ts(20,1): error TS6133: 'AnyZodObject' is declared but its value is never read.
+src/app/modules/iam/user/user.service.ts(301,13): error TS2532: Object is possibly 'undefined'.
+src/app/modules/iam/user/user.service.ts(310,47): error TS2532: Object is possibly 'undefined'.
+src/app/modules/iam/user/user.service.ts(312,33): error TS2532: Object is possibly 'undefined'.
+src/app/modules/license/license.controller.ts(9,31): error TS4111: Property 'id' comes from an index signature, so it must be accessed with ['id'].
+src/app/modules/license/license.controller.ts(9,47): error TS4111: Property '_id' comes from an index signature, so it must be accessed with ['_id'].
+src/app/modules/license/license.controller.ts(23,43): error TS4111: Property 'key' comes from an index signature, so it must be accessed with ['key'].
+src/app/modules/license/license.model.ts(2,10): error TS1484: 'ILicense' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/app/modules/license/license.model.ts(2,20): error TS1484: 'LicenseModel' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/app/modules/marketing/marketing.controller.ts(27,50): error TS6133: 'req' is declared but its value is never read.
+src/app/modules/marketing/marketing.service.ts(82,38): error TS6133: 'adAccountId' is declared but its value is never read.
+src/app/modules/marketing/marketing.service.ts(82,59): error TS6133: 'accessToken' is declared but its value is never read.
+src/app/modules/organization/business-unit-setting/business-unit-settings.service.ts(16,12): error TS18046: 'bu._id' is of type 'unknown'.
+src/app/modules/organization/business-unit/business-unit.controller.ts(44,48): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/modules/organization/business-unit/business-unit.methods.ts(55,5): error TS6133: 'reason' is declared but its value is never read.
+src/app/modules/organization/business-unit/business-unit.methods.ts(71,5): error TS6133: 'productId' is declared but its value is never read.
+src/app/modules/organization/business-unit/business-unit.methods.ts(80,5): error TS6133: 'productId' is declared but its value is never read.
+src/app/modules/organization/business-unit/business-unit.routes.ts(9,10): error TS6133: 'createBusinessUnitValidationSchema' is declared but its value is never read.
+src/app/modules/organization/business-unit/business-unit.routes.ts(46,19): error TS2379: Argument of type 'AnyZodObject' is not assignable to parameter of type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Type 'ZodObject<any, any, any, { [x: string]: any; }, { [x: string]: any; }>' is missing the following properties from type 'ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>': def, type, check, clone, and 14 more.
+src/app/modules/organization/business-unit/business-unit.service.ts(174,24): error TS6133: 'uploadBannerImage' is declared but its value is never read.
+src/app/modules/organization/company/company.controller.ts(1,10): error TS1484: 'Request' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/app/modules/organization/company/company.controller.ts(1,19): error TS1484: 'Response' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/app/modules/organization/company/company.controller.ts(2,32): error TS2307: Cannot find module './company.service' or its corresponding type declarations.
+src/app/modules/organization/company/company.controller.ts(23,39): error TS6133: 'req' is declared but its value is never read.
+src/app/modules/organization/company/company.controller.ts(40,31): error TS7030: Not all code paths return a value.
+src/app/modules/organization/company/company.controller.ts(42,72): error TS4111: Property 'id' comes from an index signature, so it must be accessed with ['id'].
+src/app/modules/organization/company/company.routes.ts(2,36): error TS2307: Cannot find module './company.controller' or its corresponding type declarations.
+src/app/modules/package/package.interface.ts(1,17): error TS6133: 'Types' is declared but its value is never read.
+src/app/modules/package/package.model.ts(2,10): error TS1484: 'IPackage' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/app/modules/package/package.model.ts(2,20): error TS1484: 'PackageModel' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/app/modules/queue/worker.service.ts(36,37): error TS6133: 'job' is declared but its value is never read.
+src/app/modules/reports/profit-loss/profit-loss.service.ts(38,11): error TS6133: 'salesPipeline' is declared but its value is never read.
+src/app/modules/sales/order/order.repository.ts(22,11): error TS4114: This member must have an 'override' modifier because it overrides a member in the base class 'BaseRepository<IOrder>'.
+src/app/modules/sales/order/order.service.ts(6,1): error TS6133: 'ProductInventory' is declared but its value is never read.
+src/app/modules/sales/order/order.service.ts(15,11): error TS6133: 'random' is declared but its value is never read.
+src/app/modules/settings/system-settings/system-settings.controller.ts(7,45): error TS6133: 'req' is declared but its value is never read.
+src/app/modules/storefront/storefront.service.ts(1,10): error TS6133: 'model' is declared but its value is never read.
+src/app/routes/middleware/auth-middleware.ts(4,32): error TS6133: 'req' is declared but its value is never read.
+src/app/routes/middleware/auth-middleware.ts(4,46): error TS6133: 'res' is declared but its value is never read.
+src/app/routes/middleware/auth-middleware.ts(9,37): error TS6133: 'req' is declared but its value is never read.
+src/app/routes/middleware/auth-middleware.ts(9,51): error TS6133: 'res' is declared but its value is never read.
+src/app/routes/middleware/auth-middleware.ts(14,38): error TS6133: 'req' is declared but its value is never read.
+src/app/routes/middleware/auth-middleware.ts(14,52): error TS6133: 'res' is declared but its value is never read.
+src/app/routes/v1/public/search.routes.ts(7,18): error TS6133: 'req' is declared but its value is never read.
+src/app/routes/v1/super-admin/dashboard.controller.ts(7,62): error TS6133: 'req' is declared but its value is never read.
+src/core/controllers/GenericController.ts(6,31): error TS6133: 'T' is declared but its value is never read.
+src/core/database/mongoose/repositories/base-repository.ts(7,3): error TS6196: 'QueryOptions' is declared but never used.
+src/core/middleware/authorize.ts(37,23): error TS18048: 'userWithRoles.roles' is possibly 'undefined'.
+src/core/middleware/authorize.ts(49,18): error TS18048: 'userWithRoles.roles' is possibly 'undefined'.
+src/core/middleware/authorize.ts(50,11): error TS2322: Type 'string[] | ObjectId[] | undefined' is not assignable to type 'string[]'.
+  Type 'undefined' is not assignable to type 'string[]'.
+src/core/middleware/resolveBusinessUnit.ts(9,57): error TS6133: 'res' is declared but its value is never read.
+src/core/utils/cacheQuery.ts(45,19): error TS6133: 'originalExec' is declared but its value is never read.
+src/core/utils/file-upload.ts(3,1): error TS6133: 'fs' is declared but its value is never read.
+src/core/utils/file-upload.ts(18,32): error TS6133: 'reject' is declared but its value is never read.
+src/core/utils/file-upload.ts(57,26): error TS6133: 'req' is declared but its value is never read.
+src/core/utils/file-upload.ts(57,31): error TS6133: 'file' is declared but its value is never read.
+src/core/utils/file-upload.ts(60,23): error TS6133: 'req' is declared but its value is never read.
+src/core/utils/logger.ts(67,13): error TS6133: 'functionName' is declared but its value is never read.
+src/debug-user.ts(9,27): error TS4111: Property 'DB_URL' comes from an index signature, so it must be accessed with ['DB_URL'].
+src/debug-user.ts(27,38): error TS4111: Property 'User' comes from an index signature, so it must be accessed with ['User'].
+src/debug-user.ts(29,34): error TS2349: This expression is not callable.
+  Each member of the union type '{ <ResultDoc = any>(filter: ObjectId | FilterQuery<Record<string, any>> | Query<any, any, {}, unknown, "find", Record<string, never>>, projection: ProjectionType<...> | ... 1 more ... | undefined, options: QueryOptions<...> & ... 1 more ... & Abortable): Query<...>; <ResultDoc = any>(filter: ObjectId | ... 1 more .....' has signatures, but none of those signatures are compatible with each other.
+src/server.ts(40,35): error TS6133: 'code' is declared but its value is never read.
+src/server.ts(40,41): error TS6133: 'signal' is declared but its value is never read.

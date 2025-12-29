@@ -230,10 +230,15 @@ UserSchema.statics["isUserExists"] = async function (email: string): Promise<IUs
     .populate([
       {
         path: 'permissions.role', // Populate role in new permissions structure
-        populate: {
-          path: 'permissions', // Populate permission IDs inside the Role
-          model: 'Permission'
-        }
+        populate: [
+          { path: 'permissions', model: 'Permission', select: 'resource action scope effect conditions resolver attributes' }, // Direct permissions
+          {
+            path: 'permissionGroups',
+            model: 'PermissionGroup',
+            select: 'permissions resolver',
+            populate: { path: 'permissions', model: 'Permission', select: 'resource action scope effect conditions resolver attributes' }
+          }
+        ]
       },
       // Keep populating deprecated fields for backward compatibility if needed
       {

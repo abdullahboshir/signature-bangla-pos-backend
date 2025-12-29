@@ -12,7 +12,7 @@ import { WorkerService } from "./app/modules/queue/worker.service.ts";
 
 let server: Server;
 
-const numCPUs = os.cpus().length;
+const numCPUs = Number(process.env['WORKERS']) || os.cpus().length;
 
 async function bootstrap() {
   try {
@@ -49,7 +49,10 @@ async function bootstrap() {
 
       // 2. Initialize Queue Workers (Distributed processing)
       // Workers compete for jobs, which is good for scale.
-      WorkerService.initWorkers();
+      // OPTIMIZATION: Check if this node should run background workers
+      if (process.env['ENABLE_QUEUE'] !== "false") { // Default true for simplicity unless explicitly disabled
+        WorkerService.initWorkers();
+      }
 
       // 3. Start HTTP Server
       server = app.listen(appConfig.port, () => {
@@ -63,6 +66,22 @@ async function bootstrap() {
 }
 
 bootstrap();
+
+// Graceful Shutdown Logic
+const shutdown = () => {
+  console.log(`🛑 Worker ${process.pid} shutting down...`.yellow);
+  if (server) {
+    server.close(() => {
+      console.log("HTTTP Server closed");
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+};
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
 
 // Error handling
 process.on("unhandledRejection", (reason, promise) => {

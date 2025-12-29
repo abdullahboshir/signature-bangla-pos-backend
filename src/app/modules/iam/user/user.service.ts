@@ -5,7 +5,7 @@ import { genereteCustomerId } from "./user.utils.js";
 
 import { User } from "./user.model.js";
 import { Role } from "../role/role.model.js";
-
+import BusinessUnit from "../../organization/business-unit/business-unit.model.ts";
 import { USER_ROLE } from "./user.constant.ts";
 import appConfig from "@shared/config/app.config.ts";
 import AppError from "@shared/errors/app-error.ts";
@@ -260,10 +260,27 @@ export const createStaffService = async (
       }
     }
 
-    // 3. Generate ID
+    // 3. Resolve Business Unit ID
+    // Check if businessUnit is provided and resolve it
+    let businessUnitId = (staffData as any).businessUnit;
+    if (businessUnitId) {
+      const bu = await BusinessUnit.findOne({
+        $or: [
+          { id: businessUnitId }, // Custom ID (BU-xxxx)
+          { _id: mongoose.isValidObjectId(businessUnitId) ? businessUnitId : null }
+        ]
+      }).session(session);
+
+      if (!bu) {
+        throw new AppError(404, `Business Unit '${businessUnitId}' not found`);
+      }
+      businessUnitId = bu._id;
+    }
+
+    // 4. Generate ID
     const userId = await genereteCustomerId(email, roleId.toString());
 
-    // 4. Handle Avatar
+    // 5. Handle Avatar
     let avatarUrl = "";
     if (file) {
       try {
@@ -275,14 +292,14 @@ export const createStaffService = async (
       }
     }
 
-    // 5. Create User
+    // 6. Create User
     const userData: Partial<IUser> = {
       id: userId,
       email: email,
       phone: phone,
       password: password || (appConfig.default_pass as string),
       roles: [roleId],
-      businessUnits: [staffData.businessUnit], // Initial BU
+      businessUnits: businessUnitId ? [businessUnitId] : [],
       status: "pending",
       needsPasswordChange: !password,
       avatar: avatarUrl,
@@ -295,10 +312,11 @@ export const createStaffService = async (
     const newUser = await User.create([userData], { session });
     if (!newUser || !newUser.length) throw new AppError(500, "Failed to create user account");
 
-    // 6. Create Staff Profile
+    // 7. Create Staff Profile
     const staffPayload: Partial<IStaff> = {
       ...staffData,
       user: newUser[0]._id,
+      businessUnit: businessUnitId, // Use resolved ObjectId
       isActive: true,
       isDeleted: false
     };

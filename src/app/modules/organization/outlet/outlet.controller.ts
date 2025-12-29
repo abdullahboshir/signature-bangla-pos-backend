@@ -52,10 +52,21 @@ const deleteOutlet = catchAsync(async (req: Request, res: Response) => {
     ApiResponse.success(res, result, "Outlet deleted successfully", httpStatus.OK);
 });
 
+const getOutletStats = catchAsync(async (req: Request, res: Response) => {
+    const id = req.params['id'];
+    if (!id) {
+        throw new Error("ID is required");
+    }
+    const result = await OutletService.getOutletStats(id);
+
+    ApiResponse.success(res, result, "Outlet stats retrieved successfully", httpStatus.OK);
+});
+
 export const OutletController = {
     createOutlet,
     getAllOutlets,
     getOutletById,
     updateOutlet,
-    deleteOutlet
+    deleteOutlet,
+    getOutletStats
 };

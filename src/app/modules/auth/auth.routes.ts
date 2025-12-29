@@ -5,7 +5,7 @@ import { authMeController, loginController, logoutController, refreshTokenContro
 import type { AnyZodObject } from "zod/v3";
 import { validateRequest } from "@core/middleware/validateRequest.ts";
 import auth from "@core/middleware/auth.ts";
-import { USER_ROLE, USER_ROLE_ARRAY } from "../iam/user/user.constant.ts";
+import { USER_ROLE_ARRAY } from "../iam/user/user.constant.ts";
 
 
 const router = Router();

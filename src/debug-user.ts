@@ -6,7 +6,7 @@ import fs from 'fs';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
-const dbUrl = process.env.DB_URL;
+const dbUrl = process.env['DB_URL'];
 const logFile = path.join(process.cwd(), 'src', 'debug_log.txt');
 
 function log(msg: string) {
@@ -24,9 +24,9 @@ async function run() {
         log('Connected to DB');
 
         const UserSchema = new mongoose.Schema({}, { strict: false });
-        const User = mongoose.models.User || mongoose.model('User', UserSchema);
+        const User = mongoose.models['User'] || mongoose.model('User', UserSchema);
 
-        const users = await User.find({}).lean();
+        const users = await (User as any).find({}).lean();
 
         let found = false;
         for (const u of users as any[]) {

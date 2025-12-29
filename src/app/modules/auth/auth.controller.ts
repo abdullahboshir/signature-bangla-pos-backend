@@ -19,10 +19,8 @@ export const loginController = catchAsync(async (req, res) => {
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: false, // Explicitly false for debugging
-    sameSite: "lax",
-    path: "/",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    secure: appConfig.NODE_ENV === "production",
+    sameSite: appConfig.NODE_ENV === "production" ? "none" : "strict",
   });
 
   console.log("LOGIN SUCCESS: Sending response to client");

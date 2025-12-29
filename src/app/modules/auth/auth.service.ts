@@ -5,6 +5,7 @@ import { User } from "../iam/user/user.model.ts";
 import "../organization/business-unit/business-unit.model.ts";
 import "../iam/role/role.model.ts";
 import "../iam/permission/permission.model.ts";
+import "../iam/permission-group/permission-group.model.ts";
 import appConfig from "@shared/config/app.config.ts";
 import AppError from "@shared/errors/app-error.ts";
 import status from "http-status";
@@ -14,8 +15,7 @@ const permissionService = new PermissionService();
 
 export const loginService = async (email: string, pass: string) => {
   const isUserExists = await User.isUserExists(email);
-  console.info("LOGIN DEBUG - Email:", email, "Pass:", pass);
-  console.info("I AM FROM AUTH SERVICE:", isUserExists);
+
 
 
   if (!isUserExists) {
@@ -40,14 +40,26 @@ export const loginService = async (email: string, pass: string) => {
 
 
   const allRoles = isUserExists.roles?.map((r: any) => r.name) ?? [];
+  console.log('businessUnitssssssssssssssssssss', isUserExists.businessUnits)
+
 
   // Get Effective Permissions & Limits (Context)
   const authContext = await permissionService.getAuthorizationContext(isUserExists as any);
+
+  const businessUnits = isUserExists.businessUnits?.map((bu: any) => ({
+    _id: bu._id,
+    name: bu.name,
+    id: bu.id,
+    slug: bu.slug
+  })) ?? [];
+
 
   const jwtPayload: any = {
     userId: isUserExists?._id,
     id: isUserExists?.id,
     email: isUserExists?.email,
+    businessUnits,
+    status: isUserExists?.status,
     role: allRoles,
     // Add context to token payload if needed, or keep token light. Keeping token light.
   };
@@ -66,15 +78,12 @@ export const loginService = async (email: string, pass: string) => {
 
   // console.log('userrrrrrrrrrrrrrrrrrrrrrrrr', isUserExists.businessUnits)
 
-  const businessUnits = isUserExists.businessUnits?.map((bu: any) => ({
-    _id: bu._id,
-    name: bu.name,
-    id: bu.id // This is likely the slug/custom ID used in URLs
-  })) ?? [];
+
   const userInfo = {
     userId: isUserExists?._id,
     id: isUserExists?.id,
     email: isUserExists?.email,
+    status: isUserExists?.status,
     role: allRoles, // Array of strings (legacy/simple)
     roles: isUserExists.roles, // Array of objects (populated)
     permissions: isUserExists.permissions || [], // Scoped permissions
@@ -118,7 +127,14 @@ export const refreshTokenAuthService = async (token: string) => {
     { path: 'businessUnits', select: 'name id' },
     {
       path: 'permissions.role',
-      populate: { path: 'permissions' }
+      populate: [
+        { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' },
+        {
+          path: 'permissionGroups',
+          select: 'permissions resolver',
+          populate: { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' }
+        }
+      ]
     }
   ]).lean()
 
@@ -158,9 +174,12 @@ export const refreshTokenAuthService = async (token: string) => {
     id: isUserExists?.id,
     email: isUserExists?.email,
     role: allRoles,
+    status: isUserExists?.status,
     roleIds: allRoles,
     isSuperAdmin: isUserExists.isSuperAdmin
   };
+
+
 
   const accessToken = createToken(
     jwtPayload,
@@ -179,10 +198,27 @@ export const authMeService = async (
 
   const res = await User.findOne({ _id: userInfo.userId }).populate([
     { path: 'businessUnits', select: 'name id slug' },
-    { path: 'roles', select: 'name slug' }, // Ensure roles are populated
+    {
+      path: 'roles',
+      populate: [
+        { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' },
+        {
+          path: 'permissionGroups',
+          select: 'permissions resolver',
+          populate: { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' }
+        }
+      ]
+    },
     {
       path: 'permissions.role',
-      populate: { path: 'permissions' }
+      populate: [
+        { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' },
+        {
+          path: 'permissionGroups',
+          select: 'permissions resolver',
+          populate: { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' }
+        }
+      ]
     }
   ]).lean();
 

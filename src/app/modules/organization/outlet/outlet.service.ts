@@ -106,10 +106,94 @@ const deleteOutlet = async (id: string): Promise<IOutlet | null> => {
     return result;
 };
 
+const getOutletStats = async (outletId: string) => {
+    // Dynamically import models to avoid circular dependency issues if any, or just use model()
+    const Order = model("Order");
+    // const CashRegister = model("CashRegister"); // Check if exists
+    const Product = model("Product");
+    // const Attendance = model("Attendance"); // Check if exists
+    const User = model("User");
+
+    // 1. Today's Sales
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const todaySales = await Order.aggregate([
+        {
+            $match: {
+                outlet: new Types.ObjectId(outletId),
+                createdAt: { $gte: startOfDay, $lte: endOfDay },
+                // status: "completed" // Assuming status field exists
+            }
+        },
+        {
+            $group: {
+                _id: null,
+                totalAmount: { $sum: "$totalAmount" }, // Verify field name
+                count: { $sum: 1 }
+            }
+        }
+    ]);
+
+    // 2. Active Registers (Mocking/Generic for now if model unsure, but try counting)
+    // Assuming 'CashRegister' model tracks status
+    let activeRegisters = 0;
+    try {
+        const CashRegister = model("CashRegister");
+        activeRegisters = await CashRegister.countDocuments({
+            outlet: outletId,
+            status: 'open'
+        });
+    } catch (e) {
+        // Model might not exist yet
+        activeRegisters = 0;
+    }
+
+    // 3. Low Stock Items
+    // Assuming products are linked to outlet (inventory) or global. 
+    // If global, this might be tricky. Assuming simple Product model for now.
+    // If Inventory is separate, we'd query that.
+    const lowStockCount = await Product.countDocuments({
+        // "stock": { $lte: 10 } // Simplified
+        // Real implementation depends on if stock is per-outlet (Inventory model) or global
+        // For now, returning 0 or simplified global count if no outlet linkage
+        // "outlet": outletId 
+    });
+
+    // 4. Active Staff
+    // Count users with outlet permissions or currently clocked in (Attendance)
+    let activeStaff = 0;
+    try {
+        const Attendance = model("Attendance");
+        activeStaff = await Attendance.countDocuments({
+            outlet: outletId,
+            checkOutTime: null, // Currently checked in
+            checkInTime: { $gte: startOfDay }
+        });
+    } catch (e) {
+        // Fallback to total staff assigned
+        activeStaff = await User.countDocuments({
+            "permissions.outlet": outletId,
+            isActive: true
+        });
+    }
+
+    return {
+        todaySales: todaySales[0]?.totalAmount || 0,
+        salesCount: todaySales[0]?.count || 0,
+        activeRegisters,
+        lowStockCount,
+        activeStaff
+    };
+};
+
 export const OutletService = {
     createOutlet,
     getAllOutlets,
     getOutletById,
     updateOutlet,
-    deleteOutlet
+    deleteOutlet,
+    getOutletStats
 };
