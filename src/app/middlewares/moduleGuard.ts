@@ -1,6 +1,6 @@
 
-import type { ISystemSettings } from '@app/modules/settings/system-settings/system-settings.interface.ts';
-import { SystemSettings } from '@app/modules/settings/system-settings/system-settings.model.ts';
+import type { ISystemSettings } from '@app/modules/platform/settings/system-settings/system-settings.interface.ts';
+import { SystemSettings } from '@app/modules/platform/settings/system-settings/system-settings.model.ts';
 import type { Request, Response, NextFunction } from 'express';
 
 import httpStatus from 'http-status';

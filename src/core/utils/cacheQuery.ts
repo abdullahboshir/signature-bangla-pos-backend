@@ -27,44 +27,44 @@ export function cacheQuery<T extends Document>(
 
 export function cachingMiddleware<T extends Document>(schema: Schema<T, any>) {
 
-    (schema.query as SchemaQuery).cache = cacheQuery;
+  (schema.query as SchemaQuery).cache = cacheQuery;
 
-    // 2️⃣ pre find middleware
-    schema.pre<Query<any, any>>(/^find/, async function (next) {
-        const cacheKey = this.getOptions()['cacheKey'];
-        if (!cacheKey) return next();
+  // 2️⃣ pre find middleware
+  schema.pre<Query<any, any>>(/^find/, async function (next) {
+    const cacheKey = this.getOptions()['cacheKey'];
+    if (!cacheKey) return next();
 
-        const cachedData = await CacheManager.get(cacheKey);
+    const cachedData = await CacheManager.get(cacheKey);
 
-        if (cachedData) {
-            console.log(`✅ Cache Hit for key: ${cacheKey}`);
-            // Cache hit flag
-            this.setOptions({ isCacheHit: true });
+    if (cachedData) {
+      console.log(`✅ Cache Hit for key: ${cacheKey}`);
+      // Cache hit flag
+      this.setOptions({ isCacheHit: true });
 
-            // exec override
-            const originalExec = this.exec;
-            this.exec = async function () {
-                return cachedData;
-            };
-        }
+      // exec override
+      // const originalExec = this.exec; // store originalExec? unused.
+      this.exec = async function () {
+        return cachedData;
+      };
+    }
 
-        next();
-    });
+    next();
+  });
 
-    // 3️⃣ post find middleware
-    schema.post<Query<any, any>>(/^find/, async function (docs, next) {
-        const options = this.getOptions();
-        const cacheKey = options['cacheKey'];
+  // 3️⃣ post find middleware
+  schema.post<Query<any, any>>(/^find/, async function (docs, next) {
+    const options = this.getOptions();
+    const cacheKey = options['cacheKey'];
 
-        if (!cacheKey || options['isCacheHit']) return next();
+    if (!cacheKey || options['isCacheHit']) return next();
 
-        const cacheConfig = cacheActiveQueries.get(cacheKey);
-        if (cacheConfig) {
-            console.log(`⬆️ Caching data for key: ${cacheConfig.key}`);
-            await CacheManager.set(cacheConfig.key, docs, cacheConfig.ttlSeconds);
-            cacheActiveQueries.delete(cacheConfig.key);
-        }
+    const cacheConfig = cacheActiveQueries.get(cacheKey);
+    if (cacheConfig) {
+      console.log(`⬆️ Caching data for key: ${cacheConfig.key}`);
+      await CacheManager.set(cacheConfig.key, docs, cacheConfig.ttlSeconds);
+      cacheActiveQueries.delete(cacheConfig.key);
+    }
 
-        next();
-    });
+    next();
+  });
 }

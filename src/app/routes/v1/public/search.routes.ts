@@ -4,7 +4,7 @@ import { Router } from "express";
 const router = Router();
 
 // Search routes will be added here
-router.get("/", (req, res) => {
+router.get("/", (_req, res) => {
   res.json({ message: "Search endpoint" });
 });
 

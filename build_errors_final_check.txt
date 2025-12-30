@@ -1,0 +1,25 @@
+
+> signature-bangla-pos-backend@1.0.0 build
+> tsc
+
+src/app/modules/commerce/catalog/child-category/child-category.controller.ts(3,3): error TS6133: 'createChildCategoryService' is declared but its value is never read.
+src/app/modules/commerce/sales/order/order.service.ts(15,11): error TS6133: 'random' is declared but its value is never read.
+src/app/modules/erp/reports/profit-loss/profit-loss.service.ts(38,11): error TS6133: '_salesPipeline' is declared but its value is never read.
+src/app/modules/iam/permission/permission.service.ts(27,7): error TS6133: '_CACHE_TTL_SECONDS' is declared but its value is never read.
+src/app/modules/iam/permission/permission.service.ts(67,11): error TS6133: '_cacheKey' is declared but its value is never read.
+src/app/modules/iam/role/role.validation.ts(5,7): error TS6133: '_permissionSchema' is declared but its value is never read.
+src/app/modules/platform/organization/business-unit/business-unit.service.ts(9,1): error TS6133: 'sendImageToCloudinary' is declared but its value is never read.
+src/app/modules/platform/organization/company/company.routes.ts(2,36): error TS2307: Cannot find module './company.controller' or its corresponding type declarations.
+src/app/modules/pos/cash/cash-register/cash-register.service.ts(19,35): error TS6133: 'outletId' is declared but its value is never read.
+src/app/modules/pos/cash/cash-register/cash-register.service.ts(84,36): error TS6133: 'userId' is declared but its value is never read.
+src/app/routes/v1/public/search.routes.ts(7,18): error TS6133: 'req' is declared but its value is never read.
+src/app/routes/v1/super-admin/dashboard.controller.ts(7,62): error TS6133: 'req' is declared but its value is never read.
+src/core/controllers/GenericController.ts(6,43): error TS2304: Cannot find name 'Document'.
+src/core/database/mongoose/repositories/base-repository.ts(7,3): error TS6196: 'QueryOptions' is declared but never used.
+src/core/utils/file-upload.ts(61,26): error TS6133: 'req' is declared but its value is never read.
+src/core/utils/file-upload.ts(61,31): error TS6133: 'file' is declared but its value is never read.
+src/core/utils/file-upload.ts(64,23): error TS6133: 'req' is declared but its value is never read.
+src/server.ts(40,35): error TS6133: 'code' is declared but its value is never read.
+src/server.ts(40,41): error TS6133: 'signal' is declared but its value is never read.
+src/server.ts(71,19): error TS6133: 'code' is declared but its value is never read.
+src/server.ts(71,33): error TS6133: 'signal' is declared but its value is never read.

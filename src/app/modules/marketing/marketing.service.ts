@@ -79,7 +79,7 @@ const deletePixel = async (id: string) => {
 };
 
 // Placeholder for Sync
-const syncCampaignsFromMeta = async (adAccountId: string, accessToken: string) => {
+const syncCampaignsFromMeta = async (_adAccountId: string, _accessToken: string) => {
     // Implementation pending
     throw new Error("Meta Sync not implemented");
 };

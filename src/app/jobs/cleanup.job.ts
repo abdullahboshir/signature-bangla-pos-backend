@@ -1,12 +1,12 @@
-import { Product } from "../modules/catalog/product/product-core/product-core.model.js";
-import { deleteProductService } from "../modules/catalog/product/product-core/product-core.service.js";
-import { Category } from "../modules/catalog/category/category.model.js";
-import { SubCategory } from "../modules/catalog/sub-category/sub-category.model.js";
-import { ChildCategory } from "../modules/catalog/child-category/child-category.model.js";
-import BusinessUnit from "../modules/organization/business-unit/business-unit.model.js";
+import "colors";
+import { Product } from "../modules/commerce/catalog/product/product-core/product-core.model.js";
+import { deleteProductService } from "../modules/commerce/catalog/product/product-core/product-core.service.js";
+import { Category } from "../modules/commerce/catalog/category/category.model.js";
+
+import BusinessUnit from "../modules/platform/organization/business-unit/business-unit.model.js";
 
 
-import { SystemSettingsService } from "../modules/settings/system-settings/system-settings.service.js";
+import { SystemSettingsService } from "../modules/platform/settings/system-settings/system-settings.service.js";
 
 export const startCleanupJob = () => {
     // Run every 24 hours (24 * 60 * 60 * 1000 ms)
@@ -50,7 +50,7 @@ export const startCleanupJob = () => {
                 for (const product of productsToDelete) {
                     try {
                         // Use service to ensure sub-documents are also deleted
-                        await deleteProductService(product._id.toString(), true);
+                        await deleteProductService((product._id as any).toString(), true);
                     } catch (err: any) {
                         console.error(`Cleanup Job warning: Failed to delete product ${product._id}:`.yellow, err?.message);
                     }
@@ -68,21 +68,7 @@ export const startCleanupJob = () => {
                 console.log(`Cleanup Job: Permanently deleted ${categoriesResult.deletedCount} categories.`);
             }
 
-            const subCategoriesResult = await SubCategory.deleteMany({
-                isDeleted: true,
-                deletedAt: { $lt: cutoffDate }
-            });
-            if (subCategoriesResult.deletedCount > 0) {
-                console.log(`Cleanup Job: Permanently deleted ${subCategoriesResult.deletedCount} sub-categories.`);
-            }
 
-            const childCategoriesResult = await ChildCategory.deleteMany({
-                isDeleted: true,
-                deletedAt: { $lt: cutoffDate }
-            });
-            if (childCategoriesResult.deletedCount > 0) {
-                console.log(`Cleanup Job: Permanently deleted ${childCategoriesResult.deletedCount} child-categories.`);
-            }
 
             // ===========================================
             // 3. Cleanup Business Units

@@ -17,7 +17,7 @@ import {
 } from "./user.controller.js";
 import { createUserController } from "./create-user.controller.ts";
 
-import type { AnyZodObject } from "zod/v3";
+import type { AnyZodObject as _AnyZodObject } from "zod/v3";
 
 
 import {
@@ -26,13 +26,14 @@ import {
 } from "../permission/permission.constant.js";
 import auth from "@core/middleware/auth.ts";
 import { authorize } from "@core/middleware/authorize.ts";
-import { createCustomerZodSchema } from "@app/modules/customer/customer.validation.ts";
+
 import { upload } from "@core/utils/file-upload.ts";
 import { validateRequest } from "@core/middleware/validateRequest.ts";
 
 import { roleRoutes } from "../role/role.routes.js";
 import { USER_ROLE } from "./user.constant.ts";
 import moduleGuard from "@app/middlewares/moduleGuard.ts";
+import { createCustomerZodSchema } from "@app/modules/contacts/customers/customer.validation.ts";
 
 
 const router = Router();

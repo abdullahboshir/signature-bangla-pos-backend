@@ -6,8 +6,8 @@ import { authGroupRoutes } from "./auth/auth.routes.js";
 import { adminGroupRoutes } from "./super-admin/index.js";
 import { customerGroupRoutes } from "./customer/index.js";
 import { publicGroupRoutes } from "./public/index.js";
-import { PackageRoutes } from "../../modules/package/package.routes.ts";
-import { LicenseRoutes } from "../../modules/license/license.routes.ts";
+import { PackageRoutes } from "../../modules/platform/package/package.routes.ts";
+import { LicenseRoutes } from "../../modules/platform/license/license.routes.ts";
 
 const router = Router();
 

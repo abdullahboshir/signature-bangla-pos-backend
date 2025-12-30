@@ -1,0 +1,6 @@
+
+> signature-bangla-pos-backend@1.0.0 build
+> tsc
+
+src/app/modules/iam/role/role.validation.ts(26,1): error TS1128: Declaration or statement expected.
+src/app/modules/iam/role/role.validation.ts(26,2): error TS1128: Declaration or statement expected.

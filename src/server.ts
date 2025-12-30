@@ -8,7 +8,7 @@ import { runRolePermissionSeeder } from "./core/database/mongoose/seeders/author
 import { seedSuperAdmin } from "./core/database/mongoose/seeders/superAdmin.seeder.ts";
 import appConfig from "./shared/config/app.config.ts";
 import { startCleanupJob } from "./app/jobs/cleanup.job.ts";
-import { WorkerService } from "./app/modules/queue/worker.service.ts";
+import { WorkerService } from "./app/modules/platform/queue/worker.service.ts";
 
 let server: Server;
 
@@ -37,7 +37,7 @@ async function bootstrap() {
         cluster.fork();
       }
 
-      cluster.on("exit", (worker, code, signal) => {
+      cluster.on("exit", (worker, _code, _signal) => {
         console.log(`💀 Worker ${worker.process.pid} died. Restarting...`.red);
         cluster.fork();
       });
@@ -68,7 +68,7 @@ async function bootstrap() {
 bootstrap();
 
 // Graceful Shutdown Logic
-const shutdown = () => {
+const shutdown = (_code: number, _signal: string) => {
   console.log(`🛑 Worker ${process.pid} shutting down...`.yellow);
   if (server) {
     server.close(() => {

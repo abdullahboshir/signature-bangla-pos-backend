@@ -1,4 +1,4 @@
-import { customerRoutes } from "@app/modules/customer/customer.routes.ts";
+import { customerRoutes } from "@app/modules/contacts/customers/customer.routes.ts";
 import { Router } from "express";
 
 

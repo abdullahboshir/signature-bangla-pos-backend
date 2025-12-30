@@ -2,7 +2,8 @@
 import { z } from 'zod';
 import mongoose from 'mongoose';
 
-const permissionSchema = z.object({
+// const _permissionSchema = z.object({
+/*
   resource: z.enum([
     'product', 'order', 'customer', 'category', 'brand', 'vendor',
     'supplier', 'promotion', 'content', 'user', 'role', 'payment',
@@ -21,7 +22,8 @@ const permissionSchema = z.object({
   conditions: z.record(z.string(), z.any()).optional(),
   description: z.string().trim().min(1).max(500),
   descriptionBangla: z.string().trim().max(500).optional()
-});
+  */
+// });
 
 export const createRoleValidation = z.object({
   body: z.object({

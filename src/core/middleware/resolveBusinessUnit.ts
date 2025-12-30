@@ -1,12 +1,12 @@
 import type { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
-import BusinessUnit from "@app/modules/organization/business-unit/business-unit.model.ts";
+import BusinessUnit from "@app/modules/platform/organization/business-unit/business-unit.model.ts";
 
 /**
  * Middleware to resolve businessUnit ID from request body/query/params
  * transforming slug or string ID into a valid ObjectId.
  */
-export const resolveBusinessUnit = async (req: Request, res: Response, next: NextFunction) => {
+export const resolveBusinessUnit = async (req: Request, _res: Response, next: NextFunction) => {
     try {
         // Check sources: body.businessUnit, query.businessUnitId, params.businessUnit
         const sources = [

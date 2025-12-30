@@ -1,9 +1,10 @@
 import type { Request, Response } from "express";
+import { Document } from "mongoose";
 import httpStatus from "http-status";
 import catchAsync from "@core/utils/catchAsync.ts";
 import { ApiResponse } from "@core/utils/api-response.ts";
 
-export class GenericController<T> {
+export class GenericController<_T extends Document> {
     constructor(
         private service: {
             create: (data: any, user?: any) => Promise<any>;

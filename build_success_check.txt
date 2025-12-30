@@ -1,0 +1,7 @@
+
+> signature-bangla-pos-backend@1.0.0 build
+> tsc
+
+src/app/modules/commerce/catalog/tax/tax.controller.ts(5,52): error TS2344: Type 'ITax' does not satisfy the constraint 'Document<unknown, any, any, Record<string, any>, {}>'.
+  Type 'ITax' is missing the following properties from type 'Document<unknown, any, any, Record<string, any>, {}>': $assertPopulated, $clearModifiedPaths, $clone, $createModifiedPathsSnapshot, and 50 more.
+src/app/modules/commerce/sales/order/order.service.ts(15,11): error TS6133: 'random' is declared but its value is never read.

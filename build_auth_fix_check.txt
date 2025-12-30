@@ -1,0 +1,4 @@
+
+> signature-bangla-pos-backend@1.0.0 build
+> tsc
+

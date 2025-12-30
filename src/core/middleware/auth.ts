@@ -7,7 +7,7 @@ import status from "http-status"
 import type { Request, Response } from "express"
 import type { JwtPayload } from "jsonwebtoken"
 import { User } from "@app/modules/iam/user/user.model.ts"
-import { verifyToken } from "@app/modules/auth/auth.utils.ts"
+import { verifyToken } from "@app/modules/iam/auth/auth.utils.ts"
 import AppError from "@shared/errors/app-error.ts"
 import catchAsync from "@core/utils/catchAsync.ts"
 

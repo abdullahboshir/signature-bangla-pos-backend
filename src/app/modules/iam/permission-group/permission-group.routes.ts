@@ -8,7 +8,7 @@ import {
     deletePermissionGroup
 } from './permission-group.controller.js';
 import { authMiddleware, adminAuthMiddleware } from '../../../routes/middleware/auth-middleware.js';
-import { USER_ROLE } from '../user/user.constant.ts';
+import { /* USER_ROLE */ } from '../user/user.constant.ts';
 
 const router = express.Router();
 

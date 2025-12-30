@@ -1,5 +1,5 @@
 // src/modules/Permission/permission.service.ts
-import { buildUserPermissionsKey } from '@core/utils/cacheKeys.ts';
+// import { buildUserPermissionsKey } from '@core/utils/cacheKeys.ts';
 import type { IUser } from '../user/user.interface.js';
 import type {
   IPermission,
@@ -7,7 +7,7 @@ import type {
   IPermissionContext,
   IPermissionResult,
 } from './permission.interface.js';
-import { CacheManager } from '@core/utils/caching/cache-manager.ts';
+import { CacheManager as _CacheManager } from "../../../../core/utils/caching/cache-manager.js";
 import logger from '@core/utils/logger.ts';
 import { Role } from '../role/role.model.ts';
 
@@ -24,7 +24,7 @@ export interface IAuthorizationContext {
 
 
 const MAX_ROLE_HIERARCHY_DEPTH = 15;
-const CACHE_TTL_SECONDS = 3600;
+// const _CACHE_TTL_SECONDS = 3600; // 1 hour
 
 export class PermissionService {
   /* ---------------------------------------------------------------------- */
@@ -64,7 +64,7 @@ export class PermissionService {
     user: IUser,
     targetScope?: { businessUnitId?: string; outletId?: string }
   ): Promise<IAuthorizationContext> {
-    const cacheKey = await buildUserPermissionsKey(user.id);
+    // const _cacheKey = await buildUserPermissionsKey(user.id);
 
     // Attempt cache fetch (currently only caching permissions array, strictly we should cache the full context)
     // For now, we will rebuild context or update cache structure later.

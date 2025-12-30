@@ -1,6 +1,6 @@
 import appConfig from '@shared/config/app.config.ts'
 import { v2 as cloudinary } from 'cloudinary'
-import fs from 'fs'
+import _fs from 'fs'
 import multer from 'multer'
 
 
@@ -15,7 +15,7 @@ cloudinary.config({
 export const sendImageToCloudinary = async (imgName: string, path: string) => {
   // Return local file path directly for development reliability
   // Ensure the path is relative to the server root for the frontend to access
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve, _reject) => {
     // Assume file is already in /uploads via Multer
     // We just need to return the URL format that the controller expects
     // Controller expects: result.secure_url
@@ -42,11 +42,15 @@ export const sendImageToCloudinary = async (imgName: string, path: string) => {
     /*
     cloudinary.uploader.upload(
         path,
-        { public_id: imgName },
+        { public_id: imgName, folder: async (_req: any, _file: any) => {
+      // Logic for changing directory based on request
+      // e.g., req.body.category
+      return 'others';
+    }},
         function (error, result) {
-            if (error) reject(error)
+            if (error) _reject(error)
             resolve(result)
-            fs.unlink(path, (err) => { // ... })
+            _fs.unlink(path, (err) => { // ... })
         }
     )
     */
@@ -54,10 +58,10 @@ export const sendImageToCloudinary = async (imgName: string, path: string) => {
 }
 
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: function (_req, _file, cb) {
     cb(null, process.cwd() + '/uploads')
   },
-  filename: function (req, file, cb) {
+  filename: function (_req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9)
     // Extract extension from original name
     const ext = file.originalname.split('.').pop();

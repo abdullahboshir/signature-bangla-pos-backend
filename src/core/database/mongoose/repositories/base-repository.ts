@@ -4,7 +4,7 @@ import type {
   Model,
   FilterQuery,
   UpdateQuery,
-  QueryOptions,
+
 } from "mongoose";
 
 export interface IRepository<T extends Document> {

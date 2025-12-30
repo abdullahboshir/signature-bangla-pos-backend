@@ -49,10 +49,10 @@ function getCallerInfo(): { file: string; line: string; full: string } {
     // 1: logAtLevel (our internal function)
     // 2: log.info/warn/error/debug (user call)
     // 3+: ACTUAL USER CODE ← We want this
-    
+
     for (let i = 3; i < stack.length; i++) {
       const frame = stack[i];
-      
+
       // Skip logger internals
       const filename = frame.getFileName() || '';
       if (filename.includes('logger.ts') || filename.includes('/core/utils/')) {
@@ -64,7 +64,7 @@ function getCallerInfo(): { file: string; line: string; full: string } {
         continue;
       }
 
-      const functionName = frame.getFunctionName() || 'anonymous';
+      // const functionName = frame.getFunctionName() || 'anonymous'; // Unused
       const lineNumber = frame.getLineNumber() || 0;
       const columnNumber = frame.getColumnNumber() || 0;
 

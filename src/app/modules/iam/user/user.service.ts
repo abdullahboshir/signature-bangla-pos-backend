@@ -5,19 +5,20 @@ import { genereteCustomerId } from "./user.utils.js";
 
 import { User } from "./user.model.js";
 import { Role } from "../role/role.model.js";
-import BusinessUnit from "../../organization/business-unit/business-unit.model.ts";
+import BusinessUnit from "../../platform/organization/business-unit/business-unit.model.ts";
 import { USER_ROLE } from "./user.constant.ts";
 import appConfig from "@shared/config/app.config.ts";
 import AppError from "@shared/errors/app-error.ts";
-import type { ICustomer } from "@app/modules/customer/customer.interface.ts";
-import Customer from "@app/modules/customer/customer.model.ts";
 
-import { Staff } from "@app/modules/staff/staff.model.ts";
-import type { IStaff } from "@app/modules/staff/staff.interface.ts";
+
+import { Staff } from "@app/modules/platform/staff/staff.model.ts";
+import type { IStaff } from "@app/modules/platform/staff/staff.interface.ts";
 import { sendImageToCloudinary } from "@core/utils/file-upload.ts";
 
 import { QueryBuilder } from "../../../../core/database/QueryBuilder.js";
 import mongoose from "mongoose";
+import type { ICustomer } from "@app/modules/contacts/customers/customer.interface.ts";
+import Customer from "@app/modules/contacts/customers/customer.model.ts";
 
 // ...
 
@@ -315,8 +316,8 @@ export const createStaffService = async (
     // 7. Create Staff Profile
     const staffPayload: Partial<IStaff> = {
       ...staffData,
-      user: newUser[0]._id,
-      businessUnit: businessUnitId, // Use resolved ObjectId
+      user: newUser[0]!._id,
+      businessUnit: (businessUnitId as any)?._id || businessUnitId,
       isActive: true,
       isDeleted: false
     };
@@ -325,9 +326,9 @@ export const createStaffService = async (
     if (!newStaff || !newStaff.length) throw new AppError(500, "Failed to create staff profile");
 
     await session.commitTransaction();
-    console.log(`✅ Staff created: ${email} (${newStaff[0]._id})`);
+    console.log(`✅ Staff created: ${email} (${newStaff[0]?._id})`);
 
-    return await Staff.findById(newStaff[0]._id).populate('user').populate('businessUnit');
+    return await Staff.findById(newStaff[0]?._id).populate('user').populate('businessUnit');
 
   } catch (error: any) {
     if (session.inTransaction()) await session.abortTransaction();

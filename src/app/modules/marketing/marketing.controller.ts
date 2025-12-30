@@ -24,7 +24,7 @@ export const adCampaignController = new GenericController(adCampaignServiceMap, 
 export const pixelController = new GenericController(pixelServiceMap, 'Pixel');
 
 // Custom method for Sync
-export const syncAdCampaigns = catchAsync(async (req, res) => {
+export const syncAdCampaigns = catchAsync(async (_req, res) => {
     // const { adAccountId, accessToken } = req.body; 
     // await AdCampaignService.syncCampaignsFromMeta(adAccountId, accessToken);
 

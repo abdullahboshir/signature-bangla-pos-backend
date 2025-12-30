@@ -9,7 +9,7 @@ const router = Router();
 
 
 
-import { SystemSettingsRoutes } from "../modules/settings/system-settings/system-settings.routes.js";
+import { SystemSettingsRoutes } from "../modules/platform/settings/system-settings/system-settings.routes.js";
 
 router.use("/v1", v1Routes);
 router.use("/v1/system-settings", SystemSettingsRoutes);

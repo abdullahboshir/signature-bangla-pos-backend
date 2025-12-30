@@ -30,7 +30,7 @@ app.use(compression());
 
 // Serve Static Files
 import path from "path";
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+app.use("/uploads", express.static(path.join(process.cwd(), "storage/uploads")));
 
 
 
@@ -82,8 +82,8 @@ app.get("/", (_req, res) => {
   });
 });
 
-import { QueueService } from "./app/modules/queue/queue.service.ts";
-import { QUEUE_NAMES } from "./app/modules/queue/queue.interface.ts";
+import { QueueService } from "./app/modules/platform/queue/queue.service.ts";
+import { QUEUE_NAMES } from "./app/modules/platform/queue/queue.interface.ts";
 import { CacheManager } from "./core/utils/caching/cache-manager.ts";
 
 // TEMP: Verification Route

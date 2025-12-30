@@ -12,7 +12,7 @@ export const authorize = (resource: string, action: string) => {
   return catchAsync(async (req: any, _res: any, next: any) => {
     try {
       const user = req.user;
-      
+
       if (!user) {
         throw new AppError(status.UNAUTHORIZED, 'Authentication required');
       }
@@ -28,26 +28,26 @@ export const authorize = (resource: string, action: string) => {
         })
         .select('+directPermissions');
 
-        
-        
-        if (!userWithRoles) {
-          throw new AppError(status.NOT_FOUND, 'User not found');
-        }
 
-        const roles = userWithRoles?.roles.map((role: any) => role?.name);
-        // console.log('USERRRRRRRRRR', roles)
 
-        if(roles.includes(USER_ROLE.SUPER_ADMIN)){
-          return next()
-        }
-    
-           console.log('USERRRRRRRRRR from req.body', req.params.userId)
+      if (!userWithRoles) {
+        throw new AppError(status.NOT_FOUND, 'User not found');
+      }
+
+      const roles = userWithRoles?.roles ? userWithRoles.roles.map((role: any) => role?.name) : [];
+      // console.log('USERRRRRRRRRR', roles)
+
+      if (roles.includes(USER_ROLE.SUPER_ADMIN)) {
+        return next()
+      }
+
+      console.log('USERRRRRRRRRR from req.body', req.params.userId)
       // Build permission context with correct resource info
       const context: IPermissionContext = {
         user: {
           id: userWithRoles.id,
-          roles: userWithRoles.roles.map((role: any) => role.name),
-          businessUnits: userWithRoles.businessUnits,
+          roles: userWithRoles.roles ? userWithRoles.roles.map((role: any) => role.name) : [],
+          businessUnits: userWithRoles.businessUnits as string[],
           ...(userWithRoles.branches !== undefined && { branches: userWithRoles.branches }),
           ...(userWithRoles.vendorId !== undefined && { vendorId: userWithRoles.vendorId }),
           ...(userWithRoles.region !== undefined && { region: userWithRoles.region })
@@ -64,8 +64,8 @@ export const authorize = (resource: string, action: string) => {
           timeOfDay: new Date().toISOString()
         }
       };
-      
-    console.log('permission context', context)
+
+      console.log('permission context', context)
       // Check permission using RBAC/ABAC system
       const result = await permissionService.checkPermission(
         userWithRoles,
@@ -77,7 +77,7 @@ export const authorize = (resource: string, action: string) => {
       if (!result.allowed) {
         console.log("[AUTHORIZE MIDDLEWARE] Permission denied:", result.reason);
         throw new AppError(
-          status.FORBIDDEN, 
+          status.FORBIDDEN,
           result.reason || 'Insufficient permissions for this action'
         );
       }
@@ -87,7 +87,7 @@ export const authorize = (resource: string, action: string) => {
       // Attach permission result and context for use in controllers
       req.permissionResult = result;
       req.permissionContext = context;
-      
+
       next();
 
     } catch (error) {

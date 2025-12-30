@@ -1,4 +1,4 @@
-import { authRoutes } from "@app/modules/auth/auth.routes.ts";
+import { authRoutes } from "@app/modules/iam/auth/auth.routes.ts";
 import { Router } from "express";
 
 const router = Router();

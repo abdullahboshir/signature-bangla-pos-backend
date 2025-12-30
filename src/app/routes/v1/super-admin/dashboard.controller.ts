@@ -4,7 +4,7 @@ import status from "http-status";
 import mongoose from "mongoose";
 
 // Get aggregated dashboard stats for super admin
-export const getDashboardStatsController = catchAsync(async (req, res) => {
+export const getDashboardStatsController = catchAsync(async (_req, res) => {
     const BusinessUnit = mongoose.model("BusinessUnit");
     const User = mongoose.model("User");
 
