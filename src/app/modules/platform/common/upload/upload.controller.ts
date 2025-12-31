@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { sendImageToCloudinary } from '@core/utils/file-upload.ts';
+import { StorageService } from '../../../../../shared/file-storage/storage.service.js';
 import catchAsync from '@core/utils/catchAsync.ts';
 import { ApiResponse } from '@core/utils/api-response.ts';
 import httpStatus from 'http-status';
@@ -8,13 +8,13 @@ const uploadImage = catchAsync(async (req: Request, res: Response) => {
     if (!req.file) {
         throw new Error('No file uploaded');
     }
-    const result: any = await sendImageToCloudinary(req.file.filename, req.file.path);
+    const result = await StorageService.uploadFile(req.file, 'uploads');
 
     ApiResponse.success(
         res,
         {
-            url: result.secure_url,
-            public_id: result.public_id
+            url: result.url,
+            public_id: result.key
         },
         'Image uploaded successfully',
         httpStatus.OK

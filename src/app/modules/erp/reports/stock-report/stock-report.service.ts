@@ -1,4 +1,4 @@
-import { Product } from "@app/modules/commerce/catalog/product/product-core/product-core.model.js";
+import { Product } from "../../../commerce/catalog/product/domain/product-core/product-core.model.js";
 import { resolveBusinessUnitId } from "@core/utils/mutation-helper.js";
 import mongoose, { type PipelineStage } from "mongoose";
 import type { IStockReportFilters } from "./stock-report.interface.js";

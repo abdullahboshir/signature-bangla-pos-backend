@@ -32,6 +32,9 @@ async function bootstrap() {
       startCleanupJob();
 
       // 4. Fork Workers
+      // NOTE: If using an external process manager like PM2 or Kubernetes (ReplicaSet),
+      // DISABLE this internal clustering to avoid port conflicts and let the infrastructure handle scaling.
+      // Set WORKERS=0 or use separate entry point for production.
       console.log(`🚀 Forking ${numCPUs} workers for full scalability...`.green);
       for (let i = 0; i < numCPUs; i++) {
         cluster.fork();

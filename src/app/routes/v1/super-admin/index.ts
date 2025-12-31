@@ -2,7 +2,7 @@ import { Router } from "express";
 
 ;
 import orderRoutes from "../../../modules/commerce/sales/order/order.routes.js";
-import { productRoutes } from "@app/modules/commerce/catalog/product/product-core/product-core-routes.js";
+import { productRoutes } from "@app/modules/commerce/catalog/product/domain/product-core/product-core-routes.js";
 import { UploadRoutes } from "@app/modules/platform/common/upload/upload.routes.js";
 
 import { userRoutes } from "../../../modules/iam/user/user.routes.js";
@@ -10,8 +10,8 @@ import { userRoutes } from "../../../modules/iam/user/user.routes.js";
 import { roleRoutes } from "../../../modules/iam/role/role.routes.js";
 
 import { permissionRoutes } from "../../../modules/iam/permission/permission.routes.js";
-import { businessUnitRoutes } from "@app/modules/platform/organization/business-unit/business-unit.routes.ts";
-import { OutletRoutes } from "@app/modules/platform/organization/outlet/outlet.route.ts";
+import { businessUnitRoutes } from "@app/modules/platform/organization/business-unit/core/business-unit.routes.ts";
+import { OutletRoutes } from "@app/modules/platform/organization/outlet/outlet.routes.js";
 import { PermissionGroupRoutes } from "../../../modules/iam/permission-group/permission-group.routes.js";
 
 // Catalog Imports
@@ -20,12 +20,12 @@ import { BrandRoutes } from "@app/modules/commerce/catalog/brand/brand.routes.js
 import { UnitRoutes } from "@app/modules/commerce/catalog/unit/unit.routes.js";
 import { TaxRoutes } from "@app/modules/commerce/catalog/tax/tax.routes.ts";
 import { attributeRoutes } from "@app/modules/commerce/catalog/attribute/attribute.routes.js";
-import { AttributeGroupRoutes } from "@app/modules/commerce/catalog/attribute-group/attribute-group.route.js";
+import { AttributeGroupRoutes } from "@app/modules/commerce/catalog/attribute-group/attribute-group.routes.js";
 import { SystemSettingsRoutes } from "@app/modules/platform/settings/system-settings/system-settings.routes.js";
-import { BusinessUnitSettingsRoutes } from "@app/modules/platform/organization/business-unit-setting/business-unit-settings.routes.js";
+import { BusinessUnitSettingsRoutes } from "@app/modules/platform/organization/business-unit/settings/settings.routes.js";
 import { storefrontRoutes } from "@app/modules/commerce/storefront/storefront.routes.ts";
-import { ProductReviewRoutes } from "@app/modules/commerce/catalog/product/product-reviews/product-reviews.routes.js";
-import { ProductQARoutes } from "@app/modules/commerce/catalog/product/product-questions/product-questions.routes.js";
+import { ProductReviewRoutes } from "@app/modules/commerce/catalog/product/features/product-reviews/product-reviews.routes.js";
+import { ProductQARoutes } from "@app/modules/commerce/catalog/product/features/product-questions/product-questions.routes.js";
 
 // ... (existing imports) ...
 
@@ -41,13 +41,55 @@ import { SalesReportRoutes } from "@app/modules/erp/reports/sales-report/sales-r
 import { PurchaseReportRoutes } from "@app/modules/erp/reports/purchase-report/purchase-report.routes.js";
 import { StockReportRoutes } from "@app/modules/erp/reports/stock-report/stock-report.routes.js";
 import { ProfitLossRoutes } from "@app/modules/erp/reports/profit-loss/profit-loss.routes.js";
-import { marketingRoutes } from "@app/modules/marketing/marketing.router.ts";
-import { automationRoutes } from "@app/modules/platform/automation/automation.router.ts";
-
-import { logisticsRoutes } from "../../../modules/erp/logistics/logistics.router.ts";
-import { riskRoutes } from "../../../modules/commerce/risk/risk.router.ts";
+import { marketingRoutes } from "@app/modules/marketing/marketing.routes.js";
+import { automationRoutes } from "@app/modules/platform/automation/automation.routes.js";
+// ERP & Commerce
+import { logisticsRoutes } from "../../../modules/erp/logistics/logistics.routes.js";
+import { riskRoutes } from "../../../modules/commerce/risk/risk.routes.js";
 import moduleGuard from "@app/middlewares/moduleGuard.ts"; // Optimized Guard Import
 import { customerRoutes } from "@app/modules/contacts/customers/customer.routes.ts";
+
+// HRM Imports
+import { AttendanceRoutes } from "@app/modules/hrm/attendance/attendance.routes.js";
+import { LeaveRoutes } from "@app/modules/hrm/leave/leave.routes.js";
+import { PayrollRoutes } from "@app/modules/hrm/payroll/payroll.routes.js";
+import { DepartmentRoutes } from "@app/modules/hrm/department/department.routes.js";
+import { DesignationRoutes } from "@app/modules/hrm/designation/designation.routes.js";
+import { AssetRoutes } from "@app/modules/hrm/asset/asset.routes.js";
+
+// Accounting Imports
+import { AccountRoutes } from "@app/modules/erp/accounting/accounts/accounts.routes.js";
+import { TransactionRoutes } from "@app/modules/erp/accounting/transactions/transaction.routes.js";
+import { BudgetRoutes } from "@app/modules/erp/accounting/budgets/budget.routes.js";
+
+// Storefront Advanced Imports
+import { ThemeRoutes } from "@app/modules/commerce/storefront/themes/theme.routes.js";
+import { PluginRoutes } from "@app/modules/commerce/storefront/plugins/plugin.routes.js";
+import { LandingPageRoutes } from "@app/modules/commerce/storefront/landing-pages/landing-page.routes.js";
+import { AbandonedCartRoutes } from "@app/modules/commerce/storefront/abandoned-carts/abandoned-cart.routes.js";
+
+// Marketing Advanced Imports
+import { SEORoutes } from "@app/modules/marketing/seo/seo.routes.js";
+import { AffiliateRoutes } from "@app/modules/marketing/affiliates/affiliate.routes.js";
+import { EventRoutes } from "@app/modules/marketing/events/event.routes.js";
+import { PixelRoutes } from "@app/modules/marketing/pixels/pixel.routes.js";
+
+// Finance Imports
+import { ReconciliationRoutes } from "@app/modules/platform/finance/reconciliation/reconciliation.routes.js";
+import { PayoutRoutes } from "@app/modules/platform/finance/payouts/payout.routes.js";
+import { SettlementRoutes } from "@app/modules/platform/finance/settlements/settlement.routes.js";
+
+// System Imports
+import { AuditLogRoutes } from "@app/modules/platform/system/audit-log/audit-log.routes.js";
+import { BackupRoutes } from "@app/modules/platform/system/backup/backup.routes.js";
+import { NotificationRoutes } from "@app/modules/platform/system/notification/notification.routes.js";
+import { CurrencyRoutes } from "@app/modules/platform/system/currency/currency.routes.js";
+import { LanguageRoutes } from "@app/modules/platform/system/language/language.routes.js";
+import { ZoneRoutes } from "@app/modules/platform/system/zone/zone.routes.js";
+import { APIKeyRoutes } from "@app/modules/platform/system/api-key/api-key.routes.js";
+import { WebhookRoutes } from "@app/modules/platform/system/webhook/webhook.routes.js";
+import { EmailTemplateRoutes } from "@app/modules/platform/system/email-template/email-template.routes.js";
+import { SMSTemplateRoutes } from "@app/modules/platform/system/sms-template/sms-template.routes.js";
 
 const superAdminRoutes = Router();
 
@@ -95,6 +137,48 @@ superAdminRoutes.use("/outlets", OutletRoutes);
 superAdminRoutes.use("/settings", BusinessUnitSettingsRoutes);
 superAdminRoutes.use("/system-settings", SystemSettingsRoutes);
 superAdminRoutes.use("/permission-groups", PermissionGroupRoutes);
+
+// --- HRM ---
+superAdminRoutes.use("/hrm/attendance", moduleGuard('hrm'), AttendanceRoutes);
+superAdminRoutes.use("/hrm/leave", moduleGuard('hrm'), LeaveRoutes);
+superAdminRoutes.use("/hrm/payroll", moduleGuard('hrm'), PayrollRoutes);
+superAdminRoutes.use("/hrm/departments", moduleGuard('hrm'), DepartmentRoutes);
+superAdminRoutes.use("/hrm/designations", moduleGuard('hrm'), DesignationRoutes);
+superAdminRoutes.use("/hrm/assets", moduleGuard('hrm'), AssetRoutes);
+
+// --- ACCOUNTING ---
+superAdminRoutes.use("/accounting/accounts", moduleGuard('erp'), AccountRoutes);
+superAdminRoutes.use("/accounting/transactions", moduleGuard('erp'), TransactionRoutes);
+superAdminRoutes.use("/accounting/budgets", moduleGuard('erp'), BudgetRoutes);
+
+// --- STOREFRONT ADVANCED ---
+superAdminRoutes.use("/storefront/themes", moduleGuard('ecommerce'), ThemeRoutes);
+superAdminRoutes.use("/storefront/plugins", moduleGuard('ecommerce'), PluginRoutes);
+superAdminRoutes.use("/storefront/landing-pages", moduleGuard('ecommerce'), LandingPageRoutes);
+superAdminRoutes.use("/storefront/abandoned-carts", moduleGuard('ecommerce'), AbandonedCartRoutes);
+
+// --- MARKETING ADVANCED ---
+superAdminRoutes.use("/marketing/seo", moduleGuard('crm'), SEORoutes);
+superAdminRoutes.use("/marketing/affiliates", moduleGuard('crm'), AffiliateRoutes);
+superAdminRoutes.use("/marketing/events", moduleGuard('crm'), EventRoutes);
+superAdminRoutes.use("/marketing/pixels", moduleGuard('crm'), PixelRoutes);
+
+// --- FINANCE (Platform) ---
+superAdminRoutes.use("/finance/reconciliation", ReconciliationRoutes);
+superAdminRoutes.use("/finance/payouts", PayoutRoutes);
+superAdminRoutes.use("/finance/settlements", SettlementRoutes);
+
+// --- SYSTEM ---
+superAdminRoutes.use("/system/audit-logs", AuditLogRoutes);
+superAdminRoutes.use("/system/backups", BackupRoutes);
+superAdminRoutes.use("/system/notifications", NotificationRoutes);
+superAdminRoutes.use("/system/currencies", CurrencyRoutes);
+superAdminRoutes.use("/system/languages", LanguageRoutes);
+superAdminRoutes.use("/system/zones", ZoneRoutes);
+superAdminRoutes.use("/system/api-keys", APIKeyRoutes);
+superAdminRoutes.use("/system/webhooks", WebhookRoutes);
+superAdminRoutes.use("/system/email-templates", EmailTemplateRoutes);
+superAdminRoutes.use("/system/sms-templates", SMSTemplateRoutes);
 
 
 export const adminGroupRoutes = superAdminRoutes;

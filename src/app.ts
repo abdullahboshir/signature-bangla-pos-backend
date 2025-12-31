@@ -59,25 +59,24 @@ if (appConfig.NODE_ENV === "development") {
 }
 
 // 6. HEALTH CHECK (Before API routes)
+import { ApiResponse } from "./core/utils/api-response.ts";
+
 app.get("/health", (_req, res) => {
-  res.status(200).json({
+  ApiResponse.success(res, {
     status: "OK",
-    message: "Server is healthy 🟢",
-    timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: appConfig.NODE_ENV,
-  });
+  }, "Server is healthy 🟢");
 });
 
 app.use("/api", router);
 
 app.get("/", (_req, res) => {
-  res.status(200).json({
+  ApiResponse.success(res, {
     message: "🚀 Welcome to Signature Bangla POS API",
     status: "Running",
     version: "v1.0.0",
     documentation: "/api/v1/docs",
-    timestamp: new Date().toISOString(),
     processId: process.pid,
   });
 });
@@ -100,16 +99,14 @@ app.get("/test-scalability", async (_req, res) => {
       body: `Processed by Worker ${process.pid}`,
     });
 
-    res.json({
-      success: true,
-      message: "Scalability Verification Complete",
+    ApiResponse.success(res, {
       worker_process_id: process.pid,
       cache_check: cacheResult,
       queue_check: "Job Dispatched to 'email-queue'",
       note: "Check terminal logs for '✅ Redis HIT' and '📨 Processing Email Job'",
-    });
+    }, "Scalability Verification Complete");
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    ApiResponse.error(res, error.message, "VERIFICATION_ERROR", 500);
   }
 });
 

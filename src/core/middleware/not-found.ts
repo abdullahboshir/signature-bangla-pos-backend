@@ -1,13 +1,15 @@
 
-import { type Response, type Request } from 'express'
-import status from 'http-status'
+import type { Response, Request } from "express";
+import httpStatus from "http-status";
+import { ApiResponse } from "@core/utils/api-response.ts";
 
 const notFound = (req: Request, res: Response) => {
-  return res.status(status.NOT_FOUND).json({
-    sucess: false,
-     message: `Route ${req.originalUrl} not found!`,
-    error: '',
-  })
-}
+  return ApiResponse.error(
+    res,
+    `Route ${req.originalUrl} not found!`,
+    "NOT_FOUND",
+    httpStatus.NOT_FOUND
+  );
+};
 
-export default notFound
+export default notFound;

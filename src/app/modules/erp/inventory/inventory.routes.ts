@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { createAdjustmentController, getAdjustmentsController, getLedgerController } from './adjustment/adjustment.controller.js';
-import { getAllStockLevelsController } from '@app/modules/commerce/catalog/product/product-inventory/product-inventory.controller.js';
+import { getAllStockLevelsController } from '@app/modules/commerce/catalog/product/features/product-inventory/product-inventory.controller.js';
 // import { protect, restrictTo } from '../../auth/auth.middleware'; // Assuming auth middlewares exist
 
 const router = Router();

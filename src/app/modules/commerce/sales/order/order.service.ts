@@ -2,8 +2,8 @@ import { startSession } from "mongoose";
 import AppError from '../../../../../shared/errors/app-error.js';
 import { OrderRepository } from "./order.repository.js";
 import type { IOrder } from "./order.interface.js";
-import { Product } from "../../catalog/product/product-core/product-core.model.js";
-import { ProductInventory as _ProductInventory } from '../../catalog/product/product-inventory/product-inventory.model.js';
+import { Product } from "../../catalog/product/domain/product-core/product-core.model.js";
+import { ProductInventory as _ProductInventory } from '../../catalog/product/features/product-inventory/product-inventory.model.js';
 
 const orderRepository = new OrderRepository();
 

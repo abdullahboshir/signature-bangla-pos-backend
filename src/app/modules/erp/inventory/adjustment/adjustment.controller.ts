@@ -1,42 +1,22 @@
-import type { Request, Response, NextFunction } from 'express';
-import { createAdjustmentService, getAdjustmentsService } from './adjustment.service.js';
-import { getLedgerHistoryService } from '../ledger/ledger.service.js';
+import catchAsync from "@core/utils/catchAsync.ts";
+import { ApiResponse } from "@core/utils/api-response.ts";
+import httpStatus from "http-status";
+import type { Request, Response } from "express";
+import { createAdjustmentService, getAdjustmentsService } from "./adjustment.service.js";
+import { getLedgerHistoryService } from "../ledger/ledger.service.js";
 
-export const createAdjustmentController = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const userId = (req as any).user._id; // Assuming auth middleware populates user
-        const result = await createAdjustmentService(req.body, userId);
-        res.status(201).json({
-            success: true,
-            message: "Stock adjustment created successfully",
-            data: result
-        });
-    } catch (error) {
-        next(error);
-    }
-};
+export const createAdjustmentController = catchAsync(async (req: Request, res: Response) => {
+    const userId = (req as any).user._id;
+    const result = await createAdjustmentService(req.body, userId);
+    ApiResponse.success(res, result, "Stock adjustment created successfully", httpStatus.CREATED);
+});
 
-export const getAdjustmentsController = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const result = await getAdjustmentsService(req.query);
-        res.status(200).json({
-            success: true,
-            data: result
-        });
-    } catch (error) {
-        next(error);
-    }
-};
+export const getAdjustmentsController = catchAsync(async (req: Request, res: Response) => {
+    const result = await getAdjustmentsService(req.query);
+    ApiResponse.success(res, result, "Adjustments retrieved successfully");
+});
 
-// Ledger Controller methods here for convenience
-export const getLedgerController = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const result = await getLedgerHistoryService(req.query);
-        res.status(200).json({
-            success: true,
-            data: result
-        });
-    } catch (error) {
-        next(error);
-    }
-};
+export const getLedgerController = catchAsync(async (req: Request, res: Response) => {
+    const result = await getLedgerHistoryService(req.query);
+    ApiResponse.success(res, result, "Ledger history retrieved successfully");
+});

@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import catchAsync from '../../../../core/utils/catchAsync.js';
 import { ApiResponse } from '../../../../core/utils/api-response.js';
 import httpStatus from 'http-status';
+import AppError from '@shared/errors/app-error.ts';
 import { LicenseService } from './license.service.ts';
 
 const createLicense = catchAsync(async (req: Request, res: Response) => {
@@ -28,12 +29,10 @@ const validateLicense = catchAsync(async (req: Request, res: Response) => {
 
     // Check Date
     if (result.expiresAt && new Date() > new Date(result.expiresAt)) {
-        res.status(400).json({ success: false, message: 'License Expired' });
-        return;
+        throw new AppError(httpStatus.BAD_REQUEST, 'License Expired', 'LICENSE_EXPIRED');
     }
     if (result.status !== 'active') {
-        res.status(400).json({ success: false, message: `License is ${result.status}` });
-        return;
+        throw new AppError(httpStatus.BAD_REQUEST, `License is ${result.status}`, 'LICENSE_INACTIVE');
     }
 
     ApiResponse.success(res, result, 'License is valid', httpStatus.OK);

@@ -1,8 +1,10 @@
 import { Types } from "mongoose";
-import { StorefrontConfig, StorePage, type IStorefrontConfig, type IStorePage } from "./storefront.model.ts";
+import { StorefrontConfig, StorePage } from "./storefront.model.ts";
+import type { IStorefrontConfig, IStorePage } from "./storefront.model.ts";
 import AppError from "@shared/errors/app-error.ts";
-import BusinessUnit from "../../platform/organization/business-unit/business-unit.model.ts";
-import { Product } from "@app/modules/commerce/catalog/product/product-core/product-core.model.ts";
+import BusinessUnit from "../../platform/organization/business-unit/core/business-unit.model.ts";
+import { Product } from "../catalog/product/domain/product-core/product-core.model.ts";
+
 
 export class StorefrontService {
 

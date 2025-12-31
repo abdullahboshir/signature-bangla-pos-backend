@@ -5,7 +5,7 @@ import {
     getProductByIdController,
     updateProductController,
     deleteProductController
-} from '@app/modules/commerce/catalog/product/product-core/product-core-controller.ts';
+} from '@app/modules/commerce/catalog/product/domain/product-core/product-core-controller.ts';
 
 const router = Router();
 

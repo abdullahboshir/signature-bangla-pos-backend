@@ -2,7 +2,7 @@ import { startSession, isValidObjectId, Types } from 'mongoose';
 import AppError from '../../../../shared/errors/app-error.js';
 import { Purchase } from './purchase.model.js';
 import type { IPurchase } from './purchase.interface.js';
-import { Product } from '../../commerce/catalog/product/product-core/product-core.model.js';
+import { Product } from '../../commerce/catalog/product/domain/product-core/product-core.model.js';
 import { addLedgerEntryService } from "../inventory/ledger/ledger.service.js";
 
 // Helper to update stock

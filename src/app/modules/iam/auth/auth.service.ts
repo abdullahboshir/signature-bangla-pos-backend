@@ -1,7 +1,7 @@
 import { createToken, verifyToken } from "./auth.utils.ts";
 import { USER_STATUS } from '../user/user.constant.js';
 import { User } from '../user/user.model.js';
-import "../../platform/organization/business-unit/business-unit.model.js";
+import "../../platform/organization/business-unit/core/business-unit.model.js";
 import "../role/role.model.js";
 import "../permission/permission.model.js";
 import "../permission-group/permission-group.model.js";
@@ -90,7 +90,7 @@ export const loginService = async (email: string, pass: string) => {
     // Authorization Context Injection
     maxDataAccess: authContext.maxDataAccess,
     hierarchyLevel: authContext.hierarchyLevel,
-    effectivePermissions: authContext.permissions,
+    effectivePermissions: authContext.permissions.map(p => `${p.resource}:${p.action}`),
 
     isSuperAdmin: isUserExists.isSuperAdmin,
     businessUnits: businessUnits // sending full object array
@@ -230,7 +230,7 @@ export const authMeService = async (
       const authContext = await permissionService.getAuthorizationContext(res as any, scope);
       (res as any).maxDataAccess = authContext.maxDataAccess;
       (res as any).hierarchyLevel = authContext.hierarchyLevel;
-      (res as any).effectivePermissions = authContext.permissions;
+      (res as any).effectivePermissions = authContext.permissions.map(p => `${p.resource}:${p.action}`);
     } catch (e) {
       console.error("Failed to calculate auth context", e);
       // Fallback or ignore

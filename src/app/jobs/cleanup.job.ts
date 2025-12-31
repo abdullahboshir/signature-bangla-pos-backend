@@ -1,9 +1,9 @@
 import "colors";
-import { Product } from "../modules/commerce/catalog/product/product-core/product-core.model.js";
-import { deleteProductService } from "../modules/commerce/catalog/product/product-core/product-core.service.js";
+import { Product } from "../modules/commerce/catalog/product/domain/product-core/product-core.model.js";
+import { deleteProductService } from "../modules/commerce/catalog/product/domain/product-core/product-core.service.js";
 import { Category } from "../modules/commerce/catalog/category/category.model.js";
 
-import BusinessUnit from "../modules/platform/organization/business-unit/business-unit.model.js";
+import BusinessUnit from "../modules/platform/organization/business-unit/core/business-unit.model.js";
 
 
 import { SystemSettingsService } from "../modules/platform/settings/system-settings/system-settings.service.js";

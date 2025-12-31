@@ -1,6 +1,6 @@
 import type { IStockLedger } from './ledger.model.js';
 import { StockLedger } from './ledger.model.js';
-import { ProductInventory } from "../../../commerce/catalog/product/product-inventory/product-inventory.model.js";
+import { ProductInventory } from "../../../commerce/catalog/product/features/product-inventory/product-inventory.model.js";
 
 export const addLedgerEntryService = async (
     payload: Partial<IStockLedger>,

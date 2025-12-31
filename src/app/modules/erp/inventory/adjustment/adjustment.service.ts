@@ -1,7 +1,7 @@
 import { startSession } from 'mongoose';
 import { InventoryAdjustment } from './adjustment.model.js';
 import type { IInventoryAdjustment } from './adjustment.model.js';
-import { ProductInventory } from '../../../commerce/catalog/product/product-inventory/product-inventory.model.js';
+import { ProductInventory } from '../../../commerce/catalog/product/features/product-inventory/product-inventory.model.js';
 import { addLedgerEntryService } from '../ledger/ledger.service.js';
 import AppError from '../../../../../shared/errors/app-error.js';
 

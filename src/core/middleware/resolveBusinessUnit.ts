@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
-import BusinessUnit from "@app/modules/platform/organization/business-unit/business-unit.model.ts";
+import BusinessUnit from "../../app/modules/platform/organization/business-unit/core/business-unit.model.js";
 
 /**
  * Middleware to resolve businessUnit ID from request body/query/params

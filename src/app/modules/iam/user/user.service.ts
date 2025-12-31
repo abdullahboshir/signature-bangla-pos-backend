@@ -5,7 +5,7 @@ import { genereteCustomerId } from "./user.utils.js";
 
 import { User } from "./user.model.js";
 import { Role } from "../role/role.model.js";
-import BusinessUnit from "../../platform/organization/business-unit/business-unit.model.ts";
+import BusinessUnit from "../../platform/organization/business-unit/core/business-unit.model.ts";
 import { USER_ROLE } from "./user.constant.ts";
 import appConfig from "@shared/config/app.config.ts";
 import AppError from "@shared/errors/app-error.ts";

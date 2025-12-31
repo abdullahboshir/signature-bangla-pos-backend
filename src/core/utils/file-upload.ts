@@ -1,61 +1,38 @@
-import appConfig from '@shared/config/app.config.ts'
-import { v2 as cloudinary } from 'cloudinary'
-import _fs from 'fs'
-import multer from 'multer'
+import multer from 'multer';
+import { StorageService } from '../../shared/file-storage/storage.service.js';
 
 
-
-// Configuration
-cloudinary.config({
-  cloud_name: appConfig.cloud_name,
-  api_key: appConfig.cloud_api_key,
-  api_secret: appConfig.cloud_api_secret,
-})
-
+// Helper for backward compatibility
+// Redirects old "sendImageToCloudinary" logic to new StorageService
 export const sendImageToCloudinary = async (imgName: string, path: string) => {
-  // Return local file path directly for development reliability
-  // Ensure the path is relative to the server root for the frontend to access
-  return new Promise((resolve, _reject) => {
-    // Assume file is already in /uploads via Multer
-    // We just need to return the URL format that the controller expects
-    // Controller expects: result.secure_url
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Create a mock Multer file object from the path
+      // This assumes we are using DiskStorage (file exists on disk)
+      const mockFile = {
+        path: path,
+        originalname: imgName, // Use imgName as originalname to influence key generation
+        filename: imgName,
+        destination: '',
+        mimetype: 'application/octet-stream', // Unknown, generic
+        size: 0,
+        buffer: Buffer.alloc(0), // No buffer for disk files
+        fieldname: 'file',
+        stream: null as any,
+        encoding: '7bit'
+      } as Express.Multer.File;
 
-    // We need to extract the filename from the path if needed, 
-    // but imgName passed here is usually just the name, valid for public_id.
-    // However, multer 'filename' is what we need for the URL.
+      const result = await StorageService.uploadFile(mockFile, 'uploads');
 
-    // Let's assume the file is saved at 'path'. 
-    // We want to return '/uploads/filename'. 
-    // path is typically "E:\...\uploads\image-123.png"
-
-    const filename = path.split(/[/\\]/).pop(); // Extract filename from full path
-    const localUrl = `/uploads/${filename}`;
-
-    console.log("Local Upload returning:", localUrl);
-
-    resolve({
-      secure_url: localUrl,
-      public_id: imgName
-    });
-
-    // Do NOT delete the file
-    /*
-    cloudinary.uploader.upload(
-        path,
-        { public_id: imgName, folder: async (_req: any, _file: any) => {
-      // Logic for changing directory based on request
-      // e.g., req.body.category
-      return 'others';
-    }},
-        function (error, result) {
-            if (error) _reject(error)
-            resolve(result)
-            _fs.unlink(path, (err) => { // ... })
-        }
-    )
-    */
-  })
-}
+      resolve({
+        secure_url: result.url,
+        public_id: result.key
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
 
 const storage = multer.diskStorage({
   destination: function (_req, _file, cb) {
