@@ -1,17 +1,12 @@
 import type { Model, Types } from "mongoose";
 
-import type { IPermission } from "../permission/permission.interface.js";
+
 import type { USER_STATUS } from "./user.constant.js";
 import type { TName } from "@core/types/common.types.ts";
 
 export type TUserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
 
-export interface IPermissionAssignment {
-  role: Types.ObjectId;
-  scopeType: 'global' | 'business-unit' | 'outlet';
-  scopeId?: Types.ObjectId | null;
-  scopeModel?: 'BusinessUnit' | 'Outlet' | null;
-}
+
 
 export interface IUser {
   _id?: Types.ObjectId;
@@ -21,10 +16,10 @@ export interface IUser {
   phone?: string;
   password: string;
   isSuperAdmin?: boolean;
-  permissions: IPermissionAssignment[];
-  // Deprecated fields (keeping for now to avoid immediate breakage until full migration)
-  businessUnits?: Types.ObjectId[] | string[];
-  roles?: Types.ObjectId[];
+  globalRoles: Types.ObjectId[];
+  // Virtual Populated Field
+  businessAccess?: any[];
+  // Removed deprecated fields: businessUnits, roles
   branches?: string[];
   vendorId?: string;
   region?: string;
@@ -35,7 +30,10 @@ export interface IUser {
   needsPasswordChange: boolean;
   passwordChangedAt?: Date;
   isDeleted: boolean;
-  directPermissions?: IPermission[];
+  directPermissions?: {
+    allow: Types.ObjectId[];
+    deny: Types.ObjectId[];
+  };
   isActive: boolean;
   lastLogin?: Date;
   loginHistory: {

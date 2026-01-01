@@ -5,6 +5,7 @@
 
 import { model, Schema } from "mongoose";
 import type { IBusinessUnitCoreDocument, IBusinessUnitCoreModel } from "./business-unit.interface.ts";
+import { BUSINESS_MODEL_ARRAY, BUSINESS_INDUSTRY_ARRAY, BUSINESS_MODEL, BUSINESS_INDUSTRY } from "./business-unit.constant.ts";
 
 
 /**
@@ -38,7 +39,7 @@ export const businessUnitCoreSchema = new Schema<
     // ====== BRANDING ======
     branding: {
       name: { type: String, required: true, trim: true },
-      description: { type: String, required: true },
+      description: { type: String, required: false },
       descriptionBangla: { type: String },
       logo: { type: String, required: false },
       banner: { type: String },
@@ -70,7 +71,7 @@ export const businessUnitCoreSchema = new Schema<
     primaryCategory: {
       type: Schema.Types.ObjectId,
       ref: "Category",
-      required: true,
+      required: false,
       index: true,
     },
     tags: [{ type: String, trim: true }],
@@ -84,11 +85,17 @@ export const businessUnitCoreSchema = new Schema<
       type: Schema.Types.ObjectId,
       ref: "AttributeGroup"
     }],
-    businessUnitType: {
+    operationalModel: {
       type: String,
-      enum: ["general", "boutique", "brand", "marketplace", "specialty"],
-      default: "general",
+      enum: BUSINESS_MODEL_ARRAY,
+      default: BUSINESS_MODEL.RETAIL,
       index: true,
+    },
+    industry: {
+      type: String,
+      enum: BUSINESS_INDUSTRY_ARRAY,
+      default: BUSINESS_INDUSTRY.GENERAL,
+      index: true
     },
 
     // ====== CONTACT & LOCATION ======

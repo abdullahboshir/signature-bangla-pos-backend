@@ -36,10 +36,14 @@ export const createUserController = catchAsync(async (req, res) => {
     }
 
     let roleName = "";
+    let isSystemRole = false;
     const Role = mongoose.model('Role');
     if (roleId) {
         const roleDoc = await Role.findById(roleId);
-        if (roleDoc) roleName = roleDoc.name.toUpperCase();
+        if (roleDoc) {
+            roleName = roleDoc.name.toUpperCase();
+            isSystemRole = roleDoc.isSystemRole;
+        }
     }
 
     let result;
@@ -59,6 +63,7 @@ export const createUserController = catchAsync(async (req, res) => {
 
     } else if (
         [USER_ROLE.SUPER_ADMIN, USER_ROLE.GUEST, USER_ROLE.VENDOR].map(r => r.toUpperCase()).includes(roleName)
+        || (isSystemRole && !userData.businessUnit) // Treat as Generic Platform User if System Role AND No Business Unit provided
     ) {
         console.log(">> Creating Generic User (Super Admin, Guest, or Vendor)...");
 

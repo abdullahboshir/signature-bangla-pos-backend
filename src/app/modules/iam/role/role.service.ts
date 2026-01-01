@@ -6,6 +6,7 @@ import { Permission } from '../permission/permission.model.js';
 import { PermissionGroup } from '../permission-group/permission-group.model.js';
 import type { JwtPayload } from 'jsonwebtoken';
 import AppError from '@shared/errors/app-error.ts';
+import { bumpVersion } from '../../../../core/utils/cacheKeys.ts';
 
 
 class RoleService {
@@ -104,6 +105,8 @@ class RoleService {
 
     const role = await Role.create(roleData);
 
+    await bumpVersion('role');
+
     return role;
   }
 
@@ -166,6 +169,8 @@ class RoleService {
       { new: true, runValidators: true }
     ).populate('permissions');
 
+    await bumpVersion('role');
+
     return updatedRole;
   }
 
@@ -195,7 +200,7 @@ class RoleService {
 
     await Role.findByIdAndDelete(id);
 
-
+    await bumpVersion('role');
   }
 
   // Assign permissions to role
@@ -230,7 +235,7 @@ class RoleService {
     role.updatedBy = user['userId'] as any;
     await role.save();
 
-
+    await bumpVersion('role');
 
     return role.populate('permissions');
   }
@@ -251,7 +256,7 @@ class RoleService {
     role.updatedBy = user['userId'] as any;
     await role.save();
 
-
+    await bumpVersion('role');
 
     return role.populate('permissions');
   }

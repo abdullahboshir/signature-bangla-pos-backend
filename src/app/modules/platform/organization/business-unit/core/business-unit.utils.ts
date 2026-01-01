@@ -181,8 +181,10 @@ export function attachStaticMethods(schema: any) {
 
     if (filters.categories)
       searchFilter.categories = { $in: filters.categories };
-    if (filters.businessUnitType)
-      searchFilter.businessUnitType = filters.businessUnitType;
+    if (filters.operationalModel)
+      searchFilter.operationalModel = filters.operationalModel;
+    if (filters.industry)
+      searchFilter.industry = filters.industry;
     if (filters.minRating)
       searchFilter["ratings.average"] = { $gte: filters.minRating };
 

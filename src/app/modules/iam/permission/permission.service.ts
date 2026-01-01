@@ -1,5 +1,5 @@
-// src/modules/Permission/permission.service.ts
-// import { buildUserPermissionsKey } from '@core/utils/cacheKeys.ts';
+import client from '@shared/config/redis.config.ts';
+import { buildUserPermissionsKey } from '@core/utils/cacheKeys.ts';
 import type { IUser } from '../user/user.interface.js';
 import type {
   IPermission,
@@ -24,7 +24,9 @@ export interface IAuthorizationContext {
 
 
 const MAX_ROLE_HIERARCHY_DEPTH = 15;
-// const _CACHE_TTL_SECONDS = 3600; // 1 hour
+const _CACHE_TTL_SECONDS = 600; // 10 minutes
+const _ALL_ROLES_CACHE_KEY = 'sys:iam:all-active-roles:v2'; // Changed key to force refresh
+const _ALL_ROLES_TTL = 60; // Reduced to 60 seconds for faster updates during dev
 
 export class PermissionService {
   /* ---------------------------------------------------------------------- */
@@ -64,16 +66,45 @@ export class PermissionService {
     user: IUser,
     targetScope?: { businessUnitId?: string; outletId?: string }
   ): Promise<IAuthorizationContext> {
-    // const _cacheKey = await buildUserPermissionsKey(user.id);
+    const userId = user.id || (user as any)._id?.toString();
+    if (!userId) {
+      // Should not happen for authenticated users
+      return { permissions: [], maxDataAccess: { products: 0, orders: 0, customers: 0 }, hierarchyLevel: 0 };
+    }
 
-    // Attempt cache fetch (currently only caching permissions array, strictly we should cache the full context)
-    // For now, we will rebuild context or update cache structure later.
-    // Let's stick to logic first.
+    const _cacheKey = await buildUserPermissionsKey(userId, targetScope);
+
+    // Attempt cache fetch
+    const cached = await _CacheManager.get<IAuthorizationContext>(_cacheKey);
+    if (cached) {
+      console.log(`[AUTH-PERF] Cache HIT for user ${userId} (Scope: ${targetScope?.businessUnitId || 'Global'})`);
+      return cached;
+    }
+    console.log(`[AUTH-PERF] Cache MISS for user ${userId} - Calculating...`);
+    console.log(`[AUTH-PERF] Cache MISS for user ${userId} - Calculating...`);
+    const startTime = Date.now();
+
+    // SUPER ADMIN OPTIMIZATION:
+    // If user has 'isSuperAdmin' flag set
+    const isSuperAdmin = user.isSuperAdmin;
+
+    if (isSuperAdmin) {
+      console.log(`[AUTH-PERF] User ${userId} is Super Admin - returning wildcard.`);
+      const result = {
+        permissions: [{ action: '*', resource: '*', effect: 'allow' } as any],
+        hierarchyLevel: 100,
+        maxDataAccess: { products: 0, orders: 0, customers: 0 } // 0 = Unlimited
+      };
+      // Cache this lightweight result
+      await _CacheManager.set(_cacheKey, result, _CACHE_TTL_SECONDS);
+      return result;
+    }
 
     const permissions: IPermission[] = [];
     const permissionMap = new Map<string, IPermission>();
 
     let maxHierarchy = 0;
+    let logicStart: number | undefined;
 
     // Initialize with -1 to indicate "not set". 
     // Logic: 0 = Unlimited (highest priority), otherwise Max Value wins.
@@ -118,8 +149,15 @@ export class PermissionService {
     };
 
     // ----- direct permissions -----
-    if (Array.isArray(user.directPermissions) && user.directPermissions.length) {
-      for (const dp of user.directPermissions) addPermission(dp);
+    // Handle new { allow: [], deny: [] } structure
+    const dPerms = user.directPermissions;
+    if (dPerms) {
+      if ('allow' in dPerms && Array.isArray(dPerms.allow)) {
+        dPerms.allow.forEach(dp => addPermission(dp));
+      }
+      if ('deny' in dPerms && Array.isArray(dPerms.deny)) {
+        dPerms.deny.forEach(dp => addPermission(dp));
+      }
     }
 
     // Helper to build deep populate object for inheritedRoles
@@ -139,73 +177,129 @@ export class PermissionService {
 
     // ----- role based permissions -----
     const roleIds = new Set<string>();
-    if (Array.isArray(user.roles)) {
-      user.roles.forEach((r: any) => {
-        const roleId = (typeof r === 'object' && r && (r.id || r._id))
-          ? (r.id || r._id).toString()
-          : String(r);
-        roleIds.add(roleId);
+
+    // 1. Collect Global Roles
+    const globalRoles = (user as any).globalRoles;
+    if (Array.isArray(globalRoles)) {
+      globalRoles.forEach((r: any) => {
+        const rid = r._id?.toString() || r.toString();
+        if (rid) roleIds.add(rid);
       });
     }
-    // Include Scoped Roles (from permissions array)
-    if (Array.isArray(user.permissions)) {
-      user.permissions.forEach(p => {
-        if (!p.role) return;
 
-        // Scope Filtering Logic
-        if (targetScope) {
-          if (p.scopeType === 'global') {
-            // Always include global roles
-          } else if (p.scopeType === 'business-unit') {
-            // If target scope has no BU ID, we skip BU-specific roles
-            if (!targetScope.businessUnitId) return;
+    const SCOPE_PRIORITY: Record<string, number> = {
+      'global': 4,
+      'business': 3, 'businessUnit': 3,
+      'outlet': 2,
+      'own': 1, 'self': 1
+    };
+    /* const SCOPE_LEVEL_TO_STRING... (mapped at end) */
 
-            const scopeIdStr = p.scopeId ? String(p.scopeId) : '';
-            if (scopeIdStr !== targetScope.businessUnitId) return;
+    let maxScopeLevel = 1; // Default 'own'
 
-          } else if (p.scopeType === 'outlet') {
-            if (!targetScope.outletId) return;
+    // 2. Collect Business Access (Scoped Roles)
+    if (Array.isArray(user.businessAccess)) {
+      user.businessAccess.forEach(assignment => {
+        if (!assignment.role) return;
 
-            const scopeIdStr = p.scopeId ? String(p.scopeId) : '';
-            if (scopeIdStr !== targetScope.outletId) return;
-          }
-        } else {
-          // If NO target scope (e.g. initial login checks), we might default to:
-          // 1. Include everything (Union) - Useful for "What CAN I do anywhere?"
-          // 2. Include only Global (Strict) - Safe.
-          // Current decision: Union (Include everything).
+        // Check Status
+        if (assignment.status && assignment.status !== 'active') return;
+
+        // Check Expiry
+        if (assignment.expiresAt) {
+          const expiry = new Date(assignment.expiresAt);
+          if (!isNaN(expiry.getTime()) && expiry < new Date()) return; // Expired
         }
 
-        const roleId = (typeof p.role === 'object' && p.role && ((p.role as any).id || (p.role as any)._id))
-          ? ((p.role as any).id || (p.role as any)._id).toString()
-          : String(p.role);
+        // Update Data Scope from Override
+        if (assignment.dataScopeOverride) {
+          const level = SCOPE_PRIORITY[assignment.dataScopeOverride] || 1;
+          if (level > maxScopeLevel) {
+            maxScopeLevel = level;
+          }
+        }
 
-        roleIds.add(roleId);
+        let includeRole = false;
+
+        const buId = assignment.businessUnit
+          ? ((assignment.businessUnit as any)._id || assignment.businessUnit).toString()
+          : null;
+        const outletId = assignment.outlet
+          ? ((assignment.outlet as any)._id || assignment.outlet).toString()
+          : null;
+
+        // 1. Global Role (No specific scope assigned) - usually handled by globalRoles, but check just in case
+        if (!buId && !outletId) {
+          includeRole = true;
+        }
+        // 2. Scoped Role
+        else {
+          if (targetScope) {
+            // Check Business Unit match
+            if (buId && targetScope.businessUnitId && buId === targetScope.businessUnitId) {
+              includeRole = true;
+            }
+            // Check Outlet match
+            if (outletId && targetScope.outletId && outletId === targetScope.outletId) {
+              includeRole = true;
+            }
+          } else {
+            // No specific scope requested (Union context) -> Include all roles
+            includeRole = true;
+          }
+        }
+
+        if (includeRole) {
+          const roleId = ((assignment.role as any).forceId || (assignment.role as any)._id || (assignment.role as any).id || assignment.role).toString();
+          roleIds.add(roleId);
+        }
       });
     }
 
     if (roleIds.size > 0) {
-      const roleDocs = await Role.find({ _id: { $in: Array.from(roleIds) }, isActive: true })
-        .populate({ path: 'permissions', match: { isActive: true } })
-        .populate({
-          path: 'permissionGroups',
-          match: { isActive: true },
-          populate: { path: 'permissions', match: { isActive: true } },
-        })
-        .populate(buildInheritedRolesPopulate(5)) // Populate up to 5 levels deep
-        .lean();
+      console.time('[AUTH-PERF] Role DB Query');
+      // OPTIMIZATION: Use Global Cache for Role Definitions
+      let allActiveRoles = await _CacheManager.get<any[]>(_ALL_ROLES_CACHE_KEY);
+
+      if (!allActiveRoles) {
+        console.log('[AUTH-PERF] Global Role Cache MISS - Fetching from DB...');
+        allActiveRoles = await Role.find({ isActive: true })
+          .populate({ path: 'permissions', match: { isActive: true } })
+          .populate({
+            path: 'permissionGroups',
+            match: { isActive: true },
+            populate: { path: 'permissions', match: { isActive: true } },
+          })
+          .lean();
+
+        await _CacheManager.set(_ALL_ROLES_CACHE_KEY, allActiveRoles, _ALL_ROLES_TTL);
+      } else {
+        console.log('[AUTH-PERF] Global Role Cache HIT');
+      }
+
+      console.timeEnd('[AUTH-PERF] Role DB Query');
+      console.log(`[AUTH-PERF] All active roles fetched: ${allActiveRoles.length}`);
+
+      logicStart = Date.now();
+
+      // Build Map for O(1) lookup
+      const roleMap = new Map<string, any>();
+      allActiveRoles.forEach((r: any) => roleMap.set(String(r._id), r));
 
       const visited = new Set<string>();
 
-      const collect = (role: any, depth = 0): void => {
-        if (!role) return;
-        const roleId = String(role._id);
-        if (visited.has(roleId)) return;
+      const collect = (targetRoleId: string, depth = 0): void => {
+        if (!targetRoleId) return;
+        if (visited.has(targetRoleId)) return;
         if (depth > MAX_ROLE_HIERARCHY_DEPTH) {
-          logger.warn('Role hierarchy depth exceeded', { roleId, depth });
+          logger.warn('Role hierarchy depth exceeded', { targetRoleId, depth });
           return;
         }
-        visited.add(roleId);
+
+        const role = roleMap.get(targetRoleId);
+        if (!role) return; // Role might be inactive or deleted
+
+        visited.add(targetRoleId);
 
         // Update Hierarchy
         if (role.hierarchyLevel && role.hierarchyLevel > maxHierarchy) {
@@ -215,34 +309,59 @@ export class PermissionService {
         // Update Data Limits
         updateMaxAccess(role.maxDataAccess);
 
-        // Permissions
-        if (Array.isArray(role.permissions)) role.permissions.forEach(addPermission);
+        // Permissions (Directly assigned to role)
+        if (Array.isArray(role.permissions)) {
+          role.permissions.forEach((p: any) => {
+            // Handle both populated object and ID string
+            if (p && typeof p === 'object') addPermission(p);
+          });
+        }
+
+        // Permission Groups
         if (Array.isArray(role.permissionGroups)) {
           for (const grp of role.permissionGroups) {
-            if (Array.isArray(grp.permissions)) grp.permissions.forEach(addPermission);
+            // 1. If group has direct permissions array
+            if (Array.isArray(grp.permissions)) {
+              grp.permissions.forEach((p: any) => {
+                if (p && typeof p === 'object') addPermission(p);
+              });
+            }
+            // 2. If group is just an ID (not populated), we can't extract permissions from it here.
+            // Rely on the initial Role.find().populate() which should have populated this.
           }
         }
+
+        // Recurse for Inherited Roles (using the map)
         if (Array.isArray(role.inheritedRoles)) {
-          for (const parent of role.inheritedRoles) collect(parent, depth + 1);
+          role.inheritedRoles.forEach((parent: any) => {
+            const parentId = (parent && parent._id) ? String(parent._id) : String(parent);
+            collect(parentId, depth + 1);
+          });
         }
       };
 
-      for (const r of roleDocs) collect(r);
+      // Start collection from user's assigned roles
+      roleIds.forEach(id => collect(id));
     }
 
-    // Normalize -1 (init) to 0 (default/unlimited fallback logic?)
-    // Actually, if a user has NO role with a limit, what should be the default?
-    // Safe default: 0 (view nothing) or Unlimited?
-    // Usually, specific permissions grant access. Limits constrain volume.
-    // If no limit defined, assume 0 (strict) OR Unlimited?
-    // Let's settle on: -1 means "Not Set". undefined means 0.
-    // If we return 0, application might treat as unlimited.
-    // FIX: Normalize -1 to 0 (assume strict if not set, or unlimited?). 
-    // Given the UI text "0 = Unlimited", let's ensure we return 0 only if explicitly granted 0.
-    // Use 0 as "Unlimited" in the logic above.
-    // If maxAccess is -1, it means "No role speicified a limit". 
-    // Safer to default to a reasonable limit or 0 (unlimited)? 
-    // Let's default to 0 (Unlimited) if no restrictions found, assuming permissions control ACCESS itself.
+    // 3️⃣ Derive Data Scope from Permissions (if higher than override)
+    permissions.forEach(p => {
+      if (p.scope) {
+        const level = SCOPE_PRIORITY[p.scope] || 0;
+        if (level > maxScopeLevel) {
+          maxScopeLevel = level;
+        }
+      }
+    });
+
+    const SCOPE_LEVEL_TO_STRING: Record<number, string> = {
+      4: 'global',
+      3: 'business',
+      2: 'outlet',
+      1: 'own'
+    };
+    const finalDataScope = SCOPE_LEVEL_TO_STRING[maxScopeLevel] || 'own';
+
 
     const finalLimits = {
       products: maxAccess.products === -1 ? 0 : maxAccess.products,
@@ -250,12 +369,44 @@ export class PermissionService {
       customers: maxAccess.customers === -1 ? 0 : maxAccess.customers,
     };
 
-    return {
+    const result = {
       permissions,
       hierarchyLevel: maxHierarchy,
-      maxDataAccess: finalLimits
+      maxDataAccess: finalLimits,
+      dataScope: finalDataScope
     };
+
+    // Cache the result
+    await _CacheManager.set(_cacheKey, result, _CACHE_TTL_SECONDS);
+
+    const totalTime = Date.now() - startTime;
+    const logicTime = typeof logicStart !== 'undefined' ? Date.now() - logicStart : 0;
+
+    console.log(`[AUTH-PERF] Calculation finished in ${totalTime}ms (Logic: ${logicTime}ms)`);
+    return result;
   }
+
+  async invalidateUserCache(userId: string): Promise<void> {
+    if (!client.isOpen) return;
+    const pattern = `permissions*:user:${userId}:scope:*`;
+
+    try {
+      let cursor: any = 0;
+      do {
+        const reply = await client.scan(cursor, { MATCH: pattern, COUNT: 100 });
+        cursor = reply.cursor;
+        const keys = reply.keys;
+        if (keys.length > 0) {
+          await client.del(keys);
+        }
+      } while (String(cursor) !== '0');
+      logger.info(`[AUTH-PERF] Invalidated cache for user ${userId}`);
+    } catch (error) {
+      logger.error(`[AUTH-PERF] Failed to invalidate cache for user ${userId}`, error as any);
+    }
+  }
+
+
 
   /* ---------------------------------------------------------------------- */
   /* 3️⃣  PRIVATE helpers – matching, condition evaluation, resolution        */
@@ -285,10 +436,6 @@ export class PermissionService {
     for (const condition of conditions) {
       const { field, operator, value } = condition;
       const ctxVal = this.getNestedValue(context, field);
-      // Ensure operator is treated as string if compareValues expects string, 
-      // or cast it if needed. The error suggests 'operator' might be getting inferred as the object itself?
-      // No, for-of with destructuring `const {field} of conditions` works if conditions is array of objects.
-      // But let's be safe.
       if (!this.compareValues(ctxVal, operator as string, value)) return false;
     }
     return true;

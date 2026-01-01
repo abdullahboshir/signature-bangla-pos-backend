@@ -4,6 +4,7 @@ import os from "os";
 import "colors";
 import app from "./app.js";
 import { connectDB } from "./core/database/mongoose/connection.ts";
+import { seedCategories } from "./core/database/mongoose/seeders/category.seeder.ts";
 import { runRolePermissionSeeder } from "./core/database/mongoose/seeders/authorization.seeder.ts";
 import { seedSuperAdmin } from "./core/database/mongoose/seeders/superAdmin.seeder.ts";
 import appConfig from "./shared/config/app.config.ts";
@@ -26,6 +27,7 @@ async function bootstrap() {
       console.log("🌱 Running Seeders...".blue);
       await runRolePermissionSeeder();
       await seedSuperAdmin();
+      await seedCategories();
 
       // 3. Start Global Cron Jobs (Only once or centralized)
       console.log("⏰ Starting Maintenance Jobs...".blue);

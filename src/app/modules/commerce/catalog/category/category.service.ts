@@ -95,14 +95,36 @@ export const updateCategoryService = async (id: string, payload: Partial<ICatego
 };
 
 export const deleteCategoryService = async (id: string) => {
-  // Check if children exist
+  // 1. Check if children categories exist
   const children = await Category.findOne({ parentId: id });
   if (children) {
-    throw new AppError(httpStatus.BAD_REQUEST, "Cannot delete category with existing children. Delete or move them first.");
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Cannot delete category with existing sub-categories. Delete or move them first."
+    );
   }
 
+  // 2. Check if any products reference this category
+  const { Product } = await import('../../product/product.model.js');
+  const productsUsingCategory = await Product.findOne({
+    $or: [
+      { category: id },
+      { 'categories': id } // If you have multiple categories support
+    ]
+  });
+
+  if (productsUsingCategory) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Cannot delete category. Products are using this category. Please update or delete those products first."
+    );
+  }
+
+  // 3. Safe to delete
   const result = await Category.findByIdAndDelete(id);
-  // Invalidate specific cache
+
+  // Invalidate caches
   await CacheManager.del(`category:id:${id}`);
+
   return result;
 };

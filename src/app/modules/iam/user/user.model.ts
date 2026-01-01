@@ -38,24 +38,7 @@ const LoginHistorySchema = new Schema({
   }
 }, { _id: false });
 
-// User Role Assignment Schema (Scoped Permissions)
-const UserRoleAssignmentSchema = new Schema({
-  role: {
-    type: Schema.Types.ObjectId,
-    ref: 'Role',
-    required: true
-  },
-  businessUnit: {
-    type: Schema.Types.ObjectId,
-    ref: 'BusinessUnit',
-    default: null
-  },
-  outlet: {
-    type: Schema.Types.ObjectId,
-    ref: 'Outlet',
-    default: null
-  }
-}, { _id: false });
+
 
 // Main User Schema
 const UserSchema = new Schema<IUser, UserStatic>({
@@ -93,21 +76,11 @@ const UserSchema = new Schema<IUser, UserStatic>({
     type: Boolean,
     default: false
   },
-  permissions: {
-    type: [UserRoleAssignmentSchema],
+  globalRoles: {
+    type: [Schema.Types.ObjectId],
+    ref: "Role",
     default: []
   },
-  // Deprecated: roles & businessUnits are now handled via 'permissions'
-  roles: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Role',
-    required: false
-  }],
-  businessUnits: [{
-    type: Schema.Types.ObjectId,
-    ref: 'BusinessUnit',
-    default: []
-  }],
   region: {
     type: String
   },
@@ -138,10 +111,10 @@ const UserSchema = new Schema<IUser, UserStatic>({
     type: Boolean,
     default: false
   },
-  directPermissions: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Permission'
-  }],
+  directPermissions: {
+    allow: [{ type: Schema.Types.ObjectId, ref: "Permission" }],
+    deny: [{ type: Schema.Types.ObjectId, ref: "Permission" }]
+  },
 
   settings: {
     theme: { type: String, default: 'system' },
@@ -178,12 +151,7 @@ const UserSchema = new Schema<IUser, UserStatic>({
 });
 
 // Indexes for better performance
-UserSchema.index({ roles: 1 });
-UserSchema.index({ businessUnits: 1 });
-UserSchema.index({ 'permissions.role': 1 }); // New Permission Structure
-UserSchema.index({ 'permissions.businessUnit': 1 });
-UserSchema.index({ 'permissions.outlet': 1 });
-UserSchema.index({ phone: 1 }); // Login Lookup
+UserSchema.index({ 'globalRoles': 1 }); // Main Access Lookup for Global Roles
 UserSchema.index({ vendorId: 1 });
 UserSchema.index({ region: 1 });
 UserSchema.index({ status: 1 });
@@ -198,6 +166,13 @@ UserSchema.virtual('fullName').get(function () {
     return `${this["name"].firstName} ${this["name"].lastName}`.trim();
   }
   return '';
+});
+
+// Virtual for businessAccess (Separate Collection)
+UserSchema.virtual('businessAccess', {
+  ref: 'UserBusinessAccess',
+  localField: '_id',
+  foreignField: 'user'
 });
 
 // Pre-save middleware to hash password
@@ -229,7 +204,7 @@ UserSchema.statics["isUserExists"] = async function (email: string): Promise<IUs
   const user = await this["findOne"]({ email, isDeleted: false, isActive: true })
     .populate([
       {
-        path: 'permissions.role', // Populate role in new permissions structure
+        path: 'globalRoles',
         populate: [
           { path: 'permissions', model: 'Permission', select: 'resource action scope effect conditions resolver attributes' }, // Direct permissions
           {
@@ -240,16 +215,34 @@ UserSchema.statics["isUserExists"] = async function (email: string): Promise<IUs
           }
         ]
       },
-      // Keep populating deprecated fields for backward compatibility if needed
+      // Direct Permissions Population
       {
-        path: 'roles',
-        populate: {
-          path: 'permissions',
-          model: 'Permission'
-        }
+        path: 'directPermissions.allow',
+        model: 'Permission',
+        select: 'resource action scope effect conditions resolver attributes'
       },
       {
-        path: 'businessUnits'
+        path: 'directPermissions.deny',
+        model: 'Permission',
+        select: 'resource action scope effect conditions resolver attributes'
+      },
+      // Virtual Business Access (Scoped Roles)
+      {
+        path: 'businessAccess',
+        select: 'role scope businessUnit outlet status isPrimary dataScopeOverride',
+        populate: [
+          {
+            path: 'role',
+            select: 'name title permissionGroups',
+            populate: {
+              path: 'permissionGroups',
+              select: 'permissions resolver',
+              populate: { path: 'permissions', model: 'Permission', select: 'resource action scope effect conditions resolver attributes' }
+            }
+          },
+          { path: 'businessUnit', select: 'name slug id' },
+          { path: 'outlet', select: 'name' }
+        ]
       }
     ])
     .select('+password');
@@ -295,13 +288,7 @@ UserSchema.methods["changedPasswordAfter"] = function (JWTTimestamp: number): bo
   return false;
 };
 
-// Virtual for active roles
-UserSchema.virtual('activeRoles', {
-  ref: 'Role',
-  localField: 'roles',
-  foreignField: '_id',
-  match: { isActive: true, isDeleted: false }
-});
+
 
 // Query middleware to exclude deleted users
 UserSchema.pre(/^find/, function (next) {
@@ -329,9 +316,9 @@ UserSchema.methods["addLoginHistory"] = function (ip: string, userAgent: string)
 // Method to get user permissions summary
 UserSchema.methods["getPermissionsSummary"] = async function () {
   await this["populate"]({
-    path: 'roles',
+    path: 'globalRoles',
     populate: {
-      path: 'permissionGroup',
+      path: 'permissionGroups',
       populate: {
         path: 'permissions'
       }
@@ -341,21 +328,37 @@ UserSchema.methods["getPermissionsSummary"] = async function () {
   const allPermissions = [];
   const permissionMap = new Map();
 
-  // Collect permissions from roles
-  for (const role of this["roles"]) {
-    for (const group of role.permissionGroups) {
-      for (const permission of group.permissions) {
-        if (!permissionMap.has(permission.id)) {
-          permissionMap.set(permission.id, permission);
-          allPermissions.push(permission);
+  // Collect permissions from globalRoles
+  if (this["globalRoles"]) {
+    for (const role of this["globalRoles"]) {
+      // Check if role is populated and has permissionGroups
+      if (role && (role as any).permissionGroups) {
+        for (const group of (role as any).permissionGroups) {
+          if (group.permissions) {
+            for (const permission of group.permissions) {
+              if (!permissionMap.has(permission.id)) {
+                permissionMap.set(permission.id, permission);
+                allPermissions.push(permission);
+              }
+            }
+          }
         }
       }
     }
   }
 
-  // Add direct permissions
-  if (this["directPermissions"] && this["directPermissions"].length > 0) {
-    for (const permission of this["directPermissions"]) {
+  // Add direct permissions (allow)
+  if (this["directPermissions"]?.allow) {
+    for (const permission of this["directPermissions"].allow) {
+      if (!permissionMap.has(permission.id)) {
+        permissionMap.set(permission.id, permission);
+        allPermissions.push(permission);
+      }
+    }
+  }
+  // Add direct permissions (deny) - Technically should override, but this is a summary
+  if (this["directPermissions"]?.deny) {
+    for (const permission of this["directPermissions"].deny) {
       if (!permissionMap.has(permission.id)) {
         permissionMap.set(permission.id, permission);
         allPermissions.push(permission);

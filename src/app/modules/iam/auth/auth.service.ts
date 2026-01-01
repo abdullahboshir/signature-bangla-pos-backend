@@ -38,20 +38,30 @@ export const loginService = async (email: string, pass: string) => {
   }
 
 
-  const allRoles = isUserExists.roles?.map((r: any) => r.name) ?? [];
-  console.log('businessUnitssssssssssssssssssss', isUserExists.businessUnits)
+  const globalRoleNames = isUserExists.globalRoles?.map((r: any) => r.name) || [];
+  // businessAccess is a virtual, populated in isUserExists
+  const businessRoleNames = isUserExists.businessAccess?.map((assign: any) => assign.role?.name).filter(Boolean) || [];
+  const allRoles = [...new Set([...globalRoleNames, ...businessRoleNames])];
 
 
-  // Get Effective Permissions & Limits (Context)
-  const authContext = await permissionService.getAuthorizationContext(isUserExists as any);
 
-  const businessUnits = isUserExists.businessUnits?.map((bu: any) => ({
-    _id: bu._id,
-    name: bu.name,
-    id: bu.id,
-    slug: bu.slug
-  })) ?? [];
 
+  // Extract unique business units from access assignments
+  const buMap = new Map();
+  if (isUserExists.businessAccess) {
+    isUserExists.businessAccess.forEach((assign: any) => {
+      // Ensure businessUnit is populated before accessing properties
+      if (assign.businessUnit && typeof assign.businessUnit === 'object' && 'name' in assign.businessUnit) {
+        buMap.set(assign.businessUnit._id.toString(), {
+          _id: assign.businessUnit._id,
+          name: assign.businessUnit.name,
+          id: assign.businessUnit.id,
+          slug: assign.businessUnit.slug
+        });
+      }
+    });
+  }
+  const businessUnits = Array.from(buMap.values());
 
   const jwtPayload: any = {
     userId: isUserExists?._id,
@@ -59,7 +69,8 @@ export const loginService = async (email: string, pass: string) => {
     email: isUserExists?.email,
     businessUnits,
     status: isUserExists?.status,
-    role: allRoles,
+    role: allRoles, // Derived from businessAccess
+    isSuperAdmin: isUserExists?.isSuperAdmin // Explicit flag check
     // Add context to token payload if needed, or keep token light. Keeping token light.
   };
 
@@ -78,29 +89,30 @@ export const loginService = async (email: string, pass: string) => {
   // console.log('userrrrrrrrrrrrrrrrrrrrrrrrr', isUserExists.businessUnits)
 
 
-  const userInfo = {
-    userId: isUserExists?._id,
-    id: isUserExists?.id,
-    email: isUserExists?.email,
-    status: isUserExists?.status,
-    role: allRoles, // Array of strings (legacy/simple)
-    roles: isUserExists.roles, // Array of objects (populated)
-    permissions: isUserExists.permissions || [], // Scoped permissions
+  // const userInfo = {
+  //   userId: isUserExists?._id,
+  //   id: isUserExists?.id,
+  //   email: isUserExists?.email,
+  //   status: isUserExists?.status,
+  //   role: allRoles, // Array of strings (legacy/simple)
+  //   roles: isUserExists.roles, // Array of objects (populated)
+  //   permissions: isUserExists.permissions || [], // Scoped permissions
 
-    // Authorization Context Injection
-    maxDataAccess: authContext.maxDataAccess,
-    hierarchyLevel: authContext.hierarchyLevel,
-    effectivePermissions: authContext.permissions.map(p => `${p.resource}:${p.action}`),
+  //   // Authorization Context Injection
+  //   maxDataAccess: authContext.maxDataAccess,
+  //   hierarchyLevel: authContext.hierarchyLevel,
+  //   effectivePermissions: authContext.permissions
+  //     .filter(p => p && p.resource && p.action) // Filter out invalid permissions
+  //     .map(p => `${p.resource}:${p.action}`),
 
-    isSuperAdmin: isUserExists.isSuperAdmin,
-    businessUnits: businessUnits // sending full object array
-  }
+  //   isSuperAdmin: isUserExists.isSuperAdmin,
+  //   businessUnits: businessUnits // sending full object array
+  // }
 
   return {
     accessToken,
     refreshToken,
     needsPasswordChange: isUserExists?.needsPasswordChange,
-    user: userInfo
   };
 };
 
@@ -123,16 +135,29 @@ export const refreshTokenAuthService = async (token: string) => {
 
   // FIXED: find user by custom userId
   const isUserExists = await User.findOne({ _id: userId }).populate([
-    { path: 'businessUnits', select: 'name id' },
     {
-      path: 'permissions.role',
+      path: 'globalRoles',
+      populate: {
+        path: 'permissionGroups',
+        select: 'permissions resolver',
+        populate: { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' }
+      }
+    },
+    {
+      path: 'businessAccess',
+      select: 'role scope businessUnit outlet status isPrimary dataScopeOverride',
       populate: [
-        { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' },
         {
-          path: 'permissionGroups',
-          select: 'permissions resolver',
-          populate: { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' }
-        }
+          path: 'role',
+          select: 'name title permissionGroups',
+          populate: {
+            path: 'permissionGroups',
+            select: 'permissions resolver',
+            populate: { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' }
+          }
+        },
+        { path: 'businessUnit', select: 'name id slug' },
+        { path: 'outlet', select: 'name' }
       ]
     }
   ]).lean()
@@ -165,7 +190,9 @@ export const refreshTokenAuthService = async (token: string) => {
   }
 
 
-  const allRoles = isUserExists.roles?.map((r: any) => r.name) ?? [];
+  const globalRoleNames = (isUserExists as any).globalRoles?.map((r: any) => r.name) || [];
+  const businessRoleNames = (isUserExists as any).businessAccess?.map((acc: any) => acc.role?.name).filter(Boolean) || [];
+  const allRoles = [...new Set([...globalRoleNames, ...businessRoleNames])];
 
 
   const jwtPayload: any = {
@@ -196,44 +223,83 @@ export const authMeService = async (
 ) => {
 
   const res = await User.findOne({ _id: userInfo.userId }).populate([
-    { path: 'businessUnits', select: 'name id slug' },
     {
-      path: 'roles',
-      populate: [
-        { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' },
-        {
-          path: 'permissionGroups',
-          select: 'permissions resolver',
-          populate: { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' }
-        }
-      ]
+      path: 'globalRoles',
+      populate: {
+        path: 'permissionGroups',
+        select: 'permissions resolver',
+        populate: { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' }
+      }
     },
     {
-      path: 'permissions.role',
+      path: 'businessAccess',
+      select: 'role scope businessUnit outlet status',
       populate: [
-        { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' },
         {
-          path: 'permissionGroups',
-          select: 'permissions resolver',
-          populate: { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' }
-        }
+          path: 'role',
+          select: 'name title permissionGroups',
+          populate: {
+            path: 'permissionGroups',
+            select: 'permissions resolver',
+            populate: { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' }
+          }
+        },
+        { path: 'businessUnit', select: 'name id slug' },
+        { path: 'outlet', select: 'name' }
       ]
     }
   ]).lean();
 
   if (res) {
-    // Standardize response: Add 'role' (string array) to match loginService
-    (res as any).role = res.roles?.map((r: any) => r.name) || [];
+    const globalRoleNames = (res as any).globalRoles?.map((r: any) => r.name) || [];
+    const businessRoleNames = (res as any).businessAccess?.map((acc: any) => acc.role?.name).filter(Boolean) || [];
+    (res as any).role = [...new Set([...globalRoleNames, ...businessRoleNames])];
 
-    // Inject Authorization Context
+
+    if ((res as any).role.includes('super-admin')) {
+      res.isSuperAdmin = true;
+    }
+
     try {
       const authContext = await permissionService.getAuthorizationContext(res as any, scope);
+
+
+
       (res as any).maxDataAccess = authContext.maxDataAccess;
       (res as any).hierarchyLevel = authContext.hierarchyLevel;
-      (res as any).effectivePermissions = authContext.permissions.map(p => `${p.resource}:${p.action}`);
+      (res as any).dataScope = authContext.dataScope;
+
+      (res as any).effectivePermissions = authContext.permissions
+        .filter(p => p && p.resource && p.action)
+        .map(p => ({
+          resource: p.resource,
+          action: p.action,
+          scope: p.scope,
+          effect: p.effect
+        }));
+
+      delete (res as any).directPermissions;
+      delete (res as any).permissions; // legacy
+      delete (res as any).loginHistory;
+      delete (res as any).__v;
+      delete (res as any).createdAt;
+      delete (res as any).updatedAt;
+      delete (res as any).createdBy;
+      delete (res as any).updatedBy;
+      delete (res as any).password;
+
+
+      if (Array.isArray(res.businessAccess)) {
+        res.businessAccess.forEach((acc: any) => {
+          if (acc.role) {
+            delete acc.role.permissions;
+            delete acc.role.permissionGroups;
+          }
+        });
+      }
+
     } catch (e) {
       console.error("Failed to calculate auth context", e);
-      // Fallback or ignore
     }
   }
 

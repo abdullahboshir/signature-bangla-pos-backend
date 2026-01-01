@@ -1,5 +1,5 @@
 // src/modules/Permission/permission.controller.ts
-import {type Request, type Response } from 'express';
+import { type Request, type Response } from 'express';
 import status from 'http-status';
 import { z } from 'zod';
 
@@ -24,14 +24,14 @@ const paginationSchema = z.object({
 
 const permissionFilterSchema = z.object({
   resource: z.string().optional(),
-  action:   z.string().optional(),
-  scope:    z.string().optional(),
+  action: z.string().optional(),
+  scope: z.string().optional(),
   isActive: z.string().optional(),                     // "true" | "false"
 });
 
 const checkPermissionBodySchema = z.object({
   resource: z.string().min(1),
-  action:   z.string().min(1),
+  action: z.string().min(1),
 });
 
 /* -------------------------------------------------------------------------- */
@@ -61,8 +61,8 @@ export const getAllPermissions = catchAsync(
 
     const filter: any = {};
     if (resource) filter.resource = resource;
-    if (action)   filter.action   = action;
-    if (scope)    filter.scope    = scope;
+    if (action) filter.action = action;
+    if (scope) filter.scope = scope;
     const boolActive = parseBoolean(isActive);
     if (boolActive !== undefined) filter.isActive = boolActive;
 
@@ -135,14 +135,25 @@ export const getUserPermissions = catchAsync(
 
     const user = await User.findById(userId)
       .populate({
-        path: 'roles',
+        path: 'globalRoles',
         populate: [
           { path: 'permissions' },
           { path: 'permissionGroups', populate: { path: 'permissions' } },
-          { path: 'inheritedRoles' },
-        ],
+        ]
       })
-      .populate('directPermissions')            // <-- ensure direct perms are loaded
+      .populate({
+        path: 'businessAccess',
+        populate: [
+          {
+            path: 'role',
+            populate: [
+              { path: 'permissions' },
+              { path: 'permissionGroups', populate: { path: 'permissions' } }
+            ]
+          }
+        ]
+      })
+      .select('+directPermissions')            // <-- ensure direct perms are loaded
       .lean();
 
     if (!user) throw new AppError(status.NOT_FOUND, 'User not found');
@@ -155,14 +166,21 @@ export const getUserPermissions = catchAsync(
       return acc;
     }, {});
 
+    const allRoles = [
+      ...(user.globalRoles || []),
+      ...(user.businessAccess || []).map((a: any) => a.role)
+    ].filter((r: any) => r && r._id);
+
+    const uniqueRoles = [...new Map(allRoles.map((r: any) => [r._id.toString(), r])).values()];
+
     ApiResponse.success(res, {
       statusCode: status.OK,
       success: true,
       message: 'User permissions retrieved successfully',
       data: {
-        userId: user.id,
+        userId: user.id || user._id,
         email: user.email,
-        roles: (user.roles as any[]).map((r) => ({
+        roles: uniqueRoles.map((r: any) => ({
           id: r._id,
           name: r.name,
           description: r.description,
@@ -189,14 +207,25 @@ export const checkUserPermission = catchAsync(
 
     const user = await User.findById(userId)
       .populate({
-        path: 'roles',
+        path: 'globalRoles',
         populate: [
           { path: 'permissions' },
           { path: 'permissionGroups', populate: { path: 'permissions' } },
-          { path: 'inheritedRoles' },
-        ],
+        ]
       })
-      .populate('directPermissions')
+      .populate({
+        path: 'businessAccess',
+        populate: [
+          {
+            path: 'role',
+            populate: [
+              { path: 'permissions' },
+              { path: 'permissionGroups', populate: { path: 'permissions' } }
+            ]
+          }
+        ]
+      })
+      .select('+directPermissions')
       .lean();
 
     if (!user) throw new AppError(status.NOT_FOUND, 'User not found');
@@ -221,11 +250,11 @@ export const checkUserPermission = catchAsync(
         reason: result.reason,
         permission: result.permission
           ? {
-              id: result.permission.id,
-              description: result.permission.description,
-              scope: result.permission.scope,
-              effect: result.permission.effect,
-            }
+            id: result.permission.id,
+            description: result.permission.description,
+            scope: result.permission.scope,
+            effect: result.permission.effect,
+          }
           : null,
         resolvedBy: result.resolvedBy,
       },

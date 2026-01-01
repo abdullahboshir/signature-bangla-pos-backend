@@ -13,6 +13,7 @@ import {
 
 import status from "http-status";
 import catchAsync from "@core/utils/catchAsync.ts";
+import AppError from "@shared/errors/app-error.ts";
 
 export const createCustomerController = catchAsync(async (req: any, res) => {
   const { customerData, password } = req.body;
@@ -122,8 +123,18 @@ export const updateProfileController = catchAsync(async (req: any, res) => {
 
 
 export const getUserSettingsController = catchAsync(async (req: any, res) => {
-  const { id } = req.user; // Assuming user ID is in req.user from auth middleware
-  const data = await getUserSettingsService(id);
+  console.log("DEBUG: Reached getUserSettingsController");
+  console.log("DEBUG: req.user", req.user);
+
+  if (!req.user || !req.user.userId) {
+    console.error("DEBUG: Req user or userId missing in controller");
+    throw new AppError(400, "User context missing");
+  }
+
+  const { userId } = req.user;
+  console.log("DEBUG: Fetching settings for", userId);
+
+  const data = await getUserSettingsService(userId);
 
   ApiResponse.success(
     res,
@@ -134,8 +145,8 @@ export const getUserSettingsController = catchAsync(async (req: any, res) => {
 });
 
 export const updateUserSettingsController = catchAsync(async (req: any, res) => {
-  const { id } = req.user;
-  const data = await updateUserSettingsService(id, req.body);
+  const { userId } = req.user;
+  const data = await updateUserSettingsService(userId, req.body);
 
   ApiResponse.success(
     res,

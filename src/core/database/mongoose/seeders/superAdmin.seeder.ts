@@ -45,30 +45,7 @@ export const seedSuperAdmin = async () => {
     session = await mongoose.startSession();
     session.startTransaction();
 
-    // 4. Check for existing super admin (multiple criteria)
-    const existingSuperAdmin = await User.findOne({
-      $or: [
-        { id: "super_admin" },
-        { email: appConfig.super_admin_email.toLowerCase() },
-        { roles: { $in: [await getSuperAdminRoleId()] } },
-      ],
-    }).session(session);
-
-    if (existingSuperAdmin) {
-      // Ensure password is synced with .env
-      existingSuperAdmin.password = appConfig.super_admin_pass;
-      await existingSuperAdmin.save({ session });
-
-      await session.commitTransaction();
-      console.log("✅ SUPER_ADMIN exists - Password synced with .env");
-      return {
-        success: true,
-        message: "SUPER_ADMIN exists - Password synced",
-        exists: true,
-      };
-    }
-
-    // 5. Validate dependencies
+    // 5. Validate dependencies (Moved up to ensure we can update existing super admin correctly)
     const [role, allPermissions] = await Promise.all([
       Role.findOne({ name: USER_ROLE.SUPER_ADMIN }).session(session),
       Permission.find({}).session(session),
@@ -94,6 +71,40 @@ export const seedSuperAdmin = async () => {
       };
     }
 
+    // 4. Check for existing super admin (multiple criteria)
+    const existingSuperAdmin = await User.findOne({
+      $or: [
+        { id: "super_admin" },
+        { email: appConfig.super_admin_email.toLowerCase() },
+        { 'globalRoles': { $in: [role._id] } },
+      ],
+    }).session(session);
+
+    if (existingSuperAdmin) {
+      // Ensure password is synced with .env
+      existingSuperAdmin.password = appConfig.super_admin_pass;
+      existingSuperAdmin.isSuperAdmin = true;
+
+      // Sync Roles and Permissions (Fixes Schema Mismatch and updates permissions)
+      existingSuperAdmin.globalRoles = [role._id];
+
+      // Explicitly set directPermissions to Object format to resolve schema mismatch (Array vs Object)
+      existingSuperAdmin.directPermissions = {
+        allow: allPermissions.map((p) => p._id),
+        deny: []
+      };
+
+      await existingSuperAdmin.save({ session });
+
+      await session.commitTransaction();
+      console.log("✅ SUPER_ADMIN exists - Password, Roles & Permissions Synced");
+      return {
+        success: true,
+        message: "SUPER_ADMIN synced successfully",
+        exists: true,
+      };
+    }
+
     // 7. Create super admin
     const superAdminData = {
       id: "super-admin",
@@ -105,22 +116,15 @@ export const seedSuperAdmin = async () => {
       description: "Full system access with all permissions",
       descriptionBangla: "সম্পূর্ণ সিস্টেমে অ্যাক্সেস",
       isActive: true,
+      isSuperAdmin: true,
       status: USER_STATUS.ACTIVE,
       isEmailVerified: true,
       isPhoneVerified: true,
-      hierarchyLevel: 100,
-      isDefault: false,
-      isSystemRole: true,
-      maxDataAccess: {
-        products: -1, // -1 for unlimited access
-        orders: -1,
-        customers: -1,
-        vendors: -1,
+      globalRoles: [role._id],
+      directPermissions: {
+        allow: allPermissions.map((p) => p._id),
+        deny: []
       },
-      roles: [role._id],
-      permissionGroups: [],
-      directPermissions: allPermissions.map((p) => p._id),
-      inheritedRoles: [],
       lastLogin: new Date(),
       createdBy: null,
       updatedBy: null,
@@ -180,10 +184,7 @@ function isValidEmail(email: string) {
   return emailRegex.test(email);
 }
 
-async function getSuperAdminRoleId() {
-  const role = await Role.findOne({ name: "SUPER_ADMIN" });
-  return role ? role._id : null;
-}
+
 
 function getErrorCode(error: any) {
   if (error.name === "ValidationError") return "VALIDATION_ERROR";

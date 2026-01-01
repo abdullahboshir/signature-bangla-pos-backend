@@ -1,14 +1,18 @@
 import { startSession } from "mongoose";
 import type { IUser } from "./user.interface.js";
 
+
 import { genereteCustomerId } from "./user.utils.js";
 
 import { User } from "./user.model.js";
 import { Role } from "../role/role.model.js";
+import { UserBusinessAccess } from "../user-business-access/user-business-access.model.js";
 import BusinessUnit from "../../platform/organization/business-unit/core/business-unit.model.ts";
 import { USER_ROLE } from "./user.constant.ts";
 import appConfig from "@shared/config/app.config.ts";
+import { PermissionService } from "../permission/permission.service.js";
 import AppError from "@shared/errors/app-error.ts";
+const permissionService = new PermissionService();
 
 
 import { Staff } from "@app/modules/platform/staff/staff.model.ts";
@@ -26,26 +30,48 @@ export const getUsersService = async (query: Record<string, unknown>) => {
   const { searchTerm, businessUnit, ...filterData } = query;
 
   // Handle Business Unit Filter (Array Match)
+  // Handle Business Unit Filter (Via UserBusinessAccess)
   if (businessUnit) {
     let buId = businessUnit as string;
-    // Resolve Slug if needed, or assume ID if verified
-    // For Users, strict ID check is safer, or consistent with others
-    // Let's assume passed as ID or Slug
+
+    // Resolve Slug if needed
     if (!mongoose.Types.ObjectId.isValid(buId) && !/^[0-9a-fA-F]{24}$/.test(buId)) {
       const BusinessUnit = mongoose.model("BusinessUnit");
       const bu = await BusinessUnit.findOne({ slug: buId });
       if (bu) buId = bu._id.toString();
-      // else ignore or fail? for filter, ignore means no match
     }
 
-    // Users store businessUnits as array
-    (filterData as any).businessUnits = { $in: [buId] };
+    // Find users who have access to this Business Unit
+    const userIds = await UserBusinessAccess.distinct('user', {
+      $or: [
+        { businessUnit: buId }, // Direct Business Scope
+        { scope: 'GLOBAL' }     // Global Admins (Optional: Do we want to show Globals when filtering by BU? Usually yes.)
+      ]
+    });
+
+    // Merge into filter
+    // If existing _id filter, we must intersect? 
+    // Usually filterData doesn't have _id unless specific.
+    (filterData as any)._id = { $in: userIds };
   }
 
   const userQuery = new QueryBuilder(
     User.find()
-      .populate("roles")
-      .populate("businessUnits") // Minimal populate to keep list fast
+      .populate({
+        path: "globalRoles",
+        select: "name title isSystemRole"
+      })
+      // Assuming we add a virtual 'businessAccess' to User model to link to UserBusinessAccess collection
+      // This preserves API structure for frontend (array of access objects)
+      .populate({
+        path: "businessAccess", // Virtual
+        select: "role businessUnit outlet scope status isPrimary dataScopeOverride",
+        populate: [
+          { path: "role", select: "name title" },
+          { path: "businessUnit", select: "name slug" },
+          { path: "outlet", select: "name" }
+        ]
+      })
       .select("-password"), // safe
     filterData
   )
@@ -130,8 +156,8 @@ export const createCustomerService = async (
       id,
       email: customerData.email,
       password: password || (appConfig.default_pass as string),
-      roles: [role._id],
-      businessUnits: ["customer"],
+      // Assign Customer Role Globally
+      globalRoles: [role._id],
       status: "pending",
       needsPasswordChange: !password,
       avatar: customerData.avatar as string,
@@ -299,8 +325,10 @@ export const createStaffService = async (
       email: email,
       phone: phone,
       password: password || (appConfig.default_pass as string),
-      roles: [roleId],
-      businessUnits: businessUnitId ? [businessUnitId] : [],
+      // Staff roles are usually assigned via UserBusinessAccess (Scoped)
+      // unless it's a Platform Admin which might be in globalRoles.
+      // Here we assume scoped assignment if BU is present.
+      globalRoles: !businessUnitId ? [roleId] : [],
       status: "pending",
       needsPasswordChange: !password,
       avatar: avatarUrl,
@@ -311,9 +339,22 @@ export const createStaffService = async (
     };
 
     const newUser = await User.create([userData], { session });
-    if (!newUser || !newUser.length) throw new AppError(500, "Failed to create user account");
+    if (!newUser || !newUser.length || !newUser[0]) throw new AppError(500, "Failed to create user account");
 
-    // 7. Create Staff Profile
+    // 7. Create User Business Access (If Business Unit is provided)
+    if (businessUnitId) {
+      const accessPayload = {
+        user: newUser[0]._id,
+        role: roleId,
+        scope: 'BUSINESS',
+        businessUnit: businessUnitId,
+        outlet: null,
+        status: 'active'
+      };
+      await UserBusinessAccess.create([accessPayload], { session });
+    }
+
+    // 8. Create Staff Profile
     const staffPayload: Partial<IStaff> = {
       ...staffData,
       user: newUser[0]!._id,
@@ -328,6 +369,7 @@ export const createStaffService = async (
     await session.commitTransaction();
     console.log(`✅ Staff created: ${email} (${newStaff[0]?._id})`);
 
+    // Return with simplified population (UserBusinessAccess not populated here, purely Staff view)
     return await Staff.findById(newStaff[0]?._id).populate('user').populate('businessUnit');
 
   } catch (error: any) {
@@ -338,123 +380,6 @@ export const createStaffService = async (
   }
 };
 
-// export const createVendorService = async (
-//   vendorData: IVendorCore,
-//   password: string,
-//   file: Express.Multer.File | undefined,
-// ) => {
-//   const session = await startSession()
-//   try {
-//     // Start transaction early to ensure abort/commit are valid
-//      session.startTransaction();
-
-//     // Check if user already exists
-//     const contact = vendorData.contact.email?  { email: vendorData.contact.email } : { primaryPhone: vendorData.contact.primaryPhone }
-//     const isUserExists = await User.findOne(contact).session(session)
-
-//     if (isUserExists) {
-//       throw new AppError(400, 'User with this Email/Phone already exists!')
-//     }
-
-//     // Get customer role
-//     const role = await Role.findOne({ name: USER_ROLE.VENDOR, isActive: true }).session(session)
-//     if (!role) {
-//       throw new AppError(404, 'Customer role not found!')
-//     }
-
-//     // Generate customer ID
-//     const id = await genereteCustomerId(vendorData?.contact.email, role._id.toString())
-
-//     // Handle file upload
-//     if (file) {
-//       try {
-//         const imgName = `${vendorData?.name?.firstName || Date.now()}-${id}`
-//         const imgPath = file?.path
-//         const { secure_url } = (await sendImageToCloudinary(
-//           imgName,
-//           imgPath,
-//         )) as any
-//         vendorData.avatar = secure_url
-//       } catch (uploadError: any) {
-//         console.error('Image upload failed:', uploadError)
-//         // Continue without avatar
-//       }
-//       console.log('dddddddddddd', id)
-//     }
-
-//     // Prepare user data
-//     const userData: Partial<IUser> = {
-//       id,
-//       email: vendorData.contact.email,
-//       password: password || (appConfig.default_pass as string),
-//       roles: [role._id],
-//       businessUnits: ['customer'],
-//       status: 'pending',
-//       needsPasswordChange: !password,
-//       avatar: vendorData.avatar as string,
-//     }
-
-//     if (vendorData.contact.primaryPhone) {
-//       userData.phone = vendorData.contact.primaryPhone;
-//     }
-
-//     // Create User
-//     const newUser: any = await User.create([userData], { session })
-
-//     if (!newUser || !newUser.length) {
-//       throw new AppError(500, 'Failed to create user account!')
-//     }
-
-//         // Prepare customer data
-//     const vndorPayload: Partial<IVendorCore | IVendorContact> = {
-//       ...vendorData,
-//       id,
-//       user: newUser[0]._id as any,
-//       email: vendorData.contact.email,
-//     }
-
-//     // Create Customer
-//     const newVendor: any = await VendorCore.create([vndorPayload], { session })
-
-//     if (!newVendor || !newVendor.length) {
-//       throw new AppError(500, 'Failed to create customer profile!')
-//     }
-
-//     // Commit transaction
-//     if (session.inTransaction()) {
-//       await session.commitTransaction();
-//     }
-
-//     console.log(`✅ Customer created successfully: ${newVendor[0].contact.email}`)
-
-//         // Return customer with populated user data
-//     const result = await VendorCore.findById(newVendor[0]._id)
-//       .populate({
-//         path: 'user',
-//         select: '-password',
-//         populate: {
-//           path: 'roles',
-//           select: 'name description'
-//         }
-//       })
-
-//     return result
-
-//   } catch (error: any) {
-//     if (session.inTransaction()) {
-//       await session.abortTransaction();
-//     }
-//     console.error('❌ Customer creation failed:', error.message)
-
-//     if (error instanceof AppError) {
-//       throw error
-//     }
-//     throw new AppError(500, `Failed to create customer: ${error.message}`)
-//   } finally {
-//     await session.endSession()
-//   }
-// }
-// ... existing code
 
 export const updateUserService = async (
   userId: string,
@@ -474,6 +399,37 @@ export const updateUserService = async (
     payload.avatar = secure_url;
   }
 
+  // Handle Business Access (Virtual Sync) - Enterprise Grade Access Management
+  if (payload.businessAccess && Array.isArray(payload.businessAccess)) {
+    const existingAccess = await UserBusinessAccess.find({ user: userId });
+
+    const payloadIds = (payload.businessAccess as any[]).map((a: any) => a._id || a.id).filter(Boolean);
+    const existingIds = existingAccess.map((a: any) => a._id.toString());
+
+    // Delete removed assignments
+    const toDelete = existingIds.filter(id => !payloadIds.includes(id));
+    if (toDelete.length > 0) {
+      await UserBusinessAccess.deleteMany({ _id: { $in: toDelete } });
+    }
+
+    // Upsert assignments
+    for (const item of (payload.businessAccess as any[])) {
+      // If setting as primary, unset others to ensure single primary context
+      if (item.isPrimary) {
+        await UserBusinessAccess.updateMany({ user: userId }, { isPrimary: false });
+      }
+
+      if (item._id || item.id) {
+        await UserBusinessAccess.findByIdAndUpdate(item._id || item.id, { ...item, user: userId }, { new: true });
+      } else {
+        await UserBusinessAccess.create({ ...item, user: userId });
+      }
+    }
+
+    // Remove from payload to prevent Mongoose schema Strict Mode error
+    delete payload.businessAccess;
+  }
+
   // Security: Prevent updating password through this route to avoid hashing issues/accidental overwrites
   if (payload.password) {
     console.warn("⚠️ Attempted to update password via updateUserService. Removing password from payload.");
@@ -484,14 +440,35 @@ export const updateUserService = async (
 
   const result = await User.findByIdAndUpdate(userId, payload, {
     new: true,
-  }).populate("roles").populate("businessUnits");
+  }).populate({
+    path: "businessAccess",
+    select: 'role businessUnit outlet scope status isPrimary dataScopeOverride',
+    populate: [
+      { path: "role", select: "name title isSystemRole" },
+      { path: "businessUnit", select: "name slug" }
+    ]
+  });
+
+  // Invalidate Permission Cache for this user
+  await permissionService.invalidateUserCache(userId);
 
   return result;
 };
 
 // Find a single user by ID
 export const getSingleUserService = async (id: string) => {
-  const result = await User.findById(id).populate("roles").populate("businessUnits");
+  const result = await User.findById(id)
+    .populate({
+      path: "globalRoles",
+      select: "name title isSystemRole"
+    })
+    .populate({
+      path: "businessAccess",
+      populate: [
+        { path: "role", select: "name title" },
+        { path: "businessUnit", select: "name slug" }
+      ]
+    });
   return result;
 };
 
@@ -516,13 +493,23 @@ export const updateProfileService = async (
   // Security: Prevent updating password
   if (payload.password) delete payload.password;
   // Prevent role/status update from profile
-  if (payload.roles) delete payload.roles;
+  if (payload.globalRoles) delete payload.globalRoles;
   if (payload.status) delete payload.status;
 
   const result = await User.findByIdAndUpdate(userId, payload, {
     new: true,
     runValidators: true,
-  }).populate("roles").populate("businessUnits");
+  }).populate({
+    path: "businessAccess",
+    select: 'role businessUnit outlet scope status isPrimary dataScopeOverride',
+    populate: [
+      { path: "role", select: "name title isSystemRole" },
+      { path: "businessUnit", select: "name slug" }
+    ]
+  });
+
+  // Invalidate Cache
+  await permissionService.invalidateUserCache(userId);
 
   return result;
 };

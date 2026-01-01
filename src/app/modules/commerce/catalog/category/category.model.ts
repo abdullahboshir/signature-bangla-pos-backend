@@ -19,7 +19,7 @@ const CategorySchema = new Schema<ICategories>(
     businessUnit: {
       type: Schema.Types.ObjectId,
       ref: "BusinessUnit",
-      required: true,
+      required: false,
     },
     parentId: {
       type: Schema.Types.ObjectId,

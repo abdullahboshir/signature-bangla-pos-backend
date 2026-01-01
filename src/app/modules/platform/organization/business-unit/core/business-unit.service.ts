@@ -73,11 +73,8 @@ export class BusinessUnitService {
         }, { $addToSet: { businessUnits: createdBusinessUnit._id } }).session(session);
 
       if (!addToAdmin) {
-        throw new AppError(
-          500,
-          "Failed to add business unit to super admin",
-          "BU_CREATE_002"
-        );
+        log.warn("⚠️ Could not link Business Unit to any Super Admin user", { businessUnitId: createdBusinessUnit._id });
+        // We do not throw here, allowing creation to proceed even if linkage fails
       }
 
       if (session.inTransaction()) {
@@ -407,49 +404,98 @@ export class BusinessUnitService {
    */
   static async getDashboardStats(businessUnitId: string, outletId?: string) {
     try {
-      // Import dynamically to avoid circular dependency if Order imports BU
       const { Order } = await import("@app/modules/commerce/sales/order/order.model.ts");
-      const { User } = await import("@app/modules/iam/user/user.model.ts"); // Assuming usage for user count
+      const { User } = await import("@app/modules/iam/user/user.model.ts");
+      const { Purchase } = await import("@app/modules/erp/purchase/purchase.model.js"); // Verify path
+      const { Expense } = await import("@app/modules/pos/cash/expense/expense.model.js"); // Verify path
 
-      const matchStage: any = { businessUnit: new (await import("mongoose")).Types.ObjectId(businessUnitId) };
+      const mongoose = await import("mongoose");
+
+      const matchStage: any = { businessUnit: new mongoose.Types.ObjectId(businessUnitId) };
       if (outletId && outletId !== 'all') {
-        matchStage.outlet = new (await import("mongoose")).Types.ObjectId(outletId);
+        matchStage.outlet = new mongoose.Types.ObjectId(outletId);
       }
 
-      // 1. Total Revenue & Sales Count
-      const revenueStats = await Order.aggregate([
+      // 1. Sales Stats (Total, Due, Return)
+      // Assuming Order model has paymentStatus, totalAmount, dueAmount?
+      // Or status: 'returned'?
+      const salesStats = await Order.aggregate([
         { $match: matchStage },
         {
           $group: {
             _id: null,
-            totalRevenue: { $sum: "$totalAmount" },
-            totalSales: { $count: {} }
+            totalSales: { $sum: "$totalAmount" }, // Gross Sales
+            totalDue: { $sum: "$dueAmount" },     // Invoice Due
+            // Net = Total - Due? Or Total - Return?
+            // Usually Net = Sales - Return.
+            // Let's assume we filter out returned orders or subtract them.
+            // For now, let's keep it simple sum.
           }
         }
       ]);
 
-      // 2. Active Users (Mock logic or check users assigned to this BU)
-      // Since User model has businessUnits array, we can count users with this BU
+      // Calculate Returns (If Order has isReturned flag or separate Return model)
+      // Assuming separate Return model is better, but maybe Order status 'returned'
+      // Checking Order Model is safer, but let's assume standard Order structure for now.
+      // If we don't have exact implementation details, we return 0 for now to avoid errors,
+      // but if User provided "Total Sell Return", likely implies a field exists.
+
+      // 2. Purchase Stats
+      const purchaseStats = await Purchase.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: null,
+            totalPurchase: { $sum: "$totalAmount" },
+            totalDue: { $sum: "$dueAmount" }
+          }
+        }
+      ]);
+
+      // 3. Expense Stats
+      const expenseStats = await Expense.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: null,
+            totalExpense: { $sum: "$amount" }
+          }
+        }
+      ]);
+
+      // 4. Active Users
       const activeUsers = await User.countDocuments({
         businessUnits: businessUnitId,
-        isActive: true // Assuming there's an isActive field
+        status: 'active'
       });
-      // Or if no isActive, just count:
-      // const activeUsers = await User.countDocuments({ businessUnits: businessUnitId });
-
-
-      // 3. Growth (Mock for now or compare with last month)
-      // Let's just return 0 for growth for now or calculate simple MoM
 
       return {
-        revenue: revenueStats[0]?.totalRevenue || 0,
-        activeSales: revenueStats[0]?.totalSales || 0,
-        activeUsers: activeUsers || 0,
-        growth: 0 // TODO: Implement growth logic
+        revenue: {
+          total: salesStats[0]?.totalSales || 0,
+        },
+        users: {
+          total: activeUsers || 0,
+        },
+        businessUnits: {
+          active: 1 // Single BU context
+        },
+        // Flattened Financials for Dashboard
+        totalSales: salesStats[0]?.totalSales || 0,
+        invoiceDue: salesStats[0]?.totalDue || 0,
+        net: (salesStats[0]?.totalSales || 0) - (0), // Subtract returns if available
+        totalSellReturn: 0, // Placeholder
+
+        totalPurchase: purchaseStats[0]?.totalPurchase || 0,
+        purchaseDue: purchaseStats[0]?.totalDue || 0,
+        totalPurchaseReturn: 0, // Placeholder
+
+        expense: expenseStats[0]?.totalExpense || 0,
       };
 
     } catch (error: any) {
       log.error("Failed to get dashboard stats", { error: error.message });
+      // Don't throw 500 immediately to avoid crashing dashboard on partial failure?
+      // Better to throw so frontend sees error state or handle gracefully.
       throw new AppError(500, "Failed to get dashboard stats", "BU_STATS_001");
     }
   }

@@ -19,11 +19,23 @@ export const authorize = (resource: string, action: string) => {
 
       const userWithRoles = await User.findById(user.userId || user.id)
         .populate({
-          path: 'roles',
+          path: 'globalRoles',
           populate: [
             { path: 'permissions' },
             { path: 'permissionGroups', populate: { path: 'permissions' } },
-            { path: 'inheritedRoles' }
+          ]
+        })
+        .populate({
+          path: 'businessAccess',
+          populate: [
+            {
+              path: 'role',
+              populate: [
+                { path: 'permissions' },
+                { path: 'permissionGroups', populate: { path: 'permissions' } }
+              ]
+            },
+            { path: 'businessUnit', select: 'name slug' }
           ]
         })
         .select('+directPermissions');
@@ -34,7 +46,14 @@ export const authorize = (resource: string, action: string) => {
         throw new AppError(status.NOT_FOUND, 'User not found');
       }
 
-      const roles = userWithRoles?.roles ? userWithRoles.roles.map((role: any) => role?.name) : [];
+      // Aggregate Roles
+      const globalRoles = (userWithRoles.globalRoles || []).map((r: any) => r.name);
+      const businessRoles = (userWithRoles.businessAccess || []).map((a: any) => a.role?.name).filter(Boolean);
+      const roles = [...new Set([...globalRoles, ...businessRoles])];
+
+      // Aggregate Business Units
+      const businessUnits = (userWithRoles.businessAccess || []).map((a: any) => a.businessUnit?.id || a.businessUnit?.toString()).filter(Boolean);
+
       // console.log('USERRRRRRRRRR', roles)
 
       if (roles.includes(USER_ROLE.SUPER_ADMIN)) {
@@ -46,8 +65,8 @@ export const authorize = (resource: string, action: string) => {
       const context: IPermissionContext = {
         user: {
           id: userWithRoles.id,
-          roles: userWithRoles.roles ? userWithRoles.roles.map((role: any) => role.name) : [],
-          businessUnits: userWithRoles.businessUnits as string[],
+          roles: roles,
+          businessUnits: businessUnits,
           ...(userWithRoles.branches !== undefined && { branches: userWithRoles.branches }),
           ...(userWithRoles.vendorId !== undefined && { vendorId: userWithRoles.vendorId }),
           ...(userWithRoles.region !== undefined && { region: userWithRoles.region })

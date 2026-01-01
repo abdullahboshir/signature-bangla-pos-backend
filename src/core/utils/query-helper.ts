@@ -6,6 +6,8 @@ import mongoose from "mongoose";
  * Logic: Match specific BU ID OR Global (null) OR Missing field.
  */
 export const resolveBusinessUnitQuery = async (query: any) => {
+    if (!query) return {};
+
     if (query.businessUnit) {
         let businessUnit = query.businessUnit;
         if (typeof businessUnit === "string") businessUnit = businessUnit.trim();

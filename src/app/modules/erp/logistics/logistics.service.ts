@@ -15,7 +15,7 @@ const createCourier = async (data: ICourier, user: any) => {
 };
 
 const getAllCouriers = async (query: Record<string, unknown>, user: any) => {
-    const businessUnitQuery = resolveBusinessUnitQuery(user);
+    const businessUnitQuery = await resolveBusinessUnitQuery(user);
     const courierQuery = new QueryBuilder(Courier.find(businessUnitQuery), query)
         .search(["name", "providerId"])
         .filter()
@@ -30,14 +30,14 @@ const getAllCouriers = async (query: Record<string, unknown>, user: any) => {
 };
 
 const getCourierById = async (id: string, user: any) => {
-    const businessUnitQuery = resolveBusinessUnitQuery(user);
+    const businessUnitQuery = await resolveBusinessUnitQuery(user);
     const courier = await Courier.findOne({ _id: id, ...businessUnitQuery }).select('+apiKey +apiSecret');
     if (!courier) throw new AppError(httpStatus.NOT_FOUND, "Courier not found");
     return courier;
 };
 
 const updateCourier = async (id: string, payload: Partial<ICourier>, user: any) => {
-    const businessUnitQuery = resolveBusinessUnitQuery(user);
+    const businessUnitQuery = await resolveBusinessUnitQuery(user);
     const courier = await Courier.findOneAndUpdate({ _id: id, ...businessUnitQuery }, payload, {
         new: true,
         runValidators: true,
@@ -47,7 +47,7 @@ const updateCourier = async (id: string, payload: Partial<ICourier>, user: any) 
 };
 
 const deleteCourier = async (id: string, user: any) => {
-    const businessUnitQuery = resolveBusinessUnitQuery(user);
+    const businessUnitQuery = await resolveBusinessUnitQuery(user);
     const courier = await Courier.findOneAndDelete({ _id: id, ...businessUnitQuery });
     if (!courier) throw new AppError(httpStatus.NOT_FOUND, "Courier not found");
     return courier;

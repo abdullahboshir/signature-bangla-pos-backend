@@ -58,7 +58,15 @@ export async function buildCompositeVersion(entities: string[]): Promise<string>
   return entities.map((e, i) => `${e}-v${versions[i]}`).join('_');
 }
 
-export async function buildUserPermissionsKey(userId: string): Promise<string> {
-  const composite = await buildCompositeVersion(['role', 'permission']);
-  return `permissions:${composite}:user:${userId}`;
+export async function buildUserPermissionsKey(
+  userId: string,
+  scope?: { businessUnitId?: string; outletId?: string }
+): Promise<string> {
+  const composite = await buildCompositeVersion(['role', 'permission', 'permission-group']);
+
+  let scopeKey = 'global';
+  if (scope?.businessUnitId) scopeKey = `bu:${scope.businessUnitId}`;
+  if (scope?.outletId) scopeKey = `outlet:${scope.outletId}`;
+
+  return `permissions:${composite}:user:${userId}:scope:${scopeKey}`;
 }

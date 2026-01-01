@@ -1,5 +1,6 @@
 import { PermissionGroup } from './permission-group.model.js';
 import type { IPermissionGroup } from '../permission/permission.interface.js';
+import { bumpVersion } from '../../../../core/utils/cacheKeys.ts';
 
 class PermissionGroupService {
     /**
@@ -55,7 +56,9 @@ class PermissionGroupService {
         if (existingToken) {
             throw new Error('Permission group with this name already exists');
         }
-        return await PermissionGroup.create(payload);
+        const group = await PermissionGroup.create(payload);
+        await bumpVersion('permission-group');
+        return group;
     }
 
     /**
@@ -71,7 +74,9 @@ class PermissionGroupService {
         }
 
         Object.assign(group, payload);
-        return await group.save();
+        const result = await group.save();
+        await bumpVersion('permission-group');
+        return result;
     }
 
     /**
@@ -80,7 +85,9 @@ class PermissionGroupService {
     async deleteGroup(id: string) {
         const group = await PermissionGroup.findById(id);
         if (!group) throw new Error('Permission group not found');
-        return await PermissionGroup.findByIdAndDelete(id);
+        const result = await PermissionGroup.findByIdAndDelete(id);
+        await bumpVersion('permission-group');
+        return result;
     }
 }
 

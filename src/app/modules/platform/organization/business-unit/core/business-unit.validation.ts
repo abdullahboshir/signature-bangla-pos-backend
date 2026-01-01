@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import mongoose from 'mongoose';
+import { BUSINESS_MODEL, BUSINESS_INDUSTRY } from './business-unit.constant.ts';
 
 // Helper validations
 const objectIdSchema = z.string().refine((val) => mongoose.Types.ObjectId.isValid(val), {
@@ -14,7 +15,7 @@ export const createBusinessUnitValidationSchema = z.object({
 
   branding: z.object({
     name: z.string().min(1, "BusinessUnit name is required").max(100, "BusinessUnit name too long"),
-    description: z.string().min(10, "Description must be at least 10 characters").max(500, "Description too long"),
+    description: z.string().max(500, "Description too long").optional(),
     descriptionBangla: z.string().max(500, "Description too long").optional(),
     logo: urlSchema,
     banner: urlSchema,
@@ -32,11 +33,12 @@ export const createBusinessUnitValidationSchema = z.object({
     .max(50, "Slug too long")
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
 
-  categories: z.array(objectIdSchema).min(1, "At least one category is required"),
-  primaryCategory: objectIdSchema,
+  categories: z.array(objectIdSchema).min(1, "At least one category is required").optional(),
+  primaryCategory: objectIdSchema.optional(),
   tags: z.array(z.string().max(30, "Tag too long")).optional(),
   specialties: z.array(z.string().max(50, "Specialty too long")).optional(),
-  businessUnitType: z.enum(["general", "boutique", "brand", "marketplace", "specialty"]).optional(),
+  operationalModel: z.enum(Object.values(BUSINESS_MODEL) as [string, ...string[]]).optional().default(BUSINESS_MODEL.RETAIL),
+  industry: z.enum(Object.values(BUSINESS_INDUSTRY) as [string, ...string[]]).optional().default(BUSINESS_INDUSTRY.GENERAL),
   attributeGroup: objectIdSchema.optional(),
 
   contact: z.object({
@@ -90,17 +92,17 @@ export const createBusinessUnitValidationSchema = z.object({
   }).optional(),
 
   policies: z.object({
-    returnPolicy: z.string().min(10, "Return policy is required").max(1000, "Return policy too long"),
-    shippingPolicy: z.string().min(10, "Shipping policy is required").max(1000, "Shipping policy too long"),
-    privacyPolicy: z.string().min(10, "Privacy policy is required").max(1000, "Privacy policy too long"),
-    termsOfService: z.string().min(10, "Terms of service is required").max(1000, "Terms of service too long"),
+    returnPolicy: z.string().max(1000, "Return policy too long").optional(),
+    shippingPolicy: z.string().max(1000, "Shipping policy too long").optional(),
+    privacyPolicy: z.string().max(1000, "Privacy policy too long").optional(),
+    termsOfService: z.string().max(1000, "Terms of service too long").optional(),
     warrantyPolicy: z.string().max(1000, "Warranty policy too long").optional(),
     refundPolicy: z.string().max(1000, "Refund policy too long").optional(),
   }),
 
   seo: z.object({
-    metaTitle: z.string().min(10, "Meta title is required").max(60, "Meta title should be under 60 characters"),
-    metaDescription: z.string().min(50, "Meta description is required").max(160, "Meta description should be under 160 characters"),
+    metaTitle: z.string().max(60, "Meta title should be under 60 characters").optional(),
+    metaDescription: z.string().max(160, "Meta description should be under 160 characters").optional(),
     keywords: z.array(z.string().max(50, "Keyword too long")).optional(),
     canonicalUrl: urlSchema,
     ogImage: urlSchema,
@@ -124,7 +126,11 @@ export const createBusinessUnitValidationSchema = z.object({
   isFeatured: z.boolean().optional(),
   isVerified: z.boolean().optional(),
   featuredExpiresAt: z.string().datetime().optional(),
-}).refine((data) => data.categories.includes(data.primaryCategory), {
+}).refine((data) => {
+  if (!data.primaryCategory) return true;
+  if (!data.categories) return false;
+  return data.categories.includes(data.primaryCategory);
+}, {
   message: "Primary category must be one of the selected categories",
   path: ["primaryCategory"],
 });

@@ -15,7 +15,7 @@ export const loginController = catchAsync(async (req, res) => {
   const { email, password } = req.body;
   const data = await loginService(email, password);
 
-  const { accessToken, refreshToken, needsPasswordChange, user } = data;
+  const { accessToken, refreshToken, needsPasswordChange } = data;
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
@@ -27,7 +27,7 @@ export const loginController = catchAsync(async (req, res) => {
 
   ApiResponse.success(
     res,
-    { accessToken, needsPasswordChange, user },
+    { accessToken, needsPasswordChange },
     "User Login has been Successfully",
     status.OK
   );
@@ -61,8 +61,9 @@ export const authMeController = catchAsync(async (req, res) => {
 
   const scope = businessUnitId ? { businessUnitId: String(businessUnitId) } : undefined;
 
+  console.log("Auth Me Scope:", scope);
   const result = await authMeService(userInfo, scope);
-
+  console.log("Auth Me Result:", result);
   ApiResponse.success(
     res,
     result,

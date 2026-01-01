@@ -28,7 +28,28 @@ export interface IBusinessUnitCore {
   specialties: string[];
   attributeGroup?: Types.ObjectId; // Deprecated: Use attributeGroups instead
   attributeGroups?: Types.ObjectId[];
-  businessUnitType: "general" | "boutique" | "brand" | "marketplace" | "specialty";
+  operationalModel:
+  | "retail"
+  | "wholesale"
+  | "distributor"
+  | "manufacturing"
+  | "service"
+  | "online_only"
+  | "hybrid"
+  | "marketplace";
+
+  industry:
+  | "fashion"
+  | "electronics"
+  | "grocery"
+  | "pharmacy"
+  | "restaurant"
+  | "beauty"
+  | "furniture"
+  | "automotive"
+  | "books_stationery"
+  | "general"
+  | "other";
 
   // ====== CONTACT & LOCATION ======
   contact: IBusinessUnitContact;
