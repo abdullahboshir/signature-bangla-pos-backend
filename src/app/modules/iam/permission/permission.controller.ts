@@ -73,8 +73,8 @@ export const getAllPermissions = catchAsync(
     /* --------- DB query --------- */
     const [permissions, total] = await Promise.all([
       Permission.find(filter)
-        .populate('createdBy', 'name email')
-        .populate('updatedBy', 'name email')
+        // .populate('createdBy', 'name email') // OPTIMIZATION: Removed for list performance
+        // .populate('updatedBy', 'name email')
         .sort({ resource: 1, action: 1 })
         .skip(skip)
         .limit(lt)
@@ -133,27 +133,14 @@ export const getUserPermissions = catchAsync(
     const { userId } = req.params;
     if (!userId) throw new AppError(status.BAD_REQUEST, 'User id is required');
 
+    // OPTIMIZATION: Removed deep nested population. PermissionService uses cached Role definitions.
     const user = await User.findById(userId)
-      .populate({
-        path: 'globalRoles',
-        populate: [
-          { path: 'permissions' },
-          { path: 'permissionGroups', populate: { path: 'permissions' } },
-        ]
-      })
+      .populate('globalRoles') // Just get the roles (IDs/Names)
       .populate({
         path: 'businessAccess',
-        populate: [
-          {
-            path: 'role',
-            populate: [
-              { path: 'permissions' },
-              { path: 'permissionGroups', populate: { path: 'permissions' } }
-            ]
-          }
-        ]
+        populate: { path: 'role' } // Just get the role ref
       })
-      .select('+directPermissions')            // <-- ensure direct perms are loaded
+      .select('+directPermissions')
       .lean();
 
     if (!user) throw new AppError(status.NOT_FOUND, 'User not found');
@@ -205,25 +192,12 @@ export const checkUserPermission = catchAsync(
     const userId = (req.user as any)?.userId ?? (req.user as any)?.id;
     if (!userId) throw new AppError(status.UNAUTHORIZED, 'User id missing in token');
 
+    // OPTIMIZATION: Removed deep nested population.
     const user = await User.findById(userId)
-      .populate({
-        path: 'globalRoles',
-        populate: [
-          { path: 'permissions' },
-          { path: 'permissionGroups', populate: { path: 'permissions' } },
-        ]
-      })
+      .populate('globalRoles')
       .populate({
         path: 'businessAccess',
-        populate: [
-          {
-            path: 'role',
-            populate: [
-              { path: 'permissions' },
-              { path: 'permissionGroups', populate: { path: 'permissions' } }
-            ]
-          }
-        ]
+        populate: { path: 'role' }
       })
       .select('+directPermissions')
       .lean();

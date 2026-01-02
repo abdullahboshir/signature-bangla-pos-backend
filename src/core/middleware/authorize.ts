@@ -17,6 +17,37 @@ export const authorize = (resource: string, action: string) => {
         throw new AppError(status.UNAUTHORIZED, 'Authentication required');
       }
 
+      /* -------------------------------------------------------------------------- */
+      /* 1️⃣  PERFORMANCE OPTIMIZATION: Check Super Admin First (Light Query)       */
+      /* -------------------------------------------------------------------------- */
+      // We only fetch basic role info first, without deep permission tree population.
+      const initialUser = await User.findById(user.userId || user.id)
+        .populate('globalRoles', 'name')
+        .populate({
+          path: 'businessAccess',
+          populate: { path: 'role', select: 'name' }
+        })
+        .lean();
+
+      if (!initialUser) {
+        throw new AppError(status.NOT_FOUND, 'User not found');
+      }
+
+      const initialGlobalRoles = (initialUser.globalRoles || []).map((r: any) => r.name);
+      const initialBusinessRoles = (initialUser.businessAccess || []).map((a: any) => a.role?.name).filter(Boolean);
+      const initialRoles = [...new Set([...initialGlobalRoles, ...initialBusinessRoles])];
+
+      // Normalized check
+      const normalizedRoles = initialRoles.map(r => r.toLowerCase().replace(/\s+/g, '-'));
+
+      if (normalizedRoles.includes(USER_ROLE.SUPER_ADMIN)) {
+        // Super Admin bypass - NO deep population needed
+        return next();
+      }
+
+      /* -------------------------------------------------------------------------- */
+      /* 2️⃣  Regular User: Fetch Full Permission Tree (Heavy Query)               */
+      /* -------------------------------------------------------------------------- */
       const userWithRoles = await User.findById(user.userId || user.id)
         .populate({
           path: 'globalRoles',
@@ -55,10 +86,6 @@ export const authorize = (resource: string, action: string) => {
       const businessUnits = (userWithRoles.businessAccess || []).map((a: any) => a.businessUnit?.id || a.businessUnit?.toString()).filter(Boolean);
 
       // console.log('USERRRRRRRRRR', roles)
-
-      if (roles.includes(USER_ROLE.SUPER_ADMIN)) {
-        return next()
-      }
 
       console.log('USERRRRRRRRRR from req.body', req.params.userId)
       // Build permission context with correct resource info

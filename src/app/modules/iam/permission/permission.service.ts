@@ -263,6 +263,7 @@ export class PermissionService {
 
       if (!allActiveRoles) {
         console.log('[AUTH-PERF] Global Role Cache MISS - Fetching from DB...');
+        const dbStart = Date.now();
         allActiveRoles = await Role.find({ isActive: true })
           .populate({ path: 'permissions', match: { isActive: true } })
           .populate({
@@ -271,7 +272,7 @@ export class PermissionService {
             populate: { path: 'permissions', match: { isActive: true } },
           })
           .lean();
-
+        console.log(`[AUTH-PERF] DB Fetch took ${Date.now() - dbStart}ms`);
         await _CacheManager.set(_ALL_ROLES_CACHE_KEY, allActiveRoles, _ALL_ROLES_TTL);
       } else {
         console.log('[AUTH-PERF] Global Role Cache HIT');

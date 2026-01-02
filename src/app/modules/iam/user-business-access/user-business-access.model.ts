@@ -26,8 +26,6 @@ const UserBusinessAccessSchema = new Schema({
         required: true
     },
 
-    // The Context Providers (Only ONE Business and ONE Outlet per record ideally)
-    // This keeps the relationship "1 Role per Context" crystal clear.
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', default: null },
     outlet: { type: Schema.Types.ObjectId, ref: 'Outlet', default: null },
 

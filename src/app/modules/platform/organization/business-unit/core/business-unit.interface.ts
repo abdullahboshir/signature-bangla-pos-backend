@@ -62,8 +62,6 @@ export interface IBusinessUnitCore {
     language: "en" | "bn";
     timezone: string;
     dateFormat: string;
-    weightUnit: "kg" | "g" | "lb";
-    dimensionUnit: "cm" | "inch";
     inventoryManagement: boolean;
     lowStockAlert: boolean;
   };

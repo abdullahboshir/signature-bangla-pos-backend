@@ -23,8 +23,8 @@ class RoleService {
     }
 
     const roles = await Role.find(filter)
-      .populate('permissions', 'id resource action description')
-      .populate('permissionGroups')
+      // .populate('permissions', 'id resource action description') // OPTIMIZATION: Removed heavy population for list view
+      // .populate('permissionGroups')
       .populate('inheritedRoles', 'name description')
       .sort({ hierarchyLevel: -1, name: 1 });
 

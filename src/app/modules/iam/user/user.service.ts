@@ -335,7 +335,8 @@ export const createStaffService = async (
       name: {
         firstName: staffData.firstName,
         lastName: staffData.lastName
-      }
+      },
+      directPermissions: staffData.directPermissions
     };
 
     const newUser = await User.create([userData], { session });
@@ -468,7 +469,8 @@ export const getSingleUserService = async (id: string) => {
         { path: "role", select: "name title" },
         { path: "businessUnit", select: "name slug" }
       ]
-    });
+    })
+    .select('+directPermissions');
   return result;
 };
 

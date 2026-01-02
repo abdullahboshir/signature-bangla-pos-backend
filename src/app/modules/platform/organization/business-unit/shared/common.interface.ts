@@ -1,6 +1,6 @@
 export interface IBusinessUnitBranding {
   name: string;
-  description: string;
+  description?: string;
   descriptionBangla?: string;
   logo: string;
   banner?: string;

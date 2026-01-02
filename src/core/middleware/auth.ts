@@ -109,9 +109,15 @@ const auth = (...requiredRoles: string[]) => {
         }
       }
     } else {
-      // Fallback or Global Context: We already added globalRoles.
-      // If we want to include ALL business accesses when no BU is specified? 
-      // Usually NO, we only want global context.
+      // Fallback: If no specific Business Unit is requested, we consider the user's roles across ALL contexts.
+      // This is crucial for endpoints like /auth/me or /user/settings which are not BU-specific but require authentication.
+      if (Array.isArray(isUserExists.businessAccess)) {
+        isUserExists.businessAccess.forEach((a: any) => {
+          if (a.role) {
+            effectiveRoleNames.push(a.role.name);
+          }
+        });
+      }
     }
 
     // 3. Validate against Required Roles

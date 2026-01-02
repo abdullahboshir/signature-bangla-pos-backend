@@ -13,9 +13,27 @@ import { PermissionService } from '../permission/permission.service.js';
 const permissionService = new PermissionService();
 
 export const loginService = async (email: string, pass: string) => {
-  const isUserExists = await User.isUserExists(email);
-
-
+  // OPTIMIZATION: Replaced heavy User.isUserExists with lightweight query
+  console.time('[AUTH-PERF] Login User Fetch');
+  const isUserExists = await User.findOne({ email })
+    .select('+password email status isDeleted needsPasswordChange isSuperAdmin _id id globalRoles businessAccess')
+    .populate([
+      {
+        path: 'globalRoles',
+        select: 'name title isSystemRole'
+      },
+      {
+        path: 'businessAccess',
+        select: 'role scope businessUnit outlet status isPrimary',
+        populate: [
+          { path: 'role', select: 'name title isSystemRole' },
+          { path: 'businessUnit', select: 'name id slug' },
+          { path: 'outlet', select: 'name' }
+        ]
+      }
+    ])
+    .lean();
+  console.timeEnd('[AUTH-PERF] Login User Fetch');
 
   if (!isUserExists) {
     throw new AppError(status.NOT_FOUND, "User is not found");
@@ -137,11 +155,7 @@ export const refreshTokenAuthService = async (token: string) => {
   const isUserExists = await User.findOne({ _id: userId }).populate([
     {
       path: 'globalRoles',
-      populate: {
-        path: 'permissionGroups',
-        select: 'permissions resolver',
-        populate: { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' }
-      }
+      select: 'name title isSystemRole'
     },
     {
       path: 'businessAccess',
@@ -149,12 +163,7 @@ export const refreshTokenAuthService = async (token: string) => {
       populate: [
         {
           path: 'role',
-          select: 'name title permissionGroups',
-          populate: {
-            path: 'permissionGroups',
-            select: 'permissions resolver',
-            populate: { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' }
-          }
+          select: 'name title isSystemRole'
         },
         { path: 'businessUnit', select: 'name id slug' },
         { path: 'outlet', select: 'name' }
@@ -225,24 +234,15 @@ export const authMeService = async (
   const res = await User.findOne({ _id: userInfo.userId }).populate([
     {
       path: 'globalRoles',
-      populate: {
-        path: 'permissionGroups',
-        select: 'permissions resolver',
-        populate: { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' }
-      }
+      select: 'name title isSystemRole' // No nested permissions needed
     },
     {
       path: 'businessAccess',
-      select: 'role scope businessUnit outlet status',
+      select: 'role scope businessUnit outlet status isPrimary dataScopeOverride',
       populate: [
         {
           path: 'role',
-          select: 'name title permissionGroups',
-          populate: {
-            path: 'permissionGroups',
-            select: 'permissions resolver',
-            populate: { path: 'permissions', select: 'resource action scope effect conditions resolver attributes' }
-          }
+          select: 'name title isSystemRole' // No nested permissions needed 
         },
         { path: 'businessUnit', select: 'name id slug' },
         { path: 'outlet', select: 'name' }
@@ -251,33 +251,61 @@ export const authMeService = async (
   ]).lean();
 
   if (res) {
+    // 1. Flatten Role Names for simplified UI display/logic check
     const globalRoleNames = (res as any).globalRoles?.map((r: any) => r.name) || [];
     const businessRoleNames = (res as any).businessAccess?.map((acc: any) => acc.role?.name).filter(Boolean) || [];
     (res as any).role = [...new Set([...globalRoleNames, ...businessRoleNames])];
-
 
     if ((res as any).role.includes('super-admin')) {
       res.isSuperAdmin = true;
     }
 
     try {
+      // 2. Calculate Authorization Context (Using Cache if available)
       const authContext = await permissionService.getAuthorizationContext(res as any, scope);
-
-
 
       (res as any).maxDataAccess = authContext.maxDataAccess;
       (res as any).hierarchyLevel = authContext.hierarchyLevel;
       (res as any).dataScope = authContext.dataScope;
 
-      (res as any).effectivePermissions = authContext.permissions
-        .filter(p => p && p.resource && p.action)
-        .map(p => ({
-          resource: p.resource,
-          action: p.action,
-          scope: p.scope,
-          effect: p.effect
-        }));
+      // 3. Resolve Effective Permissions (Pre-compute ALLOWED actions)
+      // This logic mirrors permission.service.ts::resolvePermissions but for ALL keys at once.
+      // a. Group by "resource:action"
+      const permMap = new Map<string, any[]>();
 
+      authContext.permissions.forEach(p => {
+        if (!p.resource || !p.action) return;
+        const key = `${p.resource}:${p.action}`;
+        if (!permMap.has(key)) permMap.set(key, []);
+        permMap.get(key)?.push(p);
+      });
+
+      const resolvedPermissions: string[] = [];
+
+      // b. Resolve each group
+      permMap.forEach((perms, key) => {
+        // Sort by Priority (High to Low)
+        perms.sort((a, b) => (b.resolver?.priority ?? 0) - (a.resolver?.priority ?? 0));
+
+        // Take top priority permissions
+        const maxPriority = perms[0]?.resolver?.priority ?? 0;
+        const topPerms = perms.filter(p => (p.resolver?.priority ?? 0) === maxPriority);
+
+        // Check effects
+        const hasDeny = topPerms.some(p => p.effect === 'deny');
+        const hasAllow = topPerms.some(p => p.effect === 'allow');
+
+        // Allow if explicit allow exists AND no explicit deny at same specific level
+        // (Usually deny overrides allow at same level, or allow overrides if we are permissive. 
+        // Standard Service logic: Deny wins at same priority level.)
+        if (hasAllow && !hasDeny) {
+          resolvedPermissions.push(key);
+        }
+      });
+
+      (res as any).effectivePermissions = resolvedPermissions;
+
+      // 4. STRIP Heavy Data for Performance
       delete (res as any).directPermissions;
       delete (res as any).permissions; // legacy
       delete (res as any).loginHistory;
@@ -288,15 +316,33 @@ export const authMeService = async (
       delete (res as any).updatedBy;
       delete (res as any).password;
 
+      // CRITICAL OPTIMIZATION: Remove large populated arrays
+      // The frontend generally uses 'effectivePermissions' for UI access.
+      // If it needs role names, we kept 'role' array of strings.
+      // If it needs Business Units list, we might need to keep a summary, but deeper access objects are heavy.
+      // We will keep 'businessAccess' BUT strip its nested role permissions.
 
       if (Array.isArray(res.businessAccess)) {
-        res.businessAccess.forEach((acc: any) => {
-          if (acc.role) {
-            delete acc.role.permissions;
-            delete acc.role.permissionGroups;
-          }
-        });
+        res.businessAccess = res.businessAccess.map((acc: any) => ({
+          _id: acc._id,
+          role: { name: acc.role?.name, isSystemRole: acc.role?.isSystemRole }, // Minimal Role
+          businessUnit: acc.businessUnit, // Minimal BU (id, name, slug)
+          outlet: acc.outlet,
+          status: acc.status,
+          isPrimary: acc.isPrimary
+        })) as any;
       }
+
+      // Simplify Global Roles instead of deleting
+      if (Array.isArray(res.globalRoles)) {
+        res.globalRoles = res.globalRoles.map((r: any) => ({
+          _id: r._id,
+          name: r.name,
+          title: r.title,
+          isSystemRole: r.isSystemRole
+        })) as any;
+      }
+
 
     } catch (e) {
       console.error("Failed to calculate auth context", e);
