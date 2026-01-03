@@ -18,6 +18,7 @@ export interface IOrder extends Document {
     customer?: Types.ObjectId; // Optional for walk-in customers
     businessUnit: Types.ObjectId;
     outlet: Types.ObjectId;
+    sourceModule: 'pos' | 'ecommerce' | 'crm' | 'system';
 
     items: IOrderItem[];
 

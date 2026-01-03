@@ -120,6 +120,15 @@ export const createBusinessUnitValidationSchema = z.object({
     hasWarranty: z.boolean().optional(),
   }).optional(),
 
+  activeModules: z.object({
+    pos: z.boolean().optional(),
+    erp: z.boolean().optional(),
+    hrm: z.boolean().optional(),
+    ecommerce: z.boolean().optional(),
+    crm: z.boolean().optional(),
+    logistics: z.boolean().optional()
+  }).optional(),
+
   // Optional fields with defaults
   status: z.enum(["draft", "under_review", "published", "suspended", "archived"]).optional(),
   visibility: z.enum(["public", "private", "unlisted"]).optional(),

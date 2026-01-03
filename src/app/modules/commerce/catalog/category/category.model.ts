@@ -12,6 +12,14 @@ const CategorySchema = new Schema<ICategories>(
       index: true,
       maxlength: 50,
     },
+    availableModules: {
+      type: [{
+        type: String,
+        enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system']
+      }],
+      default: ['pos', 'ecommerce'],
+      index: true
+    },
     slug: {
       type: String,
       index: true,

@@ -16,6 +16,14 @@ const SupplierSchema = new Schema<ISupplier>({
     },
     taxId: { type: String },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+    // E.g. Raw Material suppliers are 'erp', Local Vendors are 'pos'
+    module: {
+        type: String,
+        enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system'],
+        default: 'erp',
+        required: true,
+        index: true
+    },
     businessUnits: [{ type: Schema.Types.ObjectId, ref: 'BusinessUnit' }]
 }, {
     timestamps: true,

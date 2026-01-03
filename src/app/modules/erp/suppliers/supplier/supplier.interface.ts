@@ -14,7 +14,9 @@ export interface ISupplier {
     };
     taxId?: string;
     status: 'active' | 'inactive';
+    module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
     businessUnits: string[]; // ObjectIds
+    businessUnit?: string;   // For Payload Convenience
     createdAt?: Date;
     updatedAt?: Date;
 }

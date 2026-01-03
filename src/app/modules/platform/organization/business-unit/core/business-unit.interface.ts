@@ -80,6 +80,16 @@ export interface IBusinessUnitCore {
     hasWarranty: boolean;
   };
 
+  // ====== ACTIVE MODULES (LICENSE GUARD) ======
+  activeModules: {
+    pos: boolean;
+    erp: boolean;
+    hrm: boolean;
+    ecommerce: boolean;
+    crm: boolean;
+    logistics: boolean;
+  };
+
   // ====== PERFORMANCE & RATINGS ======
   performance: IBusinessUnitPerformance;
   ratings: {

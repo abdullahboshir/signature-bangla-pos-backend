@@ -1,9 +1,10 @@
-import { type Types } from "mongoose";
+import { Document, Types } from "mongoose";
+
 import type {
   ActionType,
   PermissionConditionOperatorType,
   PermissionEffectType,
-  PermissionScope,
+  PermissionScopeType,
   ResolveStrategy,
   ResourceType,
 } from "./permission.constant.js";
@@ -28,9 +29,10 @@ export interface IPermissionResolver {
 
 export interface IPermission {
   id: string;
+  module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
   resource: ResourceType;
   action: ActionType;
-  scope: PermissionScope;
+  scope: PermissionScopeType;
   effect: PermissionEffectType;
   attributes?: string[];
   conditions?: IPermissionCondition[];
@@ -52,11 +54,11 @@ export interface IPermission {
 
 
 // separate model for permission groups
-export interface IPermissionGroup {
-  id: string;
+export interface IPermissionGroup extends Document {
   name: string;
+  module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
   description: string;
-  permissions: string[];
+  permissions: Types.ObjectId[] | IPermission[];
   resolver: IPermissionResolver;
   isActive: boolean;
   createdAt: Date;

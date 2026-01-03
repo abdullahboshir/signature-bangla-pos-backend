@@ -14,6 +14,7 @@ export interface IPurchase {
     businessUnit: string; // ObjectId
     outlet: string; // ObjectId
     status: 'pending' | 'ordered' | 'received';
+    module: 'pos' | 'erp' | 'system';
     items: IPurchaseItem[];
     subTotal: number;
     tax?: number;

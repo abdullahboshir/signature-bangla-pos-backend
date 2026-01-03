@@ -33,15 +33,8 @@ const restrictionsSchema = z.object({
 });
 
 // Permission Schema
-const permissionSchema = z.object({
-  resource: z.enum(['product', 'order', 'customer', 'category', 'brand', 'vendor', 'supplier', 'promotion', 'content', 'user', 'role', 'payment', 'shipping', 'report', 'analytics', 'system']),
-  action: z.enum(['create', 'read', 'update', 'delete', 'approve', 'reject', 'export', 'import', 'manage', 'view', 'process']),
-  scope: z.enum(['global', 'vendor', 'category', 'region', 'businessUnit']).default('global'),
-  attributes: z.array(z.string()).optional(),
-  conditions: z.record(z.string(), z.any()).optional(),
-  description: z.string().optional(),
-  descriptionBangla: z.string().optional()
-});
+// Permission Schema (Deprecated/Inline now)
+// const permissionSchema = z.object({ ... });
 
 // Login History Schema
 const loginHistorySchema = z.object({
@@ -66,7 +59,12 @@ const baseUserSchema = z.object({
   avatar: z.string().url('Invalid avatar URL').optional(),
   addresses: z.array(addressSchema).min(1, 'At least one address is required'),
   region: z.string().optional(),
-  directPermissions: z.array(permissionSchema).optional(),
+  directPermissions: z.array(z.object({
+    permissionId: z.string().uuid(),
+    type: z.enum(['allow', 'deny']),
+    source: z.enum(['DIRECT', 'GROUP', 'INHERITED', 'SYSTEM', 'POLICY']).default('DIRECT'),
+    assignedScope: z.enum(['GLOBAL', 'BUSINESS', 'OUTLET'])
+  })).optional(),
   restrictions: restrictionsSchema.optional(),
   isActive: z.boolean().default(true)
 });

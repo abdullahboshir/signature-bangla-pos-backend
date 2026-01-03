@@ -1,14 +1,19 @@
 import { PermissionGroup } from "@app/modules/iam/permission-group/permission-group.model.ts";
-import { PermissionActionType, PermissionResourceType, PermissionSourceObj, type ActionType, type ResourceType } from "@app/modules/iam/permission/permission.constant.ts";
+import {
+  PermissionActionType,
+  PermissionResourceType,
+  PermissionSourceObj,
+  type ActionType,
+  type ResourceType,
+} from "@app/modules/iam/permission/permission.constant.ts";
 import { Permission } from "@app/modules/iam/permission/permission.model.ts";
 import { Role } from "@app/modules/iam/role/role.model.ts";
+import { RoleScope } from "@app/modules/iam/role/role.constant.ts";
 import { USER_ROLE } from "@app/modules/iam/user/user.constant.ts";
 import mongoose, { Types } from "mongoose";
 
-
-
 const SYSTEM_USER_ID = new Types.ObjectId(
-  process.env['system_user_id'] || "66f000000000000000000000"
+  process.env["system_user_id"] || "66f000000000000000000000"
 );
 
 export async function runRolePermissionSeeder({ clean = false } = {}) {
@@ -18,29 +23,27 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
     throw new Error("Mongoose is not connected.");
   }
 
-  // Clean if requested
+  // --------------------------
+  // CLEAN
+  // --------------------------
   if (clean) {
     await Permission.deleteMany({});
-    await PermissionGroup.deleteMany({}); // ✅ Clean PermissionGroups
+    await PermissionGroup.deleteMany({});
     await Role.deleteMany({});
-    console.log("✅ Cleaned existing permissions, permission groups and roles.");
+    console.log("✅ Cleaned permissions, permission groups and roles.");
   }
 
   // --------------------------
-  // Step 1: Permissions - Create only if empty
+  // STEP 1: PERMISSIONS (Incremental)
   // --------------------------
-  // --------------------------
-  // Step 1: Permissions - Incremental Sync
-  // --------------------------
-  let permissionsCreated = 0;
-  const existingPermissions = await Permission.find({}).select('id').lean();
+  const existingPermissions = await Permission.find({}).select("id").lean();
   const existingPermissionIds = new Set(existingPermissions.map((p: any) => p.id));
 
   const permissionsToInsert: any[] = [];
+
   for (const resource of PermissionResourceType as readonly ResourceType[]) {
     for (const action of PermissionActionType as readonly ActionType[]) {
       const id = `${resource}_${action}`.toUpperCase();
-
       if (!existingPermissionIds.has(id)) {
         permissionsToInsert.push({
           id,
@@ -60,292 +63,449 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
     }
   }
 
-  if (permissionsToInsert.length > 0) {
-    await Permission.insertMany(permissionsToInsert, { ordered: false });
-    permissionsCreated = permissionsToInsert.length;
-    console.log(`✅ Added ${permissionsCreated} NEW permissions.`);
+  if (permissionsToInsert.length) {
+    try {
+      await Permission.insertMany(permissionsToInsert, { ordered: false });
+      console.log(`✅ Inserted ${permissionsToInsert.length} new permissions`);
+    } catch (error: any) {
+      if (error.code === 11000) {
+        console.warn("⚠️ Duplicate permissions skipped during seeding (Harmless race condition).");
+      } else {
+        throw error;
+      }
+    }
   } else {
-    console.log(`✅ All permissions are up to date (${existingPermissionIds.size} total).`);
+    console.log("✅ Permissions already up to date");
   }
 
   const allPermissions = await Permission.find({}).lean();
-  const allPermissionIds = allPermissions.map(p => p._id);
+  const allPermissionIds = allPermissions.map((p) => p._id);
 
   // --------------------------
-  // Step 2: PermissionGroups (Granular + Full Access)
+  // STEP 2: PERMISSION GROUPS
   // --------------------------
-
-  // 2.1: Create Granular Groups (Resource-Based)
-  // Group permissions by resource
   const permissionsByResource: Record<string, Types.ObjectId[]> = {};
 
   for (const perm of allPermissions) {
-    if (!perm || !perm.resource) continue;
-    const resource = perm.resource as string;
+    if (!perm || !perm.resource || !perm._id) continue;
 
-    if (!permissionsByResource[resource]) {
-      permissionsByResource[resource] = [];
+    // Explicitly cast resource to string to satisfy TS index signature if needed
+    const resourceName = perm.resource as string;
+
+    if (!permissionsByResource[resourceName]) {
+      permissionsByResource[resourceName] = [];
     }
-    permissionsByResource[resource].push(perm._id as Types.ObjectId);
+    permissionsByResource[resourceName].push(perm._id as any);
   }
 
-  let groupsCreated = 0;
   const resourceGroupsMap: Record<string, Types.ObjectId> = {};
 
   for (const [resource, permIds] of Object.entries(permissionsByResource)) {
-    const groupName = `${resource.charAt(0).toUpperCase() + resource.slice(1)} Management`;
-    const existingGroup = await PermissionGroup.findOne({ name: groupName });
+    const name = `${resource.charAt(0).toUpperCase()}${resource.slice(1)} Management`;
 
-    if (!existingGroup) {
-      const newGroup = await PermissionGroup.create({
-        name: groupName,
-        description: `Manage all ${resource} related permissions`,
+    const group =
+      (await PermissionGroup.findOne({ name })) ||
+      (await PermissionGroup.create({
+        name,
+        description: `Manage ${resource}`,
         permissions: permIds,
         resolver: { strategy: "first-match", priority: 5, fallback: "deny" },
         isActive: true,
         createdBy: SYSTEM_USER_ID,
         updatedBy: SYSTEM_USER_ID,
-      });
-      resourceGroupsMap[resource] = newGroup._id;
-      groupsCreated++;
-    } else {
-      // Update permissions to ensure they are in sync (fix for stale IDs)
-      existingGroup.permissions = permIds as any;
-      await existingGroup.save();
-      resourceGroupsMap[resource] = existingGroup._id;
-      // console.log(`🔄 Updated permissions for group: ${groupName}`);
+      }));
+
+    // Ensure permissions are up to date (Check before save to avoid redundant writes/audits)
+    const currentPerms = group.permissions.map((p: any) => p.toString()).sort().join(',');
+    const newPerms = permIds.map((p: any) => p.toString()).sort().join(',');
+
+    if (currentPerms !== newPerms) {
+      group.permissions = permIds as any;
+      await group.save();
+      // console.log(`🔄 Updated group permissions for ${name}`);
     }
+
+    resourceGroupsMap[resource] = group._id;
   }
-  console.log(`✅ Verified/Created ${groupsCreated} Resource-Based Permission Groups.`);
 
-  // 2.2: Full Access Group
-  const fullAccessGroup = await PermissionGroup.findOne({ name: "Full Access Group" });
-  let fullGroupId: Types.ObjectId;
-
-  if (!fullAccessGroup) {
-    const group = await PermissionGroup.create({
+  // Full Access (Super Admin)
+  const fullAccessGroup =
+    (await PermissionGroup.findOne({ name: "Full Access Group" })) ||
+    (await PermissionGroup.create({
       name: "Full Access Group",
-      description: "Contains all permissions for Super Admin",
+      description: "All permissions",
       permissions: allPermissionIds,
       resolver: { strategy: "cumulative", priority: 10, fallback: "deny" },
       isActive: true,
       createdBy: SYSTEM_USER_ID,
       updatedBy: SYSTEM_USER_ID,
-    });
-    fullGroupId = group._id;
-    console.log("✅ Created Full Access PermissionGroup");
-  } else {
-    // Sync full access permissions
+    }));
+
+  const currentFullPerms = fullAccessGroup.permissions.map((p: any) => p.toString()).sort().join(',');
+  const newFullPerms = allPermissionIds.map((p: any) => p.toString()).sort().join(',');
+
+  if (currentFullPerms !== newFullPerms) {
     fullAccessGroup.permissions = allPermissionIds as any;
     await fullAccessGroup.save();
-    fullGroupId = fullAccessGroup._id;
-    console.log("✅ Updated Full Access PermissionGroup permissions");
   }
 
-  // --------------------------
-  // Step 3: Roles - Create only data if missing
-  // --------------------------
+  const fullGroupId = fullAccessGroup._id;
 
-  // Helpers to get group IDs safely
-  const getGroupId = (res: string) => resourceGroupsMap[res] || null;
+  const get = (r: string) => resourceGroupsMap[r] || null;
 
-  /* Use PermissionSourceObj for Type Safety */
+  // --------------------------
+  // STEP 3: ROLES (INDUSTRIAL STANDARD)
+  // --------------------------
+  /* 
+   * SYSTEM / GLOBAL ROLES (Platform Level) 
+   * Scope: GLOBAL
+   */
+  /* 
+   * SYSTEM / GLOBAL ROLES (Platform Level) 
+   * Scope: GLOBAL
+   */
   const roleConfigs = [
     {
       name: USER_ROLE.SUPER_ADMIN,
-      permissions: [],
-      permissionGroups: [fullGroupId], // 👑 God Mode
+      permissionGroups: [fullGroupId],
       hierarchyLevel: 100,
-      isDefault: false
+      roleScope: RoleScope.GLOBAL,
+      isDefault: false,
     },
     {
-      name: USER_ROLE.ADMIN,
-      permissions: [],
-      // 💼 Business Admin: Full Operational Access, No System/Dev ops
+      name: USER_ROLE.PLATFORM_ADMIN,
       permissionGroups: [
-        getGroupId(PermissionSourceObj.product),
-        getGroupId(PermissionSourceObj.order),
-        getGroupId(PermissionSourceObj.inventory),
-        getGroupId(PermissionSourceObj.purchase),
-        getGroupId(PermissionSourceObj.supplier),
-        getGroupId(PermissionSourceObj.customer),
-        getGroupId(PermissionSourceObj.user),      // Manage Staff
-        getGroupId(PermissionSourceObj.role),      // Manage Business Roles
-        getGroupId(PermissionSourceObj.report),
-        getGroupId(PermissionSourceObj.finance),
-        getGroupId(PermissionSourceObj.expense),
-        getGroupId(PermissionSourceObj.payment),
-        getGroupId(PermissionSourceObj.department), // hrm/marketing might not exist, use department/leave etc
-        getGroupId(PermissionSourceObj.leave),
-        getGroupId(PermissionSourceObj.attendance),
-        getGroupId(PermissionSourceObj.storefront)
-      ].filter(id => id !== null) as Types.ObjectId[],
+        get(PermissionSourceObj.user),
+        get(PermissionSourceObj.role),
+        get(PermissionSourceObj.system),
+        get(PermissionSourceObj.setting),
+        get(PermissionSourceObj.report),
+      ].filter(Boolean),
+      hierarchyLevel: 95,
+      roleScope: RoleScope.GLOBAL,
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.PLATFORM_SUPPORT,
+      permissionGroups: [
+        get(PermissionSourceObj.customer),
+        get(PermissionSourceObj.order),
+        get(PermissionSourceObj.report),
+      ].filter(Boolean),
+      hierarchyLevel: 80,
+      roleScope: RoleScope.GLOBAL,
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.PLATFORM_FINANCE,
+      permissionGroups: [
+        get(PermissionSourceObj.account),
+        get(PermissionSourceObj.transaction),
+        get(PermissionSourceObj.payment),
+      ].filter(Boolean),
+      hierarchyLevel: 80,
+      roleScope: RoleScope.GLOBAL,
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.PLATFORM_AUDITOR,
+      permissionGroups: [
+        get(PermissionSourceObj.report),
+        get(PermissionSourceObj.auditLog),
+      ].filter(Boolean),
+      hierarchyLevel: 70,
+      roleScope: RoleScope.GLOBAL,
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.PLATFORM_DEVOPS,
+      permissionGroups: [
+        get(PermissionSourceObj.system),
+        get(PermissionSourceObj.backup),
+        get(PermissionSourceObj.report),
+      ].filter(Boolean),
+      hierarchyLevel: 85,
+      roleScope: RoleScope.GLOBAL,
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.PLATFORM_ANALYST,
+      permissionGroups: [
+        get(PermissionSourceObj.report),
+      ].filter(Boolean),
+      hierarchyLevel: 60,
+      roleScope: RoleScope.GLOBAL,
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.PLATFORM_MARKETING,
+      permissionGroups: [
+        get(PermissionSourceObj.storefront),
+        get(PermissionSourceObj.customer),
+        get(PermissionSourceObj.report),
+      ].filter(Boolean),
+      hierarchyLevel: 55,
+      roleScope: RoleScope.GLOBAL,
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.PLATFORM_LEGAL,
+      permissionGroups: [
+        get(PermissionSourceObj.report),
+        get(PermissionSourceObj.user),
+      ].filter(Boolean),
+      hierarchyLevel: 55,
+      roleScope: RoleScope.GLOBAL,
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.SYSTEM_INTEGRATION,
+      permissionGroups: [
+        get(PermissionSourceObj.storefront), // Mapped from webhook/apiKey
+        get(PermissionSourceObj.user),
+      ].filter(Boolean),
+      hierarchyLevel: 50,
+      roleScope: RoleScope.GLOBAL,
+      isDefault: false,
+    },
+
+    /* 
+     * BUSINESS UNIT ROLES (Tenant Level) 
+     * Scope: BUSINESS 
+     */
+    {
+      name: USER_ROLE.ADMIN, // Business Owner/Admin
+      permissionGroups: [
+        get(PermissionSourceObj.product),
+        get(PermissionSourceObj.order),
+        get(PermissionSourceObj.inventory),
+        get(PermissionSourceObj.purchase),
+        get(PermissionSourceObj.supplier),
+        get(PermissionSourceObj.customer),
+        get(PermissionSourceObj.user),
+        get(PermissionSourceObj.role),
+        get(PermissionSourceObj.report),
+        get(PermissionSourceObj.account), // Valid
+        get(PermissionSourceObj.payment), // Valid
+        get(PermissionSourceObj.expense), // Valid
+        get(PermissionSourceObj.unit), // Valid general setting
+        get(PermissionSourceObj.tax), // Valid general setting
+        // get(PermissionSourceObj.leave), // Invalid? Checking... "leave" not in list. 
+        // get(PermissionSourceObj.attendance), // Invalid?
+        get(PermissionSourceObj.storefront),
+      ].filter(Boolean),
       hierarchyLevel: 90,
-      isDefault: false
+      roleScope: RoleScope.BUSINESS,
+      isDefault: false,
     },
     {
       name: USER_ROLE.MANAGER,
-      permissions: [],
-      // 👔 Manager: Operations & Staff Management
       permissionGroups: [
-        getGroupId(PermissionSourceObj.product),
-        getGroupId(PermissionSourceObj.order),
-        getGroupId(PermissionSourceObj.inventory),
-        getGroupId(PermissionSourceObj.purchase),
-        getGroupId(PermissionSourceObj.supplier),
-        getGroupId(PermissionSourceObj.customer),
-        getGroupId(PermissionSourceObj.user),
-        getGroupId(PermissionSourceObj.report),
-        getGroupId(PermissionSourceObj.expense),
-        getGroupId(PermissionSourceObj.attendance), // hrm decomposed
-        getGroupId(PermissionSourceObj.leave)
-      ].filter(id => id !== null) as Types.ObjectId[],
-      hierarchyLevel: 50,
-      isDefault: false
+        get(PermissionSourceObj.product),
+        get(PermissionSourceObj.order),
+        get(PermissionSourceObj.inventory),
+        get(PermissionSourceObj.purchase),
+        get(PermissionSourceObj.customer),
+        get(PermissionSourceObj.report),
+        get(PermissionSourceObj.expense),
+      ].filter(Boolean),
+      hierarchyLevel: 70,
+      roleScope: RoleScope.BUSINESS,
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.PURCHASE_MANAGER,
+      permissionGroups: [
+        get(PermissionSourceObj.purchase),
+        get(PermissionSourceObj.inventory),
+        get(PermissionSourceObj.supplier),
+        get(PermissionSourceObj.product),
+        get(PermissionSourceObj.payment),
+      ].filter(Boolean),
+      hierarchyLevel: 65,
+      roleScope: RoleScope.BUSINESS,
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.ASSET_MANAGER,
+      permissionGroups: [
+        get(PermissionSourceObj.inventory), // Assets tracked as inventory
+        get(PermissionSourceObj.expense),
+      ].filter(Boolean),
+      hierarchyLevel: 60,
+      roleScope: RoleScope.BUSINESS,
+      isDefault: false,
     },
     {
       name: USER_ROLE.ACCOUNTANT,
-      permissions: [],
-      // 📊 Accountant: Strict Financial Access
       permissionGroups: [
-        getGroupId(PermissionSourceObj.finance),
-        getGroupId(PermissionSourceObj.expense),
-        getGroupId(PermissionSourceObj.report),
-        getGroupId(PermissionSourceObj.payment),
-        getGroupId(PermissionSourceObj.account)
-      ].filter(id => id !== null) as Types.ObjectId[],
+        get(PermissionSourceObj.invoice), // Valid
+        get(PermissionSourceObj.payment), // Valid
+        get(PermissionSourceObj.expense), // Valid
+        get(PermissionSourceObj.expenseCategory), // Valid
+        get(PermissionSourceObj.tax), // Valid
+        get(PermissionSourceObj.report),
+      ].filter(Boolean),
       hierarchyLevel: 60,
-      isDefault: false
+      roleScope: RoleScope.BUSINESS,
+      isDefault: false,
     },
     {
       name: USER_ROLE.HR_MANAGER,
-      permissions: [],
-      // 👥 HR Manager: Staff & Payroll
       permissionGroups: [
-        getGroupId(PermissionSourceObj.user),      // Manage Staff
-        getGroupId(PermissionSourceObj.role),      // Assign roles
-        getGroupId(PermissionSourceObj.department),
-        getGroupId(PermissionSourceObj.designation),
-        getGroupId(PermissionSourceObj.attendance),
-        getGroupId(PermissionSourceObj.leave),
-        getGroupId(PermissionSourceObj.payroll)
-      ].filter(id => id !== null) as Types.ObjectId[],
+        get(PermissionSourceObj.user),
+        // get(PermissionSourceObj.department), // Invalid
+        // get(PermissionSourceObj.designation), // Invalid
+        // get(PermissionSourceObj.attendance), // Invalid
+        // get(PermissionSourceObj.leave), // Invalid
+        // get(PermissionSourceObj.payroll), // Invalid
+      ].filter(Boolean),
       hierarchyLevel: 60,
-      isDefault: false
+      roleScope: RoleScope.BUSINESS,
+      isDefault: false,
     },
+
+    /* 
+     * OUTLET ROLES (Context: Outlet)
+     * Scope: OUTLET
+     */
     {
-      name: USER_ROLE.SALES_ASSOCIATE,
-      permissions: [],
-      // 🛍️ Sales Associate: CRM & Draft Orders
+      name: USER_ROLE.STORE_KEEPER,
       permissionGroups: [
-        getGroupId(PermissionSourceObj.customer),
-        getGroupId(PermissionSourceObj.product),
-        getGroupId(PermissionSourceObj.order),
-        getGroupId(PermissionSourceObj.storefront)
-      ].filter(id => id !== null) as Types.ObjectId[],
-      hierarchyLevel: 15,
-      isDefault: false
-    },
-    {
-      name: USER_ROLE.DELIVERY_MAN,
-      permissions: [],
-      // 🚚 Delivery: Order Status & Routes
-      permissionGroups: [
-        getGroupId(PermissionSourceObj.order),
-        getGroupId(PermissionSourceObj.courier),
-        getGroupId(PermissionSourceObj.customer)
-      ].filter(id => id !== null) as Types.ObjectId[],
-      hierarchyLevel: 10,
-      isDefault: false
+        get(PermissionSourceObj.inventory),
+        get(PermissionSourceObj.purchase),
+        get(PermissionSourceObj.supplier),
+        get(PermissionSourceObj.adjustment),
+      ].filter(Boolean),
+      hierarchyLevel: 40,
+      roleScope: RoleScope.OUTLET,
+      isDefault: false,
     },
     {
       name: USER_ROLE.CASHIER,
-      permissions: [],
-      // 💰 Cashier: POS & Order Fulfillment
       permissionGroups: [
-        getGroupId(PermissionSourceObj.storefront), // covers POS usually
-        getGroupId(PermissionSourceObj.order),
-        getGroupId(PermissionSourceObj.payment),
-        getGroupId(PermissionSourceObj.customer),
-        getGroupId(PermissionSourceObj.return),
-        getGroupId(PermissionSourceObj.product)
-      ].filter(id => id !== null) as Types.ObjectId[],
-      hierarchyLevel: 20,
-      isDefault: false
+        get(PermissionSourceObj.storefront),
+        get(PermissionSourceObj.order),
+        get(PermissionSourceObj.payment),
+        get(PermissionSourceObj.customer),
+        get(PermissionSourceObj.return),
+        get(PermissionSourceObj.coupon), // Valid
+      ].filter(Boolean),
+      hierarchyLevel: 30,
+      roleScope: RoleScope.OUTLET,
+      isDefault: false,
     },
     {
-      name: USER_ROLE.STORE_KEEPER,
-      permissions: [],
-      // 📦 Store Keeper: Inventory & Stock
+      name: USER_ROLE.SALES_ASSOCIATE,
       permissionGroups: [
-        getGroupId(PermissionSourceObj.inventory),
-        getGroupId(PermissionSourceObj.purchase),
-        getGroupId(PermissionSourceObj.supplier),
-        getGroupId(PermissionSourceObj.product),
-        getGroupId(PermissionSourceObj.adjustment)
-      ].filter(id => id !== null) as Types.ObjectId[],
+        get(PermissionSourceObj.customer),
+        get(PermissionSourceObj.product),
+        get(PermissionSourceObj.order),
+        get(PermissionSourceObj.quotation), // Valid
+      ].filter(Boolean),
       hierarchyLevel: 25,
-      isDefault: false
+      roleScope: RoleScope.OUTLET,
+      isDefault: false,
     },
+    {
+      name: USER_ROLE.WAITER,
+      permissionGroups: [
+        get(PermissionSourceObj.order), // Taking order
+      ].filter(Boolean),
+      hierarchyLevel: 20,
+      roleScope: RoleScope.OUTLET,
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.KITCHEN_STAFF,
+      permissionGroups: [
+        get(PermissionSourceObj.order), // Viewing KDS
+      ].filter(Boolean),
+      hierarchyLevel: 20,
+      roleScope: RoleScope.OUTLET,
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.PACKAGING_STAFF,
+      permissionGroups: [
+        get(PermissionSourceObj.order),
+      ].filter(Boolean),
+      hierarchyLevel: 20,
+      roleScope: RoleScope.OUTLET,
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.DELIVERY_MAN,
+      permissionGroups: [
+        get(PermissionSourceObj.order),
+        get(PermissionSourceObj.customer),
+      ].filter(Boolean),
+      hierarchyLevel: 20,
+      roleScope: RoleScope.OUTLET,
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.STAFF, // General Staff
+      permissionGroups: [
+        // Attendance/Leave not in core list yet?
+      ].filter(Boolean),
+      hierarchyLevel: 15,
+      roleScope: RoleScope.BUSINESS,
+      isDefault: false,
+    },
+
+    /* 
+     * END USER (Global)
+     */
     {
       name: USER_ROLE.CUSTOMER,
-      permissions: [],
       permissionGroups: [
-        getGroupId(PermissionSourceObj.cart),
-        getGroupId(PermissionSourceObj.wishlist),
-        getGroupId(PermissionSourceObj.order),
-        getGroupId(PermissionSourceObj.review)
-      ].filter(id => id !== null) as Types.ObjectId[],
-      hierarchyLevel: 10,
-      isDefault: true
+        get(PermissionSourceObj.cart),
+        get(PermissionSourceObj.wishlist),
+        get(PermissionSourceObj.order),
+        get(PermissionSourceObj.review),
+      ].filter(Boolean),
+      hierarchyLevel: 5,
+      roleScope: RoleScope.GLOBAL,
+      isDefault: true,
     },
-    {
-      name: USER_ROLE.STAFF,
-      permissions: [],
-      permissionGroups: [
-        getGroupId(PermissionSourceObj.attendance),
-        getGroupId(PermissionSourceObj.leave),
-        getGroupId(PermissionSourceObj.storefront)
-      ].filter(id => id !== null) as Types.ObjectId[],
-      hierarchyLevel: 15,
-      isDefault: false
-    }
   ];
 
-  let rolesCreated = 0;
-  for (const roleConfig of roleConfigs) {
-    const existingRole = await Role.findOne({ name: roleConfig.name });
+  // --------------------------
+  // ATOMIC BULK WRITE EXECUTION
+  // --------------------------
+  try {
+    const bulkOps = roleConfigs.map((cfg) => ({
+      updateOne: {
+        filter: { name: cfg.name },
+        update: {
+          $set: {
+            description: `${cfg.name} system role`,
+            permissions: [],
+            permissionGroups: cfg.permissionGroups,
+            hierarchyLevel: cfg.hierarchyLevel,
+            roleScope: cfg.roleScope,
+            isSystemRole: true,
+            isDefault: cfg.isDefault,
+            isActive: true,
+            updatedBy: SYSTEM_USER_ID,
+          },
+          $setOnInsert: {
+            createdBy: SYSTEM_USER_ID,
+          },
+        },
+        upsert: true,
+      },
+    }));
 
-    if (!existingRole) {
-      await Role.create({
-        name: roleConfig.name,
-        description: `${roleConfig.name} default role`,
-        permissions: roleConfig.permissions,
-        permissionGroups: roleConfig.permissionGroups,
-        isSystemRole: true,
-        isDefault: roleConfig.isDefault,
-        isActive: true,
-        hierarchyLevel: roleConfig.hierarchyLevel,
-        createdBy: SYSTEM_USER_ID,
-        updatedBy: SYSTEM_USER_ID,
-      });
-      rolesCreated++;
-      console.log(`✅ Created role: ${roleConfig.name}`);
-    } else {
-      // Force update logic for System Roles to ensure they match the code definition
-      // This fixes the issue where Admin keeps old "Full Access" even after we changed code
-      existingRole.permissionGroups = roleConfig.permissionGroups as any;
-      existingRole.permissions = roleConfig.permissions as any;
-      existingRole.hierarchyLevel = roleConfig.hierarchyLevel;
-      existingRole.isDefault = roleConfig.isDefault;
-
-      // We don't overwrite name/description to allow some customization, 
-      // but permissions for system roles should ideally stay synced or be additive.
-      // Here we choose to SYNC (overwrite) to enforce the "Standard" definition.
-      await existingRole.save();
-      console.log(`🔄 Updated/Synced system role: ${roleConfig.name}`);
+    if (bulkOps.length > 0) {
+      const result = await Role.bulkWrite(bulkOps as any);
+      console.log(`✅ Roles synced: ${result.upsertedCount} created, ${result.modifiedCount} updated.`);
     }
+  } catch (error) {
+    console.error("❌ Failed to seed roles atomically:", error);
+    throw error; // Re-throw to stop the process if seeded partially
   }
 
-  console.log(`--- Seeder finished. Created ${rolesCreated} new roles. ---`);
+  console.log("--- Seeder finished successfully ---");
 }

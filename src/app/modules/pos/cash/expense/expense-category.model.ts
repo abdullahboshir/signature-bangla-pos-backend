@@ -8,6 +8,13 @@ const expenseCategorySchema = new Schema<IExpenseCategoryDocument>({
         enum: ['fixed', 'variable'],
         default: 'variable'
     },
+    module: {
+        type: String,
+        enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system'],
+        required: true,
+        default: 'pos', // Most expenses are POS based initially
+        index: true
+    },
     isActive: { type: Boolean, default: true },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit' },
     description: { type: String }

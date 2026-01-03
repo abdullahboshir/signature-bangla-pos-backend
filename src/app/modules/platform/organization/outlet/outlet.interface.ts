@@ -10,7 +10,14 @@ export interface IOutlet extends Document {
     country: string;
     phone: string;
     email?: string;
-
+    activeModules?: {
+        pos: boolean;
+        erp: boolean;
+        hrm: boolean;
+        ecommerce: boolean;
+        crm: boolean;
+        logistics: boolean;
+    };
     businessUnit: Types.ObjectId;
     manager?: Types.ObjectId;
 

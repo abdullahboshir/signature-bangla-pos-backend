@@ -31,9 +31,11 @@ export interface IUser {
   passwordChangedAt?: Date;
   isDeleted: boolean;
   directPermissions?: {
-    allow: Types.ObjectId[];
-    deny: Types.ObjectId[];
-  };
+    permissionId: Types.ObjectId;
+    type: 'allow' | 'deny';
+    source: 'DIRECT' | 'GROUP' | 'INHERITED' | 'SYSTEM' | 'POLICY';
+    assignedScope: 'GLOBAL' | 'BUSINESS' | 'OUTLET';
+  }[];
   isActive: boolean;
   lastLogin?: Date;
   loginHistory: {

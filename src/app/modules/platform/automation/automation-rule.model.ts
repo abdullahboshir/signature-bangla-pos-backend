@@ -15,6 +15,7 @@ export interface IAutomationCondition {
 
 export interface IAutomationRule {
     name: string;
+    module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
     trigger: TriggerType;
     conditions: IAutomationCondition[];
     actions: IAutomationAction[];
@@ -27,6 +28,11 @@ export interface IAutomationRule {
 
 const automationRuleSchema = new Schema<IAutomationRule>({
     name: { type: String, required: true },
+    module: {
+        type: String,
+        enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system'],
+        required: true
+    },
     trigger: {
         type: String,
         required: true,

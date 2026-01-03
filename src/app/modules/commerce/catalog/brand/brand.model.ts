@@ -12,6 +12,14 @@ const BrandSchema = new Schema<IBrand>(
             index: true,
             maxlength: 100,
         },
+        availableModules: {
+            type: [{
+                type: String,
+                enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system']
+            }],
+            default: ['pos', 'ecommerce'],
+            index: true
+        },
         slug: {
             type: String,
             unique: true,

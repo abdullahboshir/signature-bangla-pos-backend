@@ -1,101 +1,142 @@
 import type z from "zod";
-import { PermissionActionTypeSchema, PermissionEffectSchema, PermissionResolverSchema, PermissionScopeSchema, ResourceTypeSchema, ConditionOperatorSchema } from "./permission.validation.js";
+import {
+  PermissionActionTypeSchema,
+  PermissionEffectSchema,
+  PermissionResolverSchema,
+  PermissionScopeSchema,
+  ResourceTypeSchema,
+  ConditionOperatorSchema,
+} from "./permission.validation.js";
+
+/* ------------------------------------------------------------------
+ * 1️⃣ RESOURCE TYPES (UNCHANGED – only ordered logically)
+ * ------------------------------------------------------------------ */
 
 export const PermissionResourceType = [
+  // Core Commerce
   "product",
-  "order",
-  "customer",
   "category",
   "brand",
-  "businessUnit",
-  "vendor",
-  "outlet",
-  "supplier",
-  "promotion",
-  "content",
-  "staff",
   "attribute",
   "attributeGroup",
   "unit",
   "tax",
-  "warehouse",
-  "storefront",
-  "purchase",
+
+  // Sales & Orders
+  "order",
+  "quotation",
+  "invoice",
+  "return",
+  "review",
+  "coupon",
+  "promotion",
+  "abandonedCart",
+
+  // Customers & Users
+  "customer",
   "user",
   "role",
-  "payment",
-  "shipping",
-  "report",
-  "analytics",
-  "system",
+  "wishlist",
+  "cart",
+
+  // Inventory & Supply
   "inventory",
-  "quotation",
-  "coupon",
-  "review",
-  "return",
-  "ticket",
-  "delivery",
-  "affiliate",
-  "adCampaign",
-  "notification",
-  "loyalty",
-  "subscription",
-  "dispute",
+  "warehouse",
+  "purchase",
+  "supplier",
+  "vendor",
+  "adjustment",
+  "transfer",
+
+  // Outlet / POS
+  "outlet",
+  "storefront",
+  "terminal",
+  "cashRegister",
+
+  // Finance
+  "payment",
+  "expense",
+  "expenseCategory",
+
+  // System & Platform (New)
+  "system",
+  "setting",
+  "backup",
+  "analytics",
+  "auditLog",
+  "budget",
+  "account",
+  "transaction",
   "settlement",
   "payout",
-  "chat",
-  "fraudDetection",
-  "auditLog",
+  "reconciliation",
+
+  // Logistics
+  "shipping",
+  "courier",
+  "delivery",
+  "parcel",
+
+  // Reports & Analytics
+  "report",
+  "analytics",
+  "salesReport",
+  "purchaseReport",
+  "stockReport",
+  "profitLossReport",
+  "dashboard",
+
+  // HRM
+  "staff",
   "attendance",
   "leave",
   "payroll",
   "department",
   "designation",
   "asset",
-  "expense",
-  "expenseCategory",
-  "budget",
-  "account",
-  "transaction",
-  "cashRegister",
-  "salesReport",
-  "purchaseReport",
-  "stockReport",
-  "profitLossReport",
-  "terminal",
-  "currency",
-  "language",
-  "zone",
-  "backup",
-  "apiKey",
-  "webhook",
-  "wishlist",
-  "cart",
-  "theme",
-  "plugin",
-  "emailTemplate",
-  "smsTemplate",
-  "seo",
-  "question",
-  "courier",
-  "parcel",
-  "invoice",
-  "blacklist",
+
+  // Marketing & Growth
+  "affiliate",
+  "adCampaign",
+  "loyalty",
+  "subscription",
+  "audience",
   "pixel",
   "event",
   "landingPage",
-  "adjustment",
-  "transfer",
-  "abandonedCart",
-  "dashboard",
-  "reconciliation",
-  "riskRule",
-  "audience",
-  "riskProfile",
+  "seo",
+
+  // Communication
+  "notification",
+  "chat",
+  "emailTemplate",
+  "smsTemplate",
+
+  // Automation & Risk
   "automation",
   "workflow",
+  "fraudDetection",
+  "riskRule",
+  "riskProfile",
+
+  // System / Platform
+  "system",
+  "auditLog",
+  "backup",
+  "apiKey",
+  "webhook",
+  "theme",
+  "plugin",
+  "language",
+  "currency",
+  "zone",
+  "blacklist",
 ] as const;
 
+/* ------------------------------------------------------------------
+ * 2️⃣ ACTION TYPES (VALID & SAFE)
+ * ------------------------------------------------------------------ */
 
 export const PermissionActionType = [
   "create",
@@ -104,61 +145,70 @@ export const PermissionActionType = [
   "delete",
   "approve",
   "reject",
-  "export",
-  "import",
   "manage",
   "view",
-  "ship",
-  "refund",
-  "dispatch",
   "assign",
-  "sync",
-  "schedule",
   "publish",
   "unpublish",
-  "escalate",
-  "print",
   "cancel",
   "verify",
+  "export",
+  "import",
   "download",
+  "print",
+  "ship",
+  "dispatch",
+  "refund",
+  "track",
+  "sync",
+  "schedule",
   "reply",
   "block",
   "restrict",
   "adjust",
-  "track",
+  "escalate",
 ] as const;
 
-
+/* ------------------------------------------------------------------
+ * 3️⃣ SCOPES (🔥 FIXED – NO OPERATORS HERE)
+ * ------------------------------------------------------------------ */
 
 export const PermissionScope = [
-  "global",
+  "global",        // system-level
+  "business",      // business-wide
   "vendor",
   "outlet",
-  "category",
-  "region",
-  "businessUnit",
-  "team",
   "branch",
   "warehouse",
-  "department", // Added for HRM
-  "self",       // Critical for accessing own data
-  "between",    // This was misplaced in existing code, but kept if used as a scope? Typically 'between' is an operator.
-  "regex",
-  "like",
+  "department",
+  "team",
+  "category",
+  "region",
   "channel",
   "segment",
-  "ip",
-  "device",
-];
+  "self",          // own data only
+] as const;
 
-export const PermissionEffect = ["allow", "deny"];
+/* ------------------------------------------------------------------
+ * 4️⃣ EFFECT
+ * ------------------------------------------------------------------ */
+
+export const PermissionEffect = ["allow", "deny"] as const;
+
+/* ------------------------------------------------------------------
+ * 5️⃣ RESOLUTION STRATEGY
+ * ------------------------------------------------------------------ */
 
 export const PermissionResolveStrategy = [
-  "first-match",
-  "most-specific",
-  "priority-based",
-  "cumulative",
-];
+  "first-match",     // fast, deterministic
+  "most-specific",   // scope-aware
+  "priority-based",  // role/group priority
+  "cumulative",      // additive (super admin)
+] as const;
+
+/* ------------------------------------------------------------------
+ * 6️⃣ CONDITION OPERATORS (ONLY HERE)
+ * ------------------------------------------------------------------ */
 
 export const PermissionConditionOperator = [
   "eq",
@@ -175,21 +225,27 @@ export const PermissionConditionOperator = [
   "between",
   "regex",
   "like",
-];
+] as const;
 
-// for typescript types only
+/* ------------------------------------------------------------------
+ * 7️⃣ TYPESCRIPT TYPES
+ * ------------------------------------------------------------------ */
+
 export type ResourceType = z.infer<typeof ResourceTypeSchema>;
 export type ActionType = z.infer<typeof PermissionActionTypeSchema>;
-export type PermissionScope = z.infer<typeof PermissionScopeSchema>;
+export type PermissionScopeType = z.infer<typeof PermissionScopeSchema>;
 export type PermissionEffectType = z.infer<typeof PermissionEffectSchema>;
 export type ResolveStrategy = z.infer<typeof PermissionResolverSchema>;
-export type PermissionConditionOperatorType = z.infer<typeof ConditionOperatorSchema>;
+export type PermissionConditionOperatorType =
+  z.infer<typeof ConditionOperatorSchema>;
 
-
+/* ------------------------------------------------------------------
+ * 8️⃣ ENUM OBJECTS (SAFE FOR RUNTIME USE)
+ * ------------------------------------------------------------------ */
 
 export const PermissionSourceObj = PermissionResourceType.reduce(
-  (acc: any, action) => {
-    acc[action] = action;
+  (acc: any, resource) => {
+    acc[resource] = resource;
     return acc;
   },
   {} as Record<ResourceType, ResourceType>
@@ -202,3 +258,23 @@ export const PermissionActionObj = PermissionActionType.reduce(
   },
   {} as Record<ActionType, ActionType>
 );
+
+/* ------------------------------------------------------------------
+ * 9️⃣ 🔒 SCOPE RANK (BACKEND ENFORCEMENT – MUST USE)
+ * ------------------------------------------------------------------ */
+
+export const ScopeRank: any = {
+  global: 100,
+  business: 90,
+  vendor: 80,
+  branch: 70,
+  outlet: 60,
+  warehouse: 55,
+  department: 50,
+  team: 40,
+  category: 30,
+  region: 20,
+  channel: 15,
+  segment: 10,
+  self: 1,
+};

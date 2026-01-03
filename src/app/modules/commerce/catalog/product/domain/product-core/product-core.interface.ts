@@ -15,6 +15,8 @@ export interface IProductCore {
   slug: string;
   sku: string;
   barcode?: string;
+  // Module Availability (Omnichannel Control)
+  availableModules: ('pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system')[];
   translations?: {
     lang: string;
     field: string;

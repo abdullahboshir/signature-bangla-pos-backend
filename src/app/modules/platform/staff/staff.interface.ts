@@ -18,6 +18,7 @@ export interface IStaff extends Document {
     lastName: string;
     designation: string;
     department?: string;
+    associatedModules?: string[];
     joiningDate?: Date;
     salary?: number;
     isActive: boolean;

@@ -41,6 +41,15 @@ const outletSchema = new Schema<IOutlet, IOutletModel>(
         email: {
             type: String
         },
+        // Outlet-specific module overrides (e.g. this outlet only does POS, no Logistics)
+        activeModules: {
+            pos: { type: Boolean, default: true },
+            erp: { type: Boolean, default: true },
+            hrm: { type: Boolean, default: false },
+            ecommerce: { type: Boolean, default: false },
+            crm: { type: Boolean, default: false },
+            logistics: { type: Boolean, default: false }
+        },
         businessUnit: {
             type: Schema.Types.ObjectId,
             ref: "BusinessUnit",

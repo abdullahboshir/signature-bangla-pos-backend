@@ -94,6 +94,16 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
   // Status & Workflow
   statusInfo: { type: ProductStatusSchema, default: () => ({}) },
 
+  // Module Availability (Omnichannel Control)
+  availableModules: {
+    type: [{
+      type: String,
+      enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system']
+    }],
+    default: ['pos', 'ecommerce'],
+    index: true
+  },
+
   isDeleted: { type: Boolean, default: false, select: false },
   deletedAt: { type: Date },
 

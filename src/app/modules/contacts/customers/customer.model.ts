@@ -76,8 +76,26 @@ const CustomerSchema = new Schema<ICustomer>(
     user: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      unique: true,
       required: [true, "User id is required"],
+    },
+    businessUnit: {
+      type: Schema.Types.ObjectId,
+      ref: "BusinessUnit",
+      required: [true, "Business Unit is required"],
+      index: true,
+    },
+    outlet: {
+      type: Schema.Types.ObjectId,
+      ref: "Outlet",
+      default: null, // Optional
+    },
+    // Where this customer was acquired/created
+    sourceModule: {
+      type: String,
+      enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system'],
+      default: 'pos',
+      required: true,
+      index: true
     },
     id: {
       type: String,

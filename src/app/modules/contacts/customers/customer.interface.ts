@@ -20,6 +20,9 @@ export interface ICustomer {
   _id?: Types.ObjectId;
   id: string;
   user: Types.ObjectId;
+  businessUnit: Types.ObjectId; // Scoped to Business
+  outlet?: Types.ObjectId;      // Created at (Source)
+  sourceModule: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
   name?: TName;
   email: string;
   phone?: string;

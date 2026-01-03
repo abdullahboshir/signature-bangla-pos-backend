@@ -4,6 +4,7 @@ export interface IAttribute {
     name: string;
     values: string[];
     businessUnit: Types.ObjectId;
+    availableModules: ('pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system')[];
     status: "active" | "inactive";
     createdBy: Types.ObjectId;
 }

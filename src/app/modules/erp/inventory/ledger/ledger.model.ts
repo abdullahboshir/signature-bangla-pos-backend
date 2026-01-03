@@ -5,6 +5,7 @@ export interface IStockLedger extends Document {
     product: Types.ObjectId;
     outlet?: Types.ObjectId;
     type: 'purchase' | 'sale' | 'adjustment' | 'transfer' | 'return' | 'initial';
+    module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
     quantity: number; // Positive for IN, Negative for OUT
     reference?: string; // ID of the related document (Purchase ID, Order ID, etc.)
     referenceType?: 'Purchase' | 'Order' | 'InventoryAdjustment' | 'Transfer';
@@ -20,6 +21,12 @@ const stockLedgerSchema = new Schema<IStockLedger>({
         type: String,
         enum: ['purchase', 'sale', 'adjustment', 'transfer', 'return', 'initial'],
         required: true
+    },
+    module: {
+        type: String,
+        enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system'],
+        required: true,
+        index: true
     },
     quantity: { type: Number, required: true },
     reference: { type: String },

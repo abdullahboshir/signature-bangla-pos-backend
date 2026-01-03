@@ -9,6 +9,13 @@ const PermissionGroupSchema = new Schema<IPermissionGroup>({
     trim: true,
     unique: true
   },
+  // Which module this group belongs to (e.g. 'erp' for Inventory, 'pos' for Sales)
+  module: {
+    type: String,
+    enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system'],
+    required: true,
+    index: true
+  },
   description: {
     type: String,
     required: true

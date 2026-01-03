@@ -60,6 +60,11 @@ const StaffSchema = new Schema<IStaff>({
         type: String,
         trim: true
     },
+    // Modules relevancy for this staff (e.g. Sales Staff -> POS, Warehouse Staff -> Logistics)
+    associatedModules: [{
+        type: String,
+        enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system']
+    }],
     joiningDate: {
         type: Date
     },

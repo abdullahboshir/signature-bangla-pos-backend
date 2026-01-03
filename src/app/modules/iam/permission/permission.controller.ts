@@ -51,6 +51,22 @@ function parseBoolean(v: any): boolean | undefined {
 /* -------------------------------------------------------------------------- */
 
 /**
+ * GET /permissions/resources
+ */
+export const getPermissionResources = catchAsync(
+  async (req: Request, res: Response) => {
+    const resources = await permissionService.getUniqueResources();
+
+    ApiResponse.success(res, {
+      statusCode: status.OK,
+      success: true,
+      message: 'Permission resources retrieved successfully',
+      data: resources,
+    });
+  }
+);
+
+/**
  * GET /permissions
  */
 export const getAllPermissions = catchAsync(
@@ -58,6 +74,7 @@ export const getAllPermissions = catchAsync(
     /* --------- validation & parsing --------- */
     const { page = '1', limit = '20' } = paginationSchema.parse(req.query);
     const { resource, action, scope, isActive } = permissionFilterSchema.parse(req.query);
+    const search = req.query.search as string;
 
     const filter: any = {};
     if (resource) filter.resource = resource;
@@ -65,6 +82,16 @@ export const getAllPermissions = catchAsync(
     if (scope) filter.scope = scope;
     const boolActive = parseBoolean(isActive);
     if (boolActive !== undefined) filter.isActive = boolActive;
+
+    // Search Support
+    if (search) {
+      const searchRegex = { $regex: search, $options: 'i' };
+      filter.$or = [
+        { resource: searchRegex },
+        { action: searchRegex },
+        { description: searchRegex }
+      ];
+    }
 
     const pg = Math.max(1, Number(page));
     const lt = Math.max(1, Number(limit));

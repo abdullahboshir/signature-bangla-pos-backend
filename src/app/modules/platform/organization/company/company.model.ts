@@ -36,6 +36,15 @@ const companySchema = new Schema<ICompanyDocument, ICompanyModel>(
             type: Boolean,
             default: true,
         },
+        // Company-level Module Override (Optional)
+        activeModules: {
+            pos: { type: Boolean, default: true },
+            erp: { type: Boolean, default: true },
+            hrm: { type: Boolean, default: false },
+            ecommerce: { type: Boolean, default: false },
+            crm: { type: Boolean, default: false },
+            logistics: { type: Boolean, default: false }
+        },
     },
     {
         timestamps: true,

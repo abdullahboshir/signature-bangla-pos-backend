@@ -16,6 +16,17 @@ export interface IPackage {
     currency: string;
     features: string[]; // List of feature keys enabled
     limits: IPackageLimit;
+
+    // Modules included in this package
+    moduleAccess: {
+        pos: boolean;
+        erp: boolean;
+        hrm: boolean;
+        ecommerce: boolean;
+        crm: boolean;
+        logistics: boolean;
+    };
+
     supportType: ISupportType;
     isActive: boolean;
     isFeatured: boolean;

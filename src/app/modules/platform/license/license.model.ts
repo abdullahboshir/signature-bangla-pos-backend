@@ -7,6 +7,17 @@ const licenseSchema = new Schema<ILicense, LicenseModel>({
     packageId: { type: Schema.Types.ObjectId, ref: 'Package', required: true },
     key: { type: String, required: true, unique: true },
     expiresAt: { type: Date },
+
+    // Add-on modules enabled specifically for this license (overrides package defaults)
+    customModules: {
+        pos: { type: Boolean },
+        erp: { type: Boolean },
+        hrm: { type: Boolean },
+        ecommerce: { type: Boolean },
+        crm: { type: Boolean },
+        logistics: { type: Boolean }
+    },
+
     status: { type: String, enum: ['active', 'expired', 'revoked'], default: 'active' },
     activationDate: { type: Date, default: Date.now },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' }

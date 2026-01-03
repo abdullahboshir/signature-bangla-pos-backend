@@ -17,6 +17,15 @@ const orderSchema = new Schema<IOrder>({
     businessUnit: { type: Schema.Types.ObjectId, ref: "BusinessUnit", required: true },
     outlet: { type: Schema.Types.ObjectId, ref: "Outlet", required: true },
 
+    // Origin of the order (POS vs Online)
+    sourceModule: {
+        type: String,
+        enum: ['pos', 'ecommerce', 'crm', 'system'],
+        default: 'pos',
+        required: true,
+        index: true
+    },
+
     items: [orderItemSchema],
 
     subTotal: { type: Number, required: true, default: 0 },

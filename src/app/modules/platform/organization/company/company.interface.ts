@@ -9,8 +9,16 @@ export interface ICompany {
   logo?: string;
   website?: string;
   isActive: boolean;
+  activeModules?: {
+    pos: boolean;
+    erp: boolean;
+    hrm: boolean;
+    ecommerce: boolean;
+    crm: boolean;
+    logistics: boolean;
+  };
 }
 
-export interface ICompanyDocument extends ICompany, Document {}
+export interface ICompanyDocument extends ICompany, Document { }
 
-export interface ICompanyModel extends Model<ICompanyDocument> {}
+export interface ICompanyModel extends Model<ICompanyDocument> { }

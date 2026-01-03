@@ -21,8 +21,9 @@ export const PermissionActionTypeSchema = z.enum([
 ]);
 
 export const PermissionScopeSchema = z.enum([
-  'global', 'vendor', 'category', 'region', 'businessUnit',
-  'team', 'branch', 'warehouse', 'department', 'self'
+  'global', 'vendor', 'category', 'region', 'business',
+  'team', 'branch', 'warehouse', 'department', 'self',
+  'channel', 'segment', 'outlet', 'businessUnit' // keeping businessUnit for backward compat if needed, but 'business' is key
 ]);
 
 export const PermissionEffectSchema = z.enum(['allow', 'deny']);
@@ -36,7 +37,7 @@ export const ResolveStrategySchema = z.enum([
 
 export const ConditionOperatorSchema = z.enum([
   'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'not-in', 'contains',
-  'starts-with', 'ends-with', 'between'
+  'starts-with', 'ends-with', 'between', 'regex', 'like'
 ]);
 
 export const PermissionConditionSchema = z.object({

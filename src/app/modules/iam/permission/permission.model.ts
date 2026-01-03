@@ -77,6 +77,13 @@ const PermissionSchema = new Schema<IPermission>(
       required: true,
       unique: true,
     },
+    // Top-level module categorization for faster lookups
+    module: {
+      type: String,
+      enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system'],
+      required: true,
+      index: true
+    },
     resource: {
       type: String,
       required: true,

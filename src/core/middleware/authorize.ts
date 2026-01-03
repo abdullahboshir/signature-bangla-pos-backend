@@ -1,6 +1,8 @@
 import type { IPermissionContext } from "@app/modules/iam/permission/permission.interface.ts";
+import { getModuleByResource } from "@app/modules/iam/permission/module.constant.ts";
 import { permissionService } from "@app/modules/iam/permission/permission.service.ts";
 import { USER_ROLE } from "@app/modules/iam/user/user.constant.ts";
+import { SystemSettings } from "@app/modules/platform/settings/system-settings/system-settings.model.ts";
 import { User } from "@app/modules/iam/user/user.model.ts";
 import catchAsync from "@core/utils/catchAsync.ts";
 import AppError from "@shared/errors/app-error.ts";
@@ -66,7 +68,11 @@ export const authorize = (resource: string, action: string) => {
                 { path: 'permissionGroups', populate: { path: 'permissions' } }
               ]
             },
-            { path: 'businessUnit', select: 'name slug' }
+            {
+              path: 'businessUnit',
+              select: 'name slug id activeModules company',
+              populate: { path: 'company', select: 'activeModules' }
+            }
           ]
         })
         .select('+directPermissions');
@@ -75,6 +81,48 @@ export const authorize = (resource: string, action: string) => {
 
       if (!userWithRoles) {
         throw new AppError(status.NOT_FOUND, 'User not found');
+      }
+
+      // --------------------------------------------------------------------------
+      // 🛡️ MODULE LEVEL GUARD (Tiered: System > Company > BU)
+      // --------------------------------------------------------------------------
+      const requiredModule = getModuleByResource(resource);
+      if (requiredModule) {
+        // 1. System Global Check (Maintenance Mode)
+        const systemSettings = await SystemSettings.findOne().lean();
+        // @ts-ignore
+        if (systemSettings?.enabledModules && systemSettings.enabledModules[requiredModule] === false) {
+          throw new AppError(status.SERVICE_UNAVAILABLE, `System Module '${requiredModule.toUpperCase()}' is temporarily disabled.`);
+        }
+
+        const targetBuParam = req.params.businessUnit || req.params.businessUnitId || req.headers['x-business-unit'];
+
+        if (targetBuParam) {
+          const targetAccess = (userWithRoles.businessAccess || []).find((a: any) =>
+            (a.businessUnit?.id?.toString() === targetBuParam.toString()) ||
+            (a.businessUnit?.slug === targetBuParam)
+          );
+
+          if (targetAccess?.businessUnit) {
+            // 2. Company Level Check (Organization License)
+            if (targetAccess.businessUnit.company?.activeModules) {
+              // @ts-ignore
+              const isCompanyActive = targetAccess.businessUnit.company.activeModules[requiredModule];
+              if (isCompanyActive === false) {
+                throw new AppError(status.PAYMENT_REQUIRED, `Organization License does not include '${requiredModule.toUpperCase()}' module.`);
+              }
+            }
+
+            // 3. Business Unit Level Check (Unit Toggle)
+            if (targetAccess.businessUnit.activeModules) {
+              // @ts-ignore
+              const isBuActive = targetAccess.businessUnit.activeModules[requiredModule];
+              if (isBuActive === false) {
+                throw new AppError(status.FORBIDDEN, `Module '${requiredModule.toUpperCase()}' is active in your plan but disabled for this Unit.`);
+              }
+            }
+          }
+        }
       }
 
       // Aggregate Roles

@@ -13,6 +13,14 @@ const packageSchema = new Schema<IPackage, PackageModel>({
         maxOutlets: { type: Number, default: 1 },
         maxStorage: { type: Number, default: 512 }
     },
+    moduleAccess: {
+        pos: { type: Boolean, default: true },
+        erp: { type: Boolean, default: false },
+        hrm: { type: Boolean, default: false },
+        ecommerce: { type: Boolean, default: false },
+        crm: { type: Boolean, default: false },
+        logistics: { type: Boolean, default: false }
+    },
     supportType: { type: String, enum: ['basic', 'priority', 'dedicated'], default: 'basic' },
     isActive: { type: Boolean, default: true },
     isFeatured: { type: Boolean, default: false }

@@ -7,6 +7,14 @@ export const createSupplierService = async (data: ISupplier) => {
     if (!data.id) {
         data.id = `SUP-${Date.now()}`;
     }
+
+    // Handle Single Business Unit Payload
+    if (data.businessUnit) {
+        if (!data.businessUnits) data.businessUnits = [];
+        if (!data.businessUnits.includes(data.businessUnit)) {
+            data.businessUnits.push(data.businessUnit);
+        }
+    }
     const result = await Supplier.create(data);
     return result;
 };
@@ -24,6 +32,15 @@ export const getAllSuppliersService = async (filters: any) => {
                 { id: { $regex: searchTerm, $options: 'i' } }
             ]
         });
+    }
+
+
+    // Handle Business Unit Isolation
+    if (filterData.businessUnit) {
+        andConditions.push({
+            businessUnits: filterData.businessUnit
+        });
+        delete filterData.businessUnit;
     }
 
     if (Object.keys(filterData).length) {

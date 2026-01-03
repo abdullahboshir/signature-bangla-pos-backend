@@ -1,6 +1,7 @@
 // validations/role.validation.ts
 import { z } from 'zod';
 import mongoose from 'mongoose';
+import { RoleScope } from './role.constant.ts';
 
 // const _permissionSchema = z.object({
 /*
@@ -37,6 +38,10 @@ export const createRoleValidation = z.object({
       .trim()
       .max(100, 'Bangla role name cannot exceed 100 characters')
       .optional(),
+
+    roleScope: z.enum([RoleScope.GLOBAL, RoleScope.BUSINESS, RoleScope.OUTLET], {
+      message: 'Invalid role scope. Must be GLOBAL, BUSINESS, or OUTLET'
+    }),
 
     description: z.string()
       .trim()

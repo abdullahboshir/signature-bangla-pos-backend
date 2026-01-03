@@ -180,6 +180,9 @@ export const createCustomerService = async (
       id,
       user: newUser[0]._id as any,
       email: customerData.email,
+      // Ensure businessUnit is passed. If missing, it will fail at model validation.
+      businessUnit: customerData.businessUnit,
+      outlet: customerData.outlet || null
     };
 
     // Create Customer
@@ -319,6 +322,31 @@ export const createStaffService = async (
       }
     }
 
+    // 5.1 Validate Direct Permissions (Security Step 3)
+    // Staff are usually created by Business Admins or Managers. 
+    // They should NOT have GLOBAL permissions.
+    if (staffData.directPermissions && staffData.directPermissions.length > 0) {
+      const { Permission } = await import("../permission/permission.model.js");
+      const permissionIds = staffData.directPermissions.map((p: any) => p.permissionId);
+      const permissions = await Permission.find({ _id: { $in: permissionIds } });
+
+      // Max Scope for Staff Creation:
+      // If creating for a Business Unit -> Max Scope = BUSINESS
+      // If Global -> Max Scope = GLOBAL (but createsStaffService usually implies BU context?)
+      // Let's assume implied max scope:
+      const maxScopeVal = (!businessUnitId) ? 3 : 2; // If no BU, maybe Global admin? Safest is 2 if strictly staff.
+      // Actually, strictly enforce: Created Staff cannot exceed creator's scope?
+      // For now, hard rule: Staff = BUSINESS Max.
+
+      const scopeRank = { 'OUTLET': 1, 'BUSINESS': 2, 'GLOBAL': 3 };
+      for (const p of permissions) {
+        const pScopeVal = scopeRank[p.scope as keyof typeof scopeRank] || 0;
+        if (pScopeVal > maxScopeVal) {
+          throw new AppError(403, `Security Violation: Cannot assign ${p.scope} permission to new staff.`);
+        }
+      }
+    }
+
     // 6. Create User
     const userData: Partial<IUser> = {
       id: userId,
@@ -391,6 +419,46 @@ export const updateUserService = async (
 
   if (!isUserExists) {
     throw new AppError(404, "User not found!");
+  }
+
+
+  // Validate Direct Permissions Scope if being updated
+  if (payload.directPermissions && payload.directPermissions.length > 0) {
+    const { Permission } = await import("../permission/permission.model.js"); // Dynamic import to avoid circular dep
+    const permissionIds = payload.directPermissions.map((p: any) => p.permissionId);
+
+    // Fetch permissions to check their scope
+    const permissions = await Permission.find({ _id: { $in: permissionIds } });
+
+    // Determine User's Max Access Scope
+    // Logic: SuperAdmin > BusinessAdmin > OutletManager
+    // This is simplified. Ideally, we check against specific Business Unit context.
+    // For now, we prevent GLOBAL permissions for non-SuperAdmins.
+
+    let userMaxScopeVal = 1; // Default Outlet
+
+    // Check if user has explicit global roles or super admin status (PRE-UPDATE state)
+    // Note: If payload changes roles, we should check payload. Assume role changes handled separately?
+    // Using current state for safety.
+    if (isUserExists.isSuperAdmin || (isUserExists.globalRoles && isUserExists.globalRoles.length > 0)) {
+      userMaxScopeVal = 3; // Global
+    } else {
+      // Check business access
+      // We might need to fetch UserBusinessAccess if not populated.
+      // Assuming if not SuperAdmin/GlobalRole, they are Business/Outlet level.
+      // Let's assume BUSINESS level (2) is max for normal staff for now, unless restricted.
+      userMaxScopeVal = 2;
+    }
+
+    const scopeRank = { 'OUTLET': 1, 'BUSINESS': 2, 'GLOBAL': 3 };
+
+    for (const p of permissions) {
+      const pScopeVal = scopeRank[p.scope as keyof typeof scopeRank] || 0;
+
+      if (pScopeVal > userMaxScopeVal) {
+        throw new AppError(403, `Security Violation: Cannot assign ${p.scope} permission '${p.action}:${p.resource}' to a user with lower scope.`);
+      }
+    }
   }
 
   // Handle Image Upload

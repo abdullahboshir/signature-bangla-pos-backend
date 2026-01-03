@@ -10,7 +10,6 @@ const RoleSchema = new Schema<IRole>(
     name: {
       type: String,
       required: [true, 'Role name is required'],
-      unique: true,
       trim: true,
       maxlength: [100, 'Role name cannot exceed 100 characters'],
       match: [/^[a-zA-Z0-9_-\s]+$/, 'Role name can only contain letters, numbers, spaces, hyphens and underscores']
@@ -38,7 +37,6 @@ const RoleSchema = new Schema<IRole>(
       ref: 'Role',
       validate: {
         validator: function (this: IRole, roles: Types.ObjectId[]) {
-          // Prevent circular inheritance
           return !roles.includes(this._id as unknown as Types.ObjectId);
         },
         message: 'Role cannot inherit from itself'
@@ -48,6 +46,17 @@ const RoleSchema = new Schema<IRole>(
       type: Boolean,
       default: false
     },
+    roleScope: {
+      type: String,
+      enum: ['GLOBAL', 'BUSINESS', 'OUTLET'],
+      required: true,
+      index: true
+    },
+    // Applicable Modules for this role (e.g. ['pos'] for Cashier, ['hrm'] for HR Manager)
+    associatedModules: [{
+      type: String,
+      enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system'],
+    }],
     isDefault: {
       type: Boolean,
       default: false
@@ -92,6 +101,9 @@ RoleSchema.index({ isSystemRole: 1 });
 RoleSchema.index({ isDefault: 1 });
 
 
+// Compound index to ensure name is unique per scope
+RoleSchema.index({ name: 1, roleScope: 1 }, { unique: true });
+
 RoleSchema.virtual('allPermissions').get(function (this: IRole) {
   return this.permissions;
 });
@@ -113,19 +125,5 @@ RoleSchema.pre('save', async function (next) {
 
 
 cachingMiddleware(RoleSchema);
-
-// Invalidate permission caches by bumping role version on changes
-// RoleSchema.post('save', async function() {
-//   await bumpVersion('role');
-// });
-// RoleSchema.post('findOneAndUpdate', async function() {
-//   await bumpVersion('role');
-// });
-// RoleSchema.post('deleteOne', { document: false, query: true }, async function() {
-//   await bumpVersion('role');
-// });
-// RoleSchema.post('deleteMany', async function() {
-//   await bumpVersion('role');
-// });
 
 export const Role = model<IRole>('Role', RoleSchema);

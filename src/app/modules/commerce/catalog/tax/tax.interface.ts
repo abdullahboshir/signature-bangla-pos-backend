@@ -5,6 +5,7 @@ export interface ITax extends Document {
     name: string; // e.g., "VAT 15%"
     rate: number; // e.g., 15
     type: 'percentage' | 'fixed';
+    module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
     businessUnit: Types.ObjectId | null; // null for global
     isDefault: boolean;
     isActive: boolean;

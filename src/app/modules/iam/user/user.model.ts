@@ -111,10 +111,29 @@ const UserSchema = new Schema<IUser, UserStatic>({
     type: Boolean,
     default: false
   },
-  directPermissions: {
-    allow: [{ type: Schema.Types.ObjectId, ref: "Permission" }],
-    deny: [{ type: Schema.Types.ObjectId, ref: "Permission" }]
-  },
+  directPermissions: [{
+    _id: false,
+    permissionId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Permission',
+      required: true
+    },
+    type: {
+      type: String,
+      enum: ['allow', 'deny'],
+      required: true
+    },
+    source: {
+      type: String,
+      enum: ['DIRECT', 'GROUP', 'INHERITED', 'SYSTEM', 'POLICY'],
+      default: 'DIRECT'
+    },
+    assignedScope: {
+      type: String,
+      enum: ['GLOBAL', 'BUSINESS', 'OUTLET'],
+      required: true
+    }
+  }],
 
   settings: {
     theme: { type: String, default: 'system' },
@@ -217,12 +236,7 @@ UserSchema.statics["isUserExists"] = async function (email: string): Promise<IUs
       },
       // Direct Permissions Population
       {
-        path: 'directPermissions.allow',
-        model: 'Permission',
-        select: 'resource action scope effect conditions resolver attributes'
-      },
-      {
-        path: 'directPermissions.deny',
+        path: 'directPermissions.permissionId',
         model: 'Permission',
         select: 'resource action scope effect conditions resolver attributes'
       },
@@ -347,29 +361,41 @@ UserSchema.methods["getPermissionsSummary"] = async function () {
     }
   }
 
-  // Add direct permissions (allow)
-  if (this["directPermissions"]?.allow) {
-    for (const permission of this["directPermissions"].allow) {
-      if (!permissionMap.has(permission.id)) {
-        permissionMap.set(permission.id, permission);
-        allPermissions.push(permission);
-      }
-    }
-  }
-  // Add direct permissions (deny) - Technically should override, but this is a summary
-  if (this["directPermissions"]?.deny) {
-    for (const permission of this["directPermissions"].deny) {
-      if (!permissionMap.has(permission.id)) {
-        permissionMap.set(permission.id, permission);
-        allPermissions.push(permission);
+  // Add direct permissions
+  if (this["directPermissions"] && this["directPermissions"].length > 0) {
+    for (const dp of this["directPermissions"]) {
+      // Fetch permission details if not populated? 
+      // Ideally, directPermissions.permissionId should be populated before calling this.
+      // But for summary, we assume caller might not have populated deeply. 
+      // For safety, we check if permissionId is an object (populated) or logic needs fetching.
+      // NOTE: For 'summary' method, we usually expect population. 
+
+      // Assuming permissionId is populated or available in permissionMap if we fetched all?
+      // Re-using logic: access the detailed permission object.
+      // If it's just ID, we can't get resource/action details without fetch.
+
+      const p: any = dp.permissionId;
+
+      if (p && p.resource) { // Check if populated
+        if (dp.type === 'allow') {
+          if (!permissionMap.has(p.id)) {
+            permissionMap.set(p.id, p);
+            allPermissions.push(p);
+          }
+        } else if (dp.type === 'deny') {
+          // Remove if exists (Deny overrides Allow)
+          if (permissionMap.has(p.id)) {
+            permissionMap.delete(p.id);
+            const idx = allPermissions.findIndex(ap => ap.id === p.id);
+            if (idx !== -1) allPermissions.splice(idx, 1);
+          }
+        }
       }
     }
   }
 
   return {
     totalPermissions: allPermissions.length,
-    allowedPermissions: allPermissions.filter(p => p.effect === 'allow').length,
-    deniedPermissions: allPermissions.filter(p => p.effect === 'deny').length,
     resources: [...new Set(allPermissions.map(p => p.resource))],
     permissions: allPermissions
   };

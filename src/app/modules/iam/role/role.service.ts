@@ -22,6 +22,15 @@ class RoleService {
       filter.isSystemRole = query.isSystemRole === 'true';
     }
 
+    if (query.roleScope) {
+      filter.roleScope = query.roleScope;
+    }
+
+    // Role Scope Filtering Logic based on Requestor (if needed, or purely query based for now)
+    // Ideally, we should filter out GLOBAL roles for Business users here if we had user context.
+    // However, the controller passes `req.query`, not `req.user` context for filtering typically.
+    // For now, enabling query parameter filtering is sufficient for frontend usage.
+
     const roles = await Role.find(filter)
       // .populate('permissions', 'id resource action description') // OPTIMIZATION: Removed heavy population for list view
       // .populate('permissionGroups')

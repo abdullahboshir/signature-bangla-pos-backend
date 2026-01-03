@@ -12,6 +12,7 @@ export interface IAttributeField {
 export interface IAttributeGroup {
     name: string;
     description?: string;
+    module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
     fields: IAttributeField[];
     isActive: boolean;
 }

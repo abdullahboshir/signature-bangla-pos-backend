@@ -13,6 +13,8 @@ export interface IRole {
   isSystemRole: boolean;
   isDefault: boolean;
   isActive: boolean;
+  roleScope: 'GLOBAL' | 'BUSINESS' | 'OUTLET';
+  associatedModules?: string[];
   hierarchyLevel: number;
   maxDataAccess?: {
     products?: number;

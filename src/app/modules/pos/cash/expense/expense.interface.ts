@@ -6,6 +6,7 @@ export interface IExpense extends Document {
     amount: number;
     category: Types.ObjectId;
     paymentMethod: 'cash' | 'bank' | 'mobile_money' | 'other';
+    module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
     reference?: string;
     remarks?: string;
     businessUnit: Types.ObjectId;

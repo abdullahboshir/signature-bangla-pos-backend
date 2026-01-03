@@ -11,6 +11,7 @@ export interface IInventoryAdjustment extends Document {
     date: Date;
     referenceNo: string;
     outlet?: Types.ObjectId; // If null, global adjustment
+    sourceModule: 'pos' | 'erp' | 'system';
     items: IAdjustmentItem[];
     adjustedBy: Types.ObjectId; // User ID
     status: 'completed' | 'pending';
@@ -28,6 +29,12 @@ const inventoryAdjustmentSchema = new Schema<IInventoryAdjustment>({
     date: { type: Date, default: Date.now },
     referenceNo: { type: String, required: true, unique: true },
     outlet: { type: Schema.Types.ObjectId, ref: 'Outlet' },
+    sourceModule: {
+        type: String,
+        enum: ['pos', 'erp', 'system'],
+        default: 'erp',
+        required: true
+    },
     items: [adjustmentItemSchema],
     adjustedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     status: { type: String, enum: ['completed', 'pending'], default: 'completed' },

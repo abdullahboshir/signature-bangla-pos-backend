@@ -6,6 +6,7 @@ export interface IUserBusinessAccess extends Document {
     scope: 'GLOBAL' | 'BUSINESS' | 'OUTLET';
     businessUnit?: Types.ObjectId | null;
     outlet?: Types.ObjectId | null;
+    restrictedModules?: string[];
     status: 'active' | 'suspended';
     isPrimary: boolean;
     assignedBy?: Types.ObjectId;
@@ -29,7 +30,16 @@ const UserBusinessAccessSchema = new Schema({
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', default: null },
     outlet: { type: Schema.Types.ObjectId, ref: 'Outlet', default: null },
 
-    status: { type: String, enum: ['active', 'suspended'], default: 'active' },
+    status: {
+        type: String,
+        enum: ['ACTIVE', 'INACTIVE', 'SUSPENDED'],
+        default: 'ACTIVE'
+    },
+    // Explicitly deny access to these modules for this user in this specific Business Unit
+    restrictedModules: [{
+        type: String,
+        enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics']
+    }],
 
     isPrimary: {
         type: Boolean,

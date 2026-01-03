@@ -10,6 +10,7 @@ import type {
 import { CacheManager as _CacheManager } from "../../../../core/utils/caching/cache-manager.js";
 import logger from '@core/utils/logger.ts';
 import { Role } from '../role/role.model.ts';
+import { Permission } from './permission.model.ts';
 
 export interface IAuthorizationContext {
   permissions: IPermission[];
@@ -57,6 +58,14 @@ export class PermissionService {
   ): Promise<IPermission[]> {
     const context = await this.getAuthorizationContext(user, targetScope);
     return context.permissions;
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* 2.2️⃣  PUBLIC API – getUniqueResources (For Frontend Sidebar)              */
+  /* ---------------------------------------------------------------------- */
+  async getUniqueResources(): Promise<string[]> {
+    const resources = await Permission.distinct('resource', { isActive: true });
+    return resources.sort();
   }
 
   /* ---------------------------------------------------------------------- */

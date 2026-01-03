@@ -7,6 +7,7 @@ export interface ICategories {
   code?: string;
   slug?: string;
   image?: string;
+  availableModules?: ('pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system')[];
   isActive?: boolean;
   parentId?: Types.ObjectId | null;
   level?: number;

@@ -18,6 +18,13 @@ const taxSchema = new Schema<ITax>(
             enum: ['percentage', 'fixed'],
             default: 'percentage',
         },
+        module: {
+            type: String,
+            enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system'],
+            default: 'system',
+            required: true,
+            index: true
+        },
         businessUnit: {
             type: Schema.Types.ObjectId,
             ref: 'BusinessUnit',

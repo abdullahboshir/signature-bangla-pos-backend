@@ -25,6 +25,10 @@ export const BUSINESS_INDUSTRY = {
     OTHER: 'other'
 } as const;
 
+export const BUSINESS_INDUSTRY_ARRAY = Object.values(BUSINESS_INDUSTRY);
+
+export const BUSINESS_MODEL_ARRAY = Object.values(BUSINESS_MODEL);
+
 export const BUSINESS_UNIT_STATUS = {
     DRAFT: 'draft',
     UNDER_REVIEW: 'under_review',
@@ -35,6 +39,16 @@ export const BUSINESS_UNIT_STATUS = {
     INACTIVE: 'inactive',
 } as const;
 
-export const BUSINESS_MODEL_ARRAY = Object.values(BUSINESS_MODEL);
-export const BUSINESS_INDUSTRY_ARRAY = Object.values(BUSINESS_INDUSTRY);
 export const BUSINESS_UNIT_STATUS_ARRAY = Object.values(BUSINESS_UNIT_STATUS);
+
+// System Modules (Access Control Checks)
+export const SYSTEM_MODULES = {
+    POS: 'pos',             // Point of Sale
+    ERP: 'erp',             // Inventory, Purchasing, Accounts
+    HRM: 'hrm',             // Staff, Attendance, Payroll
+    ECOMMERCE: 'ecommerce', // Online Storefront
+    CRM: 'crm',             // Customers, Marketing, Tickets
+    LOGISTICS: 'logistics', // Couriers, Shipments
+} as const;
+
+export const SYSTEM_MODULES_ARRAY = Object.values(SYSTEM_MODULES);

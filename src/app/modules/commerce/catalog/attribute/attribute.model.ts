@@ -18,6 +18,14 @@ const attributeSchema = new Schema<IAttributeDocument, IAttributeModel>({
         ref: "BusinessUnit",
         required: false
     },
+    availableModules: {
+        type: [{
+            type: String,
+            enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system']
+        }],
+        default: ['pos', 'ecommerce'],
+        index: true
+    },
     status: {
         type: String,
         enum: ["active", "inactive"],

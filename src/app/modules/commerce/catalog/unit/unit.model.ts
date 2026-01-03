@@ -30,6 +30,13 @@ const unitSchema = new Schema<IUnit, UnitModel>(
             type: [String],
             default: [],
         },
+        module: {
+            type: String,
+            enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system'],
+            default: 'system',
+            required: true,
+            index: true
+        },
         createdBy: {
             type: Schema.Types.ObjectId,
             ref: 'User',

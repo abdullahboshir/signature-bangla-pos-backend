@@ -18,6 +18,13 @@ const AttributeFieldSchema = new Schema({
 const AttributeGroupSchema = new Schema<IAttributeGroupDocument, IAttributeGroupModel>({
     name: { type: String, required: true, unique: true, trim: true },
     description: { type: String },
+    module: {
+        type: String,
+        enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system'],
+        default: 'erp',
+        required: true,
+        index: true
+    },
     fields: [AttributeFieldSchema],
     isActive: { type: Boolean, default: true }
 }, {

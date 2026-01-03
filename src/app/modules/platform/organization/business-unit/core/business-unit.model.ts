@@ -1,17 +1,10 @@
-// ============================================================================
-// FILE: src/app/modules/organization/business-unit/schemas/business-unit.schema.ts
-// ============================================================================
-// Extract from your current business-unit.model.ts and move here
+
 
 import { model, Schema } from "mongoose";
 import type { IBusinessUnitCoreDocument, IBusinessUnitCoreModel } from "./business-unit.interface.ts";
 import { BUSINESS_MODEL_ARRAY, BUSINESS_INDUSTRY_ARRAY, BUSINESS_MODEL, BUSINESS_INDUSTRY } from "./business-unit.constant.ts";
 
 
-/**
- * Business Unit Core Schema Definition
- * Contains main structure, indexes, and virtual properties
- */
 export const businessUnitCoreSchema = new Schema<
   IBusinessUnitCoreDocument,
   IBusinessUnitCoreModel
@@ -160,6 +153,16 @@ export const businessUnitCoreSchema = new Schema<
       hasCompliance: { type: Boolean, default: true },
       hasBundles: { type: Boolean, default: true },
       hasWarranty: { type: Boolean, default: true }
+    },
+
+    // ====== ACTIVE MODULES ======
+    activeModules: {
+      pos: { type: Boolean, default: true },
+      erp: { type: Boolean, default: true },
+      hrm: { type: Boolean, default: false },
+      ecommerce: { type: Boolean, default: false },
+      crm: { type: Boolean, default: false },
+      logistics: { type: Boolean, default: false }
     },
 
     // ====== POLICIES & SEO ======

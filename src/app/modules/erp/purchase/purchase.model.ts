@@ -17,6 +17,13 @@ const PurchaseSchema = new Schema<IPurchase>({
     businessUnit: { type: Schema.Types.ObjectId as any, ref: 'BusinessUnit', required: true },
     outlet: { type: Schema.Types.ObjectId as any, ref: 'Outlet', required: true },
     status: { type: String, enum: ['pending', 'ordered', 'received'], default: 'pending' },
+    module: {
+        type: String,
+        enum: ['pos', 'erp', 'system'],
+        default: 'erp',
+        required: true,
+        index: true
+    },
     items: [PurchaseItemSchema],
     subTotal: { type: Number, required: true },
     tax: { type: Number, default: 0 },

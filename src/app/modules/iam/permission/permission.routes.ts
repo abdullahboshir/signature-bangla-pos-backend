@@ -4,6 +4,7 @@ import { PermissionActionObj, PermissionSourceObj } from './permission.constant.
 import { USER_ROLE } from '../user/user.constant.js';
 import {
   getAllPermissions,
+  getPermissionResources,
   getPermissionById,
   getUserPermissions,
   checkUserPermission
@@ -12,6 +13,12 @@ import auth from '@core/middleware/auth.ts';
 import { authorize } from '@core/middleware/authorize.ts';
 
 const router = Router();
+
+// Get unique permission resources
+router.get('/resources',
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  getPermissionResources
+);
 
 // Get all permissions - Admin only
 router.get('/',

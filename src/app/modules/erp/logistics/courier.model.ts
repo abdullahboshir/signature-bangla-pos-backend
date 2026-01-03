@@ -7,6 +7,7 @@ export interface ICourier {
     apiSecret?: string;
     baseUrl?: string;
     isActive: boolean;
+    module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics';
     businessUnit: Schema.Types.ObjectId;
     config: Map<string, any>; // Extra config like "store_id"
 }
@@ -18,6 +19,14 @@ const courierSchema = new Schema<ICourier>({
     apiSecret: { type: String, select: false },
     baseUrl: { type: String },
     isActive: { type: Boolean, default: true },
+    // Typically 'logistics', but could be 'pos' for local delivery
+    module: {
+        type: String,
+        enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics'],
+        default: 'logistics',
+        required: true,
+        index: true
+    },
     businessUnit: { type: Schema.Types.ObjectId, ref: "BusinessUnit", required: true },
     config: { type: Map, of: Schema.Types.Mixed }
 }, {

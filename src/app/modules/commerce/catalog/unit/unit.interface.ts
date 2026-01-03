@@ -7,6 +7,7 @@ export interface IUnit {
     status: 'active' | 'inactive';
     businessUnit: Types.ObjectId | null; // Reference to the business unit, null for global
     relatedBusinessTypes?: string[]; // e.g., ["Grocery", "Pharmacy"]
+    module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
     createdBy: Types.ObjectId;
     isDeleted: boolean;
     createdAt?: Date;

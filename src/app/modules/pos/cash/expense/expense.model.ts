@@ -12,6 +12,13 @@ const expenseSchema = new Schema<IExpenseDocument>({
         enum: ['cash', 'bank', 'mobile_money', 'other'],
         required: true
     },
+    module: {
+        type: String,
+        enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system'],
+        default: 'pos',
+        required: true,
+        index: true
+    },
     reference: { type: String },
     remarks: { type: String },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true },

@@ -8,7 +8,6 @@ export const seedCategories = async () => {
         console.log("🌱 Seeding Global Categories...".blue);
 
         for (const industry of BUSINESS_INDUSTRY_ARRAY) {
-            // Create a display name: 'fashion' -> 'Fashion'
             const name = industry.charAt(0).toUpperCase() + industry.slice(1).replace(/_/g, " ");
 
             const existing = await Category.findOne({
