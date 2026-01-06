@@ -378,7 +378,7 @@ export const createStaffService = async (
         scope: 'BUSINESS',
         businessUnit: businessUnitId,
         outlet: null,
-        status: 'active'
+        status: 'ACTIVE'
       };
       await UserBusinessAccess.create([accessPayload], { session });
     }
@@ -618,4 +618,80 @@ export const deleteUserService = async (userId: string) => {
 
   const result = await User.findByIdAndDelete(userId);
   return result;
+};
+
+export const createCompanyOwnerService = async (
+  companyData: { contactEmail: string; name: string; contactPhone: string },
+  companyId: string,
+  session: any
+) => {
+  // 1. Check if user already exists
+  const isUserExists = await User.findOne({ email: companyData.contactEmail }).session(session);
+
+  if (isUserExists) {
+    // If user exists, we might want to just assign them the role? 
+    // For now, simpler to throw error or maybe we can support linking existing user.
+    // Let's support linking if they exist (Industrial Standard: One user multiple companies?)
+    // But complexity increases. Let's throw error for now or generate unique email.
+    // Actually, user expects fresh company -> fresh owner.
+    // If Admin uses their own email, it might conflict.
+    // Default behavior: Create new user. If exists, maybe we skip creation and just assign access?
+    // Let's try to find if they have COMPANY_OWNER role?
+
+    // DECISION: For 'Create Company' flow, if email matches, we PROCEED to link them as Owner.
+    // This allows one person to own multiple companies.
+
+    // Find COMPANY_OWNER role
+    const ownerRole = await Role.findOne({ name: USER_ROLE.COMPANY_OWNER }).session(session);
+    if (!ownerRole) throw new AppError(500, "FATAL: COMPANY_OWNER role missing in system");
+
+    // Create Access
+    await UserBusinessAccess.create([{
+      user: isUserExists._id,
+      role: ownerRole._id,
+      scope: 'COMPANY',
+      company: companyId,
+      status: 'ACTIVE',
+      isPrimary: true
+    }], { session });
+
+    return isUserExists;
+  }
+
+  // 2. Create New User
+  const ownerRole = await Role.findOne({ name: USER_ROLE.COMPANY_OWNER }).session(session);
+  if (!ownerRole) throw new AppError(500, "FATAL: COMPANY_OWNER role missing in system");
+
+  const userId = await genereteCustomerId(companyData.contactEmail, ownerRole._id.toString());
+  const defaultPassword = appConfig.default_pass || "12345678";
+
+  const userData: Partial<IUser> = {
+    id: userId,
+    email: companyData.contactEmail,
+    phone: companyData.contactPhone,
+    password: defaultPassword,
+    status: "active", // Auto-active for owners
+    needsPasswordChange: true, // Force change on first login
+    name: {
+      firstName: companyData.name, // Use company name as first name equivalent initially
+      lastName: "Owner"
+    },
+    globalRoles: [], // Not a global system role
+    isEmailVerified: true // Trust Super Admin input
+  };
+
+  const newUser = await User.create([userData], { session });
+  if (!newUser || !newUser[0]) throw new AppError(500, "Failed to create Company Owner user");
+
+  // 3. Create Access
+  await UserBusinessAccess.create([{
+    user: newUser[0]._id,
+    role: ownerRole._id,
+    scope: 'COMPANY',
+    company: companyId,
+    status: 'ACTIVE',
+    isPrimary: true
+  }], { session });
+
+  return newUser[0];
 };

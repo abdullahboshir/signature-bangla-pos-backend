@@ -177,7 +177,7 @@ export const createUserController = catchAsync(async (req, res) => {
                     businessUnit: p.businessUnit,
                     outlet: p.outlet || null,
                     scope: p.outlet ? 'OUTLET' : 'BUSINESS',
-                    status: 'active',
+                    status: 'ACTIVE',
                     isPrimary: false // We can set first as primary later if needed
                 }));
 

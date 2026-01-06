@@ -3,6 +3,7 @@ import cluster from "cluster";
 import os from "os";
 import "colors";
 import app from "./app.js";
+import mongoose from "mongoose";
 import { connectDB } from "./core/database/mongoose/connection.ts";
 import { seedCategories } from "./core/database/mongoose/seeders/category.seeder.ts";
 import { runRolePermissionSeeder } from "./core/database/mongoose/seeders/authorization.seeder.ts";
@@ -23,11 +24,35 @@ async function bootstrap() {
       // 1. Connect DB for Primary (Needed for Seeders/Cron)
       await connectDB();
 
-      // 2. Run Seeders (Only once)
+      // 1.1 Pre-create collections & indexes (Critical for atomic seeding on fresh DB)
+      // Index creation cannot run inside a transaction.
+      console.log("📦 Initializing Collections & Indexes...".gray);
+      const models = mongoose.modelNames();
+      for (const modelName of models) {
+        await mongoose.model(modelName).createCollection();
+      }
+      console.log("✅ Collections Initialized".green);
+
+      // 2. Run Seeders (Atomic Transaction)
+      // 2. Run Seeders (Atomic Transaction removed for stability)
       console.log("🌱 Running Seeders...".blue);
-      await runRolePermissionSeeder();
-      await seedSuperAdmin();
-      await seedCategories();
+      // const session = await mongoose.startSession(); // Transaction disabled to avoid 'yielding disabled' write conflicts
+      try {
+        // session.startTransaction();
+
+        await runRolePermissionSeeder(); // No session
+        await seedSuperAdmin(); // No session
+        await seedCategories(); // No session
+
+        // await session.commitTransaction();
+        console.log("✅ All Seeders Completed Successfully".green.bold);
+      } catch (error: any) {
+        console.error("❌ Seeding Failed:", error.message);
+        // await session.abortTransaction();
+        // process.exit(1); // Don't exit dev server on seed fail, just log
+      } finally {
+        // session.endSession();
+      }
 
       // 3. Start Global Cron Jobs (Only once or centralized)
       console.log("⏰ Starting Maintenance Jobs...".blue);

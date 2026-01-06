@@ -6,6 +6,9 @@ import catchAsync from '../../../../core/utils/catchAsync.js';
 import { ApiResponse } from '../../../../core/utils/api-response.js';
 
 const createPackage = catchAsync(async (req: Request, res: Response) => {
+    if (!req.body) {
+        throw new Error("Request body is empty or undefined");
+    }
     const result = await PackageService.createPackage(req.body);
     ApiResponse.success(res, result, 'Package created successfully', httpStatus.CREATED);
 });

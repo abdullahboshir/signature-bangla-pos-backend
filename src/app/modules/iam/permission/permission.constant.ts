@@ -60,6 +60,7 @@ export const PermissionResourceType = [
   "expenseCategory",
 
   // System & Platform (New)
+  "businessUnit",
   "system",
   "setting",
   "backup",
@@ -77,6 +78,11 @@ export const PermissionResourceType = [
   "courier",
   "delivery",
   "parcel",
+  "driver",
+  "vehicle",
+  "track",
+  "dispatch",
+  "zone",
 
   // Reports & Analytics
   "report",
@@ -132,6 +138,13 @@ export const PermissionResourceType = [
   "currency",
   "zone",
   "blacklist",
+
+  // Governance
+  "shareholder",
+  "meeting",
+  "voting",
+  "compliance",
+  "license",
 ] as const;
 
 /* ------------------------------------------------------------------
@@ -175,6 +188,7 @@ export const PermissionActionType = [
 
 export const PermissionScope = [
   "global",        // system-level
+  "company",       // tenant/group level
   "business",      // business-wide
   "vendor",
   "outlet",
@@ -265,6 +279,7 @@ export const PermissionActionObj = PermissionActionType.reduce(
 
 export const ScopeRank: any = {
   global: 100,
+  company: 95, // Tenant Level
   business: 90,
   vendor: 80,
   branch: 70,

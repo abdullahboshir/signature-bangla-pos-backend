@@ -33,8 +33,7 @@ const openRegister = async (payload: Partial<ICashRegister>, userId: string) => 
         }
     }
 
-    // 2. Check if user already has an open register at this outlet?
-    // For now, simple check: is there ANY open register for this outlet?
+
     const existingOpen = await CashRegister.findOne({
         outlet: payload.outlet,
         status: 'open'
@@ -84,12 +83,6 @@ const closeRegister = async (id: string, payload: { closingBalance: number; rema
 const getMyActiveRegister = async (_userId: string, outletId?: string) => {
     const query: any = { status: 'open' };
     if (outletId) query.outlet = outletId;
-
-    // Maybe we want to find register opened by THIS user?
-    // query.openedBy = userId; 
-
-    // Or just any open register in the outlet?
-    // Let's assume one register per outlet for this phase.
 
     const result = await CashRegister.findOne(query)
         .populate("openedBy", "name")

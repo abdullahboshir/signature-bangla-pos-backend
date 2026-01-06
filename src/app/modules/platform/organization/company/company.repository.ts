@@ -1,8 +1,13 @@
 import { Company } from './company.model.ts';
 import type { ICompanyDocument } from './company.interface.ts';
+import { type ClientSession } from 'mongoose';
 
 export class CompanyRepository {
-    async create(data: Partial<ICompanyDocument>): Promise<ICompanyDocument> {
+    async create(data: Partial<ICompanyDocument>, session: ClientSession | null = null): Promise<ICompanyDocument> {
+        if (session) {
+            const [company] = await Company.create([data], { session });
+            return company;
+        }
         return await Company.create(data);
     }
 

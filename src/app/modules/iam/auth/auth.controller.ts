@@ -23,7 +23,7 @@ export const loginController = catchAsync(async (req, res) => {
     sameSite: appConfig.NODE_ENV === "production" ? "none" : "strict",
   });
 
-  console.log("LOGIN SUCCESS: Sending response to client");
+
 
   ApiResponse.success(
     res,
@@ -61,9 +61,9 @@ export const authMeController = catchAsync(async (req, res) => {
 
   const scope = businessUnitId ? { businessUnitId: String(businessUnitId) } : undefined;
 
-  console.log("Auth Me Scope:", scope);
+  // console.log("Auth Me Scope:", scope);
   const result = await authMeService(userInfo, scope);
-  console.log("Auth Me Result:", result);
+  // console.log("Auth Me Result:", result);
   ApiResponse.success(
     res,
     result,

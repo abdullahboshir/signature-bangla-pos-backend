@@ -1,11 +1,5 @@
 import { PermissionSourceObj } from "./permission.constant.ts";
 
-/**
- * Maps System Modules to specific Resources.
- * This is used to ENFORCE module-level access.
- * If a module is disabled (e.g. activeModules.erp = false), 
- * then access to these resources will be blocked even if the user has permission.
- */
 export const MODULE_RESOURCE_MAP = {
     // POS System
     pos: [
@@ -59,6 +53,20 @@ export const MODULE_RESOURCE_MAP = {
         PermissionSourceObj.purchaseReport,
         PermissionSourceObj.stockReport,
         PermissionSourceObj.profitLossReport,
+
+        // Logistics (Merged into ERP)
+        PermissionSourceObj.shipping,
+        PermissionSourceObj.delivery,
+        PermissionSourceObj.courier,
+        PermissionSourceObj.track,
+        PermissionSourceObj.dispatch,
+        PermissionSourceObj.parcel,
+        PermissionSourceObj.zone,
+        PermissionSourceObj.driver,
+        PermissionSourceObj.vehicle,
+
+        // Risk
+        PermissionSourceObj.fraudDetection,
     ],
 
     // HRM & Payroll
@@ -78,16 +86,12 @@ export const MODULE_RESOURCE_MAP = {
         PermissionSourceObj.plugin,
         PermissionSourceObj.seo,
         PermissionSourceObj.review,
-        PermissionSourceObj.promotion,
-        PermissionSourceObj.coupon,
-        PermissionSourceObj.adCampaign,
-        PermissionSourceObj.affiliate,
         PermissionSourceObj.content,
         PermissionSourceObj.landingPage,
         PermissionSourceObj.subscription,
     ],
 
-    // CRM & Support
+    // CRM & Marketing (Consolidated)
     crm: [
         PermissionSourceObj.customer,
         PermissionSourceObj.ticket,
@@ -99,29 +103,39 @@ export const MODULE_RESOURCE_MAP = {
         PermissionSourceObj.loyalty,
         PermissionSourceObj.emailTemplate,
         PermissionSourceObj.smsTemplate,
+        // Moved from E-Commerce
+        PermissionSourceObj.promotion,
+        PermissionSourceObj.coupon,
+        PermissionSourceObj.adCampaign,
+        PermissionSourceObj.affiliate,
     ],
 
-    // Logistics
-    logistics: [
-        PermissionSourceObj.shipping,
-        PermissionSourceObj.delivery,
-        PermissionSourceObj.courier,
-        PermissionSourceObj.track,
-        PermissionSourceObj.dispatch,
-        PermissionSourceObj.parcel,
-        PermissionSourceObj.zone,
+    // Governance & Compliance
+    governance: [
+        PermissionSourceObj.shareholder,
+        PermissionSourceObj.voting,
+        PermissionSourceObj.meeting,
+        PermissionSourceObj.compliance,
+    ],
+
+    // Integrations
+    integrations: [
+        PermissionSourceObj.webhook,
+        PermissionSourceObj.apiKey,
+    ],
+
+    // SaaS Platform
+    saas: [
+        PermissionSourceObj.license,
     ],
 } as const;
 
-/**
- * Reverse Lookup: Resource -> Module Name
- * Example: 'inventory' -> 'erp'
- */
+
 export const getModuleByResource = (resource: string): string | null => {
     for (const [moduleName, resources] of Object.entries(MODULE_RESOURCE_MAP)) {
         if ((resources as readonly string[]).includes(resource)) {
             return moduleName;
         }
     }
-    return null; // Resource is core/shared (like 'user', 'role', 'report')
+    return null;
 };

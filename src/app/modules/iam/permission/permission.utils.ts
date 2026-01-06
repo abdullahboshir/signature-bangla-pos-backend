@@ -71,12 +71,14 @@ export function isDenied(
  */
 export function buildContextFromRequest(req: any): IPermissionContext {
   const user = req.user;
-  
+
   return {
     user: {
       id: user?.id || user?.userId,
       roles: user?.roles || [],
+      companies: user?.companies || [], // Add companies to context
       businessUnits: user?.businessUnits || [],
+      outlets: user?.outlets || [], // Add outlets to context
       ...(user?.branches && { branches: user.branches }),
       ...(user?.vendorId && { vendorId: user.vendorId }),
       ...(user?.region && { region: user.region })
@@ -84,6 +86,9 @@ export function buildContextFromRequest(req: any): IPermissionContext {
     resource: {
       id: req.params.id || req.params.resourceId,
       ownerId: req.body?.ownerId || req.params.userId || req.params.ownerId,
+      companyId: req.body?.companyId || req.params.companyId || req.headers?.['x-company-id'], // Support Company context
+      businessUnitId: req.body?.businessUnitId || req.params.businessUnitId || req.params['business-unit'], // Add businessUnitId
+      outletId: req.body?.outletId || req.params.outletId || req.headers?.['x-outlet-id'], // Add outletId
       vendorId: req.body?.vendorId || req.params.vendorId || user?.vendorId,
       category: req.body?.category || req.params.category || req.query?.category,
       region: req.body?.region || req.params.region || user?.region
@@ -139,23 +144,39 @@ export function matchesScope(
   switch (permission.scope) {
     case 'global':
       return true;
-      
+
     case 'vendor':
       return context.user.vendorId === context.resource?.vendorId;
-      
-    case 'businessUnit':
-      return context.user.businessUnits.some(
-        (dept) => dept === context.resource?.region
-      );
-      
+
+    case 'company':
+      // Check if user has access to this company
+      return context.user.companies?.some(
+        (companyId: string) => companyId === context.resource?.companyId
+      ) ?? false;
+
+    case 'business': // Fixed: matches PermissionScope constant
+      // Check if user's businessUnits include the resource's businessUnit
+      return context.user.businessUnits?.some(
+        (bu: any) => {
+          const buId = bu?._id?.toString() || bu?.toString();
+          return buId === context.resource?.businessUnitId;
+        }
+      ) ?? false;
+
     case 'region':
       return context.user.region === context.resource?.region;
-      
+
     case 'branch':
       return context.user.branches?.some(
         (branch) => context.resource?.region === branch
       ) ?? false;
-      
+
+    case 'outlet':
+      // Check if user's outlets include the resource's outlet
+      return context.user.outlets?.some(
+        (outletId: string) => outletId === context.resource?.outletId
+      ) ?? false;
+
     default:
       return true;
   }

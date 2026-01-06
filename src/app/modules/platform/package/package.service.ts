@@ -4,8 +4,8 @@ import AppError from '../../../../shared/errors/app-error.js';
 import httpStatus from 'http-status';
 
 const createPackage = async (payload: IPackage) => {
-    // Generate slug from name if not provided
-    if (!payload.slug && payload.name) {
+    // Generate slug from name if not provided (Safety check)
+    if (payload && !payload.slug && payload.name) {
         payload.slug = payload.name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
     }
     const result = await Package.create(payload);

@@ -72,10 +72,30 @@ const RoleSchema = new Schema<IRole>(
       max: [100, 'Hierarchy level cannot exceed 100'],
       default: 1
     },
-    maxDataAccess: {
-      products: { type: Number, min: 0 },
-      orders: { type: Number, min: 0 },
-      customers: { type: Number, min: 0 }
+    limits: {
+      financial: {
+        maxDiscountPercent: { type: Number, default: 0, min: 0, max: 100 },
+        maxDiscountAmount: { type: Number, default: 0, min: 0 },
+        maxRefundAmount: { type: Number, default: 0, min: 0 },
+        maxCreditLimit: { type: Number, default: 0, min: 0 },
+        maxCashTransaction: { type: Number, default: 0, min: 0 }
+      },
+      dataAccess: {
+        maxProducts: { type: Number, default: 0, min: 0 },
+        maxOrders: { type: Number, default: 0, min: 0 },
+        maxCustomers: { type: Number, default: 0, min: 0 },
+        maxOutlets: { type: Number, default: 0, min: 0 },
+        maxWarehouses: { type: Number, default: 0, min: 0 }
+      },
+      security: {
+        maxLoginSessions: { type: Number, default: 1, min: 1 },
+        ipWhitelistEnabled: { type: Boolean, default: false },
+        loginTimeRestricted: { type: Boolean, default: false }
+      },
+      approval: {
+        maxPurchaseOrderAmount: { type: Number, default: 0, min: 0 },
+        maxExpenseEntry: { type: Number, default: 0, min: 0 }
+      }
     },
     createdBy: {
       type: Schema.Types.ObjectId,

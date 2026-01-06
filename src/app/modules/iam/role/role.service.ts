@@ -1,6 +1,7 @@
 
 import status from 'http-status';
 import { Role } from './role.model.js';
+import { RoleScope } from './role.constant.js';
 import type { IRole } from './role.interface.js';
 import { Permission } from '../permission/permission.model.js';
 import { PermissionGroup } from '../permission-group/permission-group.model.js';
@@ -10,6 +11,27 @@ import { bumpVersion } from '../../../../core/utils/cacheKeys.ts';
 
 
 class RoleService {
+  // Helper to validate scope consistency
+  private async validateScopeConsistency(roleScope: string, permissionIds: string[]) {
+    // 1. If Role is GLOBAL, it can have any permission. No check needed.
+    if (roleScope === RoleScope.GLOBAL) return;
+
+    // 2. If Role is BUSINESS or OUTLET, it CANNOT have GLOBAL permissions
+    if (permissionIds.length > 0) {
+      const globalPermissions = await Permission.find({
+        _id: { $in: permissionIds },
+        scope: 'global' // Assuming 'scope' field exists in Permission model and lowercased 'global' matches
+      }).select('id scope');
+
+      if (globalPermissions.length > 0) {
+        throw new AppError(
+          status.BAD_REQUEST,
+          `Security Violation: Cannot assign GLOBAL permissions to a ${roleScope} role. Denied permissions: ${globalPermissions.map(p => p.id).join(', ')}`
+        );
+      }
+    }
+  }
+
   // Get all roles
   async getAllRoles(query: any) {
     const filter: any = {};
@@ -32,8 +54,8 @@ class RoleService {
     // For now, enabling query parameter filtering is sufficient for frontend usage.
 
     const roles = await Role.find(filter)
-      // .populate('permissions', 'id resource action description') // OPTIMIZATION: Removed heavy population for list view
-      // .populate('permissionGroups')
+      .populate('permissions', 'id resource action description')
+      .populate('permissionGroups', 'name description')
       .populate('inheritedRoles', 'name description')
       .sort({ hierarchyLevel: -1, name: 1 });
 
@@ -73,6 +95,11 @@ class RoleService {
 
       if (validPermissions.length !== payload.permissions.length) {
         throw new AppError(status.BAD_REQUEST, 'Some permissions are invalid or inactive');
+      }
+
+      // ENFORCE SCOPE GUARD
+      if (payload.roleScope) {
+        await this.validateScopeConsistency(payload.roleScope, payload.permissions as unknown as string[]);
       }
     }
 
@@ -229,6 +256,9 @@ class RoleService {
     if (validPermissions.length !== permissionIds.length) {
       throw new AppError(status.BAD_REQUEST, 'Some permissions are invalid');
     }
+
+    // ENFORCE SCOPE GUARD
+    await this.validateScopeConsistency(role.roleScope, permissionIds);
 
     // Add permissions (avoid duplicates)
     const existingPermissions = role.permissions.map(p => p.toString());

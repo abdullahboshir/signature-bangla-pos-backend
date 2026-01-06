@@ -3,7 +3,8 @@ import { model, Schema, Types, Document } from "mongoose";
 export interface IUserBusinessAccess extends Document {
     user: Types.ObjectId;
     role: Types.ObjectId;
-    scope: 'GLOBAL' | 'BUSINESS' | 'OUTLET';
+    scope: 'GLOBAL' | 'COMPANY' | 'BUSINESS' | 'OUTLET';
+    company?: Types.ObjectId | null;
     businessUnit?: Types.ObjectId | null;
     outlet?: Types.ObjectId | null;
     restrictedModules?: string[];
@@ -13,7 +14,7 @@ export interface IUserBusinessAccess extends Document {
     assignedAt: Date;
     expiresAt?: Date;
     notes?: string;
-    dataScopeOverride?: 'own' | 'outlet' | 'business' | 'global' | null;
+    dataScopeOverride?: 'own' | 'outlet' | 'business' | 'company' | 'global' | null;
 }
 
 const UserBusinessAccessSchema = new Schema({
@@ -23,10 +24,11 @@ const UserBusinessAccessSchema = new Schema({
     // Scope Defines the Context Level
     scope: {
         type: String,
-        enum: ['GLOBAL', 'BUSINESS', 'OUTLET'],
+        enum: ['GLOBAL', 'COMPANY', 'BUSINESS', 'OUTLET'],
         required: true
     },
 
+    company: { type: Schema.Types.ObjectId, ref: 'Company', default: null, index: true },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', default: null },
     outlet: { type: Schema.Types.ObjectId, ref: 'Outlet', default: null },
 
@@ -55,7 +57,7 @@ const UserBusinessAccessSchema = new Schema({
     // Data Scope Override regarding this specific role assignment
     dataScopeOverride: {
         type: String,
-        enum: ['own', 'outlet', 'business', 'global', null],
+        enum: ['own', 'outlet', 'business', 'company', 'global', null],
         default: null
     },
 }, {
@@ -65,14 +67,20 @@ const UserBusinessAccessSchema = new Schema({
 });
 
 // Ensure a user doesn't have duplicate roles for the EXACT same context
-UserBusinessAccessSchema.index({ user: 1, role: 1, businessUnit: 1, outlet: 1 }, { unique: true });
+UserBusinessAccessSchema.index({ user: 1, role: 1, company: 1, businessUnit: 1, outlet: 1 }, { unique: true });
 
-// Validation Middleware to enforce scope rules
+// Validation Middleware to enforce scope rules (Strict Hierarchy)
 UserBusinessAccessSchema.pre('save', function (next) {
     if (this.scope === 'GLOBAL') {
-        if (this.businessUnit || this.outlet) return next(new Error('GLOBAL scope cannot have businessUnit or outlet assigned.'));
+        if (this.company || this.businessUnit || this.outlet) return next(new Error('GLOBAL scope cannot have company, businessUnit, or outlet assigned.'));
+    }
+    if (this.scope === 'COMPANY') {
+        if (!this.company) return next(new Error('COMPANY scope must have company assigned.'));
+        if (this.businessUnit || this.outlet) return next(new Error('COMPANY scope cannot have businessUnit or outlet assigned.'));
     }
     if (this.scope === 'BUSINESS') {
+        // A business unit MUST belong to a company, but we might not enforce company ID here if we rely on businessUnit.company linkage.
+        // However, for strict explicit access, let's require it if possible, or at least validate businessUnit.
         if (!this.businessUnit) return next(new Error('BUSINESS scope must have businessUnit assigned.'));
         if (this.outlet) return next(new Error('BUSINESS scope cannot have outlet assigned (use OUTLET scope).'));
     }

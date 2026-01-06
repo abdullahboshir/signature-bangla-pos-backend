@@ -27,9 +27,7 @@ const cashRegisterSchema = new Schema<ICashRegisterDocument>({
     timestamps: true
 });
 
-// Prevent multiple open registers for same outlet (optional logic, but good for data integrity)
-// cashRegisterSchema.index({ outlet: 1, status: 1 }, { unique: true, partialFilterExpression: { status: 'open' } });
-// Commenting out unique index for flexible testing, but recommended for production.
+
 
 cashRegisterSchema.index({ businessUnit: 1 });
 cashRegisterSchema.index({ outlet: 1 });

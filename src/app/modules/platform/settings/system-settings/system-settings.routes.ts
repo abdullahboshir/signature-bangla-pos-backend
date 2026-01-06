@@ -8,7 +8,7 @@ const router = express.Router();
 // Only Super Admin should be able to manage system settings
 router.get(
     '/',
-    auth(USER_ROLE.SUPER_ADMIN),
+    auth(),
     SystemSettingsController.getSystemSettings
 );
 

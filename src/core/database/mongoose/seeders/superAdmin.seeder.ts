@@ -6,11 +6,17 @@ import appConfig from "@shared/config/app.config.ts";
 
 const SUPER_ADMIN_ID = "super_admin";
 
-export const seedSuperAdmin = async () => {
-  let session: mongoose.ClientSession | null = null;
+export const seedSuperAdmin = async ({ session }: { session?: mongoose.ClientSession } = {}) => {
+  let localSession: mongoose.ClientSession | null = null;
+  const dbSession = session || (localSession = await mongoose.startSession());
+
+  // Only start transaction if we created the session (local)
+  if (session === undefined) {
+    dbSession.startTransaction();
+  }
 
   try {
-    console.log("� Seeding SUPER ADMIN");
+    console.log("🔒 Seeding SUPER ADMIN");
 
     if (mongoose.connection.readyState !== 1) {
       throw new Error("Database not connected");
@@ -28,10 +34,7 @@ export const seedSuperAdmin = async () => {
       throw new Error("Missing super admin credentials");
     }
 
-    session = await mongoose.startSession();
-    session.startTransaction();
-
-    const role = await Role.findOne({ name: USER_ROLE.SUPER_ADMIN }).session(session);
+    const role = await Role.findOne({ name: USER_ROLE.SUPER_ADMIN }).session(dbSession);
     if (!role) {
       throw new Error("SUPER_ADMIN role not found. Run role seeder first.");
     }
@@ -43,7 +46,7 @@ export const seedSuperAdmin = async () => {
         { id: "super-admin" },
         { email: appConfig.super_admin_email.toLowerCase() },
       ],
-    }).session(session);
+    }).session(dbSession);
 
     if (existing) {
       existing.isSuperAdmin = true;
@@ -55,9 +58,11 @@ export const seedSuperAdmin = async () => {
       // Ensure password is up to date with env
       existing.password = appConfig.super_admin_pass;
 
-      await existing.save({ session });
+      await existing.save({ session: dbSession });
 
-      await session.commitTransaction();
+      if (localSession) {
+        await localSession.commitTransaction();
+      }
       return { success: true, message: "Super admin synced" };
     }
 
@@ -88,16 +93,23 @@ export const seedSuperAdmin = async () => {
           },
         },
       ],
-      { session }
+      { session: dbSession }
     );
 
-    await session.commitTransaction();
+    if (localSession) {
+      await localSession.commitTransaction();
+    }
     return { success: true, message: "Super admin created" };
   } catch (err: any) {
-    if (session) await session.abortTransaction();
+    if (localSession) {
+      await localSession.abortTransaction();
+    }
+    // If external session, let caller handle abort
     throw err;
   } finally {
-    if (session) session.endSession();
+    if (localSession) {
+      localSession.endSession();
+    }
   }
 };
 

@@ -63,10 +63,10 @@ export async function buildUserPermissionsKey(
   scope?: { businessUnitId?: string; outletId?: string }
 ): Promise<string> {
   const composite = await buildCompositeVersion(['role', 'permission', 'permission-group']);
-
   let scopeKey = 'global';
   if (scope?.businessUnitId) scopeKey = `bu:${scope.businessUnitId}`;
   if (scope?.outletId) scopeKey = `outlet:${scope.outletId}`;
 
-  return `permissions:${composite}:user:${userId}:scope:${scopeKey}`;
+  // Force invalidation by appending a suffix
+  return `permissions:${composite}:v3:user:${userId}:scope:${scopeKey}`;
 }

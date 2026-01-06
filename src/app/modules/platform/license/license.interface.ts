@@ -3,7 +3,7 @@ import { Model, Types } from 'mongoose';
 export type ILicenseStatus = 'active' | 'expired' | 'revoked';
 
 export interface ILicense {
-    clientId: Types.ObjectId; // BusinessUnit ID or User ID
+    clientId: Types.ObjectId;
     clientName?: string; // Cache for display
     packageId: Types.ObjectId;
     key: string;

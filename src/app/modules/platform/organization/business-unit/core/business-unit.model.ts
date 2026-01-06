@@ -297,6 +297,12 @@ businessUnitCoreSchema.virtual("daysSinceCreation").get(function (this: IBusines
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 });
 
+businessUnitCoreSchema.virtual("outlets", {
+  ref: "Outlet",
+  localField: "_id",
+  foreignField: "businessUnit"
+});
+
 
 const BusinessUnit = model<IBusinessUnitCoreDocument, IBusinessUnitCoreModel>(
   "BusinessUnit",

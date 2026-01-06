@@ -1,40 +1,59 @@
 export const USER_ROLE = {
-  // System / Platform
+  // ========================================================================
+  // 1. PLATFORM LEVEL (Global Scope)
+  // These roles manage the SaaS system itself, not specific businesses.
+  // ========================================================================
   SUPER_ADMIN: 'super-admin',
   PLATFORM_ADMIN: 'platform-admin',
   PLATFORM_SUPPORT: 'platform-support',
   PLATFORM_FINANCE: 'platform-finance',
   PLATFORM_AUDITOR: 'platform-auditor',
-  PLATFORM_DEVOPS: 'platform-devops', // New
-  PLATFORM_ANALYST: 'platform-analyst', // New
-  PLATFORM_MARKETING: 'platform-marketing', // New
-  PLATFORM_LEGAL: 'platform-legal', // New
-  SYSTEM_INTEGRATION: 'system-integration', // New
+  PLATFORM_DEVOPS: 'platform-devops',
+  PLATFORM_ANALYST: 'platform-analyst',
+  PLATFORM_MARKETING: 'platform-marketing',
+  PLATFORM_LEGAL: 'platform-legal',
+  SYSTEM_INTEGRATION: 'system-integration', // For API/Webhooks
 
-  // Business Level
-  ADMIN: 'admin', // Keeping legacy key for compatibility, but represents Business Admin
-  BUSINESS_ADMIN: 'business-admin', // Explicit alias if needed, or we can migrate to this
-  MANAGER: 'manager',
-  BUSINESS_MANAGER: 'business-manager', // Explicit alias
+  // ========================================================================
+  // 2. COMPANY LEVEL (Tenant/Group Scope)
+  // These roles manage the entire company/holding group across all business units.
+  // ========================================================================
+  COMPANY_OWNER: 'company-owner', // Group Chairman/MD - manages entire company
 
-  // Department / Function
+  // ========================================================================
+  // 3. BUSINESS LEVEL (Business Unit Scope)
+  // These roles operate WITHIN a specific Business Unit (vertical).
+  // ========================================================================
+  // Core Management
+  ADMIN: 'admin',            // The Business Unit Owner / Main Administrator
+  MANAGER: 'manager',        // Operations Manager (General)
+  OUTLET_MANAGER: 'outlet-manager', // Specific Outlet Manager
+
+  // Department Heads
+  HR_MANAGER: 'hr-manager',
+  STORE_KEEPER: 'store-keeper',
+  PURCHASE_MANAGER: 'purchase-manager',
+  ASSET_MANAGER: 'asset-manager',
+  BUSINESS_ANALYST: 'business-analyst',
+  BUSINESS_FINANCE: 'business-finance',
   ACCOUNTANT: 'accountant',
-  HR_MANAGER: 'hr_manager',
-  STORE_KEEPER: 'store_keeper',
-  PURCHASE_MANAGER: 'purchase_manager', // New
-  ASSET_MANAGER: 'asset_manager', // New
+  SHAREHOLDER: 'shareholder',
 
-  // Outlet / Frontline
+  // Frontline / Outlet Operations
   CASHIER: 'cashier',
-  SALES_ASSOCIATE: 'sales_associate',
+  SALES_ASSOCIATE: 'sales-associate',
   DELIVERY_MAN: 'delivery-man',
-  SUPPORT_AGENT: 'support-agent', // Maybe business support?
+  SUPPORT_AGENT: 'support-agent', // Business-level support staff
   STAFF: 'staff',
-  WAITER: 'waiter', // New
-  KITCHEN_STAFF: 'kitchen_staff', // New
-  PACKAGING_STAFF: 'packaging_staff', // New
 
-  // End User
+  // Hospitality / Service Specific
+  WAITER: 'waiter',
+  KITCHEN_STAFF: 'kitchen-staff',
+  PACKAGING_STAFF: 'packaging-staff',
+
+  // ========================================================================
+  // 4. EXTERNAL / END USERS
+  // ========================================================================
   VENDOR: 'vendor',
   CUSTOMER: 'customer',
   GUEST: 'guest',

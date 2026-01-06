@@ -4,10 +4,37 @@ import { CompanyRepository } from "./company.repository.ts";
 
 const companyRepository = new CompanyRepository();
 
+import { startSession } from "mongoose";
+import { createCompanyOwnerService } from "../../../iam/user/user.service.ts"; // Check path relative to modules/platform/organization/company
+
 export class CompanyService {
     async createCompany(data: Partial<ICompanyDocument>): Promise<ICompanyDocument> {
-        // Add any business logic here before saving
-        return await companyRepository.create(data);
+        const session = await startSession();
+        session.startTransaction();
+        try {
+            // 1. Create Company
+            const company = await companyRepository.create(data, session);
+
+            if (!data.contactEmail || !data.name || !data.contactPhone) {
+                // Should be validated by Zod by now, but safe check
+                throw new Error("Missing required company contact details for owner creation");
+            }
+
+            // 2. Create Company Owner User
+            await createCompanyOwnerService({
+                contactEmail: data.contactEmail,
+                name: data.name,
+                contactPhone: data.contactPhone
+            }, company.id, session);
+
+            await session.commitTransaction();
+            return company;
+        } catch (error) {
+            await session.abortTransaction();
+            throw error;
+        } finally {
+            await session.endSession();
+        }
     }
 
     async getAllCompanies(): Promise<ICompanyDocument[]> {

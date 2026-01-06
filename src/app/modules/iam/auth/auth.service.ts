@@ -13,8 +13,7 @@ import { PermissionService } from '../permission/permission.service.js';
 const permissionService = new PermissionService();
 
 export const loginService = async (email: string, pass: string) => {
-  // OPTIMIZATION: Replaced heavy User.isUserExists with lightweight query
-  console.time('[AUTH-PERF] Login User Fetch');
+
   const isUserExists = await User.findOne({ email })
     .select('+password email status isDeleted needsPasswordChange isSuperAdmin _id id globalRoles businessAccess')
     .populate([
@@ -28,12 +27,12 @@ export const loginService = async (email: string, pass: string) => {
         populate: [
           { path: 'role', select: 'name title isSystemRole' },
           { path: 'businessUnit', select: 'name id slug' },
-          { path: 'outlet', select: 'name' }
+          { path: 'outlet', select: 'name _id' }
         ]
       }
     ])
     .lean();
-  console.timeEnd('[AUTH-PERF] Login User Fetch');
+
 
   if (!isUserExists) {
     throw new AppError(status.NOT_FOUND, "User is not found");
@@ -64,11 +63,10 @@ export const loginService = async (email: string, pass: string) => {
 
 
 
-  // Extract unique business units from access assignments
+
   const buMap = new Map();
   if (isUserExists.businessAccess) {
     isUserExists.businessAccess.forEach((assign: any) => {
-      // Ensure businessUnit is populated before accessing properties
       if (assign.businessUnit && typeof assign.businessUnit === 'object' && 'name' in assign.businessUnit) {
         buMap.set(assign.businessUnit._id.toString(), {
           _id: assign.businessUnit._id,
@@ -79,32 +77,78 @@ export const loginService = async (email: string, pass: string) => {
       }
     });
   }
+
+
+
   const businessUnits = Array.from(buMap.values());
 
-  const jwtPayload: any = {
-    userId: isUserExists?._id,
-    id: isUserExists?.id,
-    email: isUserExists?.email,
-    businessUnits,
-    status: isUserExists?.status,
-    role: allRoles, // Derived from businessAccess
-    isSuperAdmin: isUserExists?.isSuperAdmin // Explicit flag check
-    // Add context to token payload if needed, or keep token light. Keeping token light.
+
+  // Calculate Context Information for Frontend Redirection
+  let businessAccessInfo: any = {
+    primary: null,
+    available: []
   };
 
-  const accessToken = createToken(
-    jwtPayload,
-    appConfig.jwt_access_secret as string,
-    appConfig.jwt_access_expired_in as string
-  );
+  if (isUserExists) {
+    if (isUserExists.businessAccess && isUserExists.businessAccess.length > 0) {
+      // 1. Identify Primary Context
+      const primaryAccess = isUserExists.businessAccess.find((a: any) => a.isPrimary) || isUserExists.businessAccess[0];
 
-  const refreshToken = createToken(
-    jwtPayload,
-    appConfig.jwt_refresh_secret as string,
-    appConfig.jwt_refresh_expired_in as string
-  );
+      if (primaryAccess) {
+        businessAccessInfo.primary = {
+          businessUnit: {
+            _id: primaryAccess.businessUnit?._id,
+            slug: primaryAccess.businessUnit?.slug,
+            id: primaryAccess.businessUnit?.id
+          },
+          outlet: primaryAccess.outlet ? {
+            _id: primaryAccess.outlet._id,
+            name: primaryAccess.outlet.name
+          } : null,
+          role: primaryAccess.role?.name
+        };
+      }
 
-  // console.log('userrrrrrrrrrrrrrrrrrrrrrrrr', isUserExists.businessUnits)
+      // 2. Group Available Contexts
+      const buMap = new Map();
+
+      isUserExists.businessAccess.forEach((access: any) => {
+        if (!access.businessUnit) return;
+
+        const buId = access.businessUnit._id.toString();
+
+        if (!buMap.has(buId)) {
+          buMap.set(buId, {
+            businessUnit: {
+              _id: access.businessUnit._id,
+              slug: access.businessUnit.slug,
+              id: access.businessUnit.id,
+              name: access.businessUnit.name
+            },
+            outlets: [],
+            outletCount: 0
+          });
+        }
+
+        const entry = buMap.get(buId);
+
+        if (access.outlet) {
+          entry.outlets.push({
+            _id: access.outlet._id,
+            name: access.outlet.name
+          });
+          entry.outletCount++;
+        }
+      });
+
+      businessAccessInfo.available = Array.from(buMap.values());
+    }
+  }
+
+
+
+
+  // jwtPayload moved below to include context info
 
 
   // const userInfo = {
@@ -127,10 +171,35 @@ export const loginService = async (email: string, pass: string) => {
   //   businessUnits: businessUnits // sending full object array
   // }
 
+
+  // Inject Context Info into JWT Payload
+  const jwtPayload: any = {
+    userId: isUserExists?._id,
+    id: isUserExists?.id,
+    email: isUserExists?.email,
+    businessUnits,
+    status: isUserExists?.status,
+    role: allRoles, // Derived from businessAccess
+    isSuperAdmin: isUserExists?.isSuperAdmin,
+    context: businessAccessInfo
+  };
+
+  const accessToken = createToken(
+    jwtPayload,
+    appConfig.jwt_access_secret as string,
+    appConfig.jwt_access_expired_in as string
+  );
+
+  const refreshToken = createToken(
+    jwtPayload,
+    appConfig.jwt_refresh_secret as string,
+    appConfig.jwt_refresh_expired_in as string
+  );
+
   return {
     accessToken,
     refreshToken,
-    needsPasswordChange: isUserExists?.needsPasswordChange,
+    needsPasswordChange: isUserExists?.needsPasswordChange
   };
 };
 
@@ -268,9 +337,7 @@ export const authMeService = async (
       (res as any).hierarchyLevel = authContext.hierarchyLevel;
       (res as any).dataScope = authContext.dataScope;
 
-      // 3. Resolve Effective Permissions (Pre-compute ALLOWED actions)
-      // This logic mirrors permission.service.ts::resolvePermissions but for ALL keys at once.
-      // a. Group by "resource:action"
+
       const permMap = new Map<string, any[]>();
 
       authContext.permissions.forEach(p => {
@@ -315,6 +382,68 @@ export const authMeService = async (
       delete (res as any).createdBy;
       delete (res as any).updatedBy;
       delete (res as any).password;
+
+      // --- INJECT CONTEXT INFO (Same as Login) ---
+      let businessAccessInfo: any = {
+        primary: null,
+        available: []
+      };
+
+      if (res.businessAccess && res.businessAccess.length > 0) {
+        // 1. Identify Primary Context
+        const primaryAccess = res.businessAccess.find((a: any) => a.isPrimary) || res.businessAccess[0];
+
+        if (primaryAccess) {
+          businessAccessInfo.primary = {
+            businessUnit: {
+              _id: primaryAccess.businessUnit?._id,
+              slug: primaryAccess.businessUnit?.slug,
+              id: primaryAccess.businessUnit?.id
+            },
+            outlet: primaryAccess.outlet ? {
+              _id: primaryAccess.outlet._id,
+              name: primaryAccess.outlet.name
+            } : null,
+            role: primaryAccess.role?.name
+          };
+        }
+
+        // 2. Group Available Contexts
+        const buMap = new Map();
+
+        res.businessAccess.forEach((access: any) => {
+          if (!access.businessUnit) return;
+
+          const buId = access.businessUnit._id.toString();
+
+          if (!buMap.has(buId)) {
+            buMap.set(buId, {
+              businessUnit: {
+                _id: access.businessUnit._id,
+                slug: access.businessUnit.slug,
+                id: access.businessUnit.id,
+                name: access.businessUnit.name
+              },
+              outlets: [],
+              outletCount: 0
+            });
+          }
+
+          const entry = buMap.get(buId);
+
+          if (access.outlet) {
+            entry.outlets.push({
+              _id: access.outlet._id,
+              name: access.outlet.name
+            });
+            entry.outletCount++;
+          }
+        });
+
+        businessAccessInfo.available = Array.from(buMap.values());
+      }
+      (res as any).context = businessAccessInfo;
+      // -------------------------------------------
 
       // CRITICAL OPTIMIZATION: Remove large populated arrays
       // The frontend generally uses 'effectivePermissions' for UI access.

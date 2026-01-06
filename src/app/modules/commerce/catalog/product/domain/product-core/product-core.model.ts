@@ -346,9 +346,24 @@ productSchema.statics['getProductAnalytics'] = async function (_productId: strin
   return {};
 };
 
+// ==================== MIDDLEWARE ====================
+
+productSchema.pre(/^find/, function (next) {
+  // Allow explicit querying for deleted documents if needed (e.g. Trash bin)
+  if ((this as any).getQuery().isDeleted === true) {
+    return next();
+  }
+  // Otherwise, filter them out
+  this.where({ isDeleted: { $ne: true } });
+  next();
+});
+
+export const Product = model<IProductDocument, IProductModel>('Product', productSchema);
+
+// Update Aggregations manually since middleware doesn't easily apply to them safely
 productSchema.statics['getCategoryStats'] = async function (categoryId: string | Types.ObjectId): Promise<any> {
   return this.aggregate([
-    { $match: { categories: categoryId, 'statusInfo.status': 'published' } },
+    { $match: { categories: categoryId, 'statusInfo.status': 'published', isDeleted: { $ne: true } } },
     {
       $group: {
         _id: '$statusInfo.status',
@@ -362,7 +377,7 @@ productSchema.statics['getCategoryStats'] = async function (categoryId: string |
 
 productSchema.statics['getBrandStats'] = async function (brandId: string | Types.ObjectId): Promise<any> {
   return this.aggregate([
-    { $match: { brands: brandId, 'statusInfo.status': 'published' } },
+    { $match: { brands: brandId, 'statusInfo.status': 'published', isDeleted: { $ne: true } } },
     {
       $group: {
         _id: null,
@@ -376,7 +391,7 @@ productSchema.statics['getBrandStats'] = async function (brandId: string | Types
 
 productSchema.statics['getVendorStats'] = async function (vendorId: string | Types.ObjectId): Promise<any> {
   return this.aggregate([
-    { $match: { 'vendor.id': vendorId } },
+    { $match: { 'vendor.id': vendorId, isDeleted: { $ne: true } } },
     {
       $group: {
         _id: '$statusInfo.status',
@@ -394,7 +409,8 @@ productSchema.statics['getSalesReport'] = async function (startDate: Date, endDa
     {
       $match: {
         'statusInfo.status': 'published',
-        createdAt: { $gte: startDate, $lte: endDate }
+        createdAt: { $gte: startDate, $lte: endDate },
+        isDeleted: { $ne: true }
       }
     },
     {
@@ -406,5 +422,3 @@ productSchema.statics['getSalesReport'] = async function (startDate: Date, endDa
     }
   ]);
 };
-
-export const Product = model<IProductDocument, IProductModel>('Product', productSchema);

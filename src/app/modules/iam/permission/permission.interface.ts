@@ -72,7 +72,9 @@ export interface IPermissionContext {
   user: {
     id: string;
     roles: string[];
+    companies?: string[]; // Added
     businessUnits: string[];
+    outlets?: string[]; // Added for outlet-level scope
     branches?: string[];
     vendorId?: string;
     region?: string;
@@ -80,6 +82,9 @@ export interface IPermissionContext {
   resource?: {
     id?: string;
     ownerId?: string;
+    companyId?: string; // Added
+    businessUnitId?: string; // Added for business scope
+    outletId?: string; // Added for outlet scope
     vendorId?: string;
     category?: string;
     region?: string;
@@ -104,15 +109,10 @@ export interface IPermissionResult {
   resolvedBy?: string;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
+export interface IAuthorizationContext {
+  permissions: IPermission[];
+  maxDataAccess: any;
+  hierarchyLevel: number;
+  dataScope: string;
+  scopeRank: number;
+}

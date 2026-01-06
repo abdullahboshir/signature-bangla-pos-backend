@@ -11,6 +11,11 @@ export interface ISystemSettings {
         ecommerce: boolean;
         crm: boolean;
         logistics: boolean;
+        finance: boolean;
+        marketing: boolean;
+        integrations: boolean;
+        governance: boolean;
+        saas: boolean;
     };
 }
 

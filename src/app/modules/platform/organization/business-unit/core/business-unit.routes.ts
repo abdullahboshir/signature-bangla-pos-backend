@@ -36,7 +36,15 @@ router.delete(
 
 router.get(
   '/:businessUnitId',
-  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  auth(
+    USER_ROLE.SUPER_ADMIN,
+    USER_ROLE.ADMIN,
+    USER_ROLE.MANAGER,
+    USER_ROLE.OUTLET_MANAGER,
+    USER_ROLE.SALES_ASSOCIATE,
+    USER_ROLE.CASHIER,
+    USER_ROLE.STAFF
+  ),
   getBusinessUnitByIdController
 );
 
@@ -49,7 +57,15 @@ router.patch(
 
 router.get(
   '/:businessUnitId/dashboard',
-  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.MANAGER),
+  auth(
+    USER_ROLE.SUPER_ADMIN,
+    USER_ROLE.ADMIN,
+    USER_ROLE.MANAGER,
+    USER_ROLE.OUTLET_MANAGER,
+    USER_ROLE.SALES_ASSOCIATE,
+    USER_ROLE.CASHIER,
+    USER_ROLE.STAFF
+  ),
   getBusinessUnitStatsController
 );
 

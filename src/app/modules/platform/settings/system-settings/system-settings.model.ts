@@ -13,7 +13,8 @@ const systemSettingsSchema = new Schema<ISystemSettingsDocument, ISystemSettings
     },
     licenseKey: {
         type: String,
-        default: null
+        default: null,
+        select: false
     },
     enabledModules: {
         pos: { type: Boolean, default: true },
@@ -21,7 +22,12 @@ const systemSettingsSchema = new Schema<ISystemSettingsDocument, ISystemSettings
         hrm: { type: Boolean, default: true },
         ecommerce: { type: Boolean, default: true },
         crm: { type: Boolean, default: true },
-        logistics: { type: Boolean, default: true }
+        logistics: { type: Boolean, default: true },
+        finance: { type: Boolean, default: true },
+        marketing: { type: Boolean, default: true },
+        integrations: { type: Boolean, default: true },
+        governance: { type: Boolean, default: false },
+        saas: { type: Boolean, default: true }
     }
 }, {
     timestamps: true
@@ -41,7 +47,12 @@ systemSettingsSchema.statics['getSettings'] = async function () {
                 hrm: true,
                 ecommerce: true,
                 crm: true,
-                logistics: true
+                logistics: true,
+                finance: true,
+                marketing: true,
+                integrations: true,
+                governance: false,
+                saas: true
             }
         });
     }

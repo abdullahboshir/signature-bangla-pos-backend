@@ -11,7 +11,7 @@ export const ResourceTypeSchema = z.enum([
   'payout', 'chat', 'fraudDetection', 'auditLog', 'seo', 'notification', 'loyalty', 'subscription', 'affiliate', 'adCampaign',
   'attendance', 'leave', 'payroll', 'department', 'designation', 'asset', 'expense', 'budget', 'account', 'transaction',
   'cashRegister', 'terminal', 'currency', 'language', 'zone', 'backup', 'apiKey', 'webhook', 'wishlist', 'cart',
-  'theme', 'plugin', 'emailTemplate', 'smsTemplate'
+  'theme', 'plugin', 'emailTemplate', 'smsTemplate', 'shareholder', 'meeting', 'voting', 'compliance'
 ]);
 
 export const PermissionActionTypeSchema = z.enum([
@@ -21,7 +21,7 @@ export const PermissionActionTypeSchema = z.enum([
 ]);
 
 export const PermissionScopeSchema = z.enum([
-  'global', 'vendor', 'category', 'region', 'business',
+  'global', 'company', 'vendor', 'category', 'region', 'business',
   'team', 'branch', 'warehouse', 'department', 'self',
   'channel', 'segment', 'outlet', 'businessUnit' // keeping businessUnit for backward compat if needed, but 'business' is key
 ]);

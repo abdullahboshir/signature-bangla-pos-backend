@@ -43,7 +43,12 @@ const companySchema = new Schema<ICompanyDocument, ICompanyModel>(
             hrm: { type: Boolean, default: false },
             ecommerce: { type: Boolean, default: false },
             crm: { type: Boolean, default: false },
-            logistics: { type: Boolean, default: false }
+            logistics: { type: Boolean, default: false },
+            governance: { type: Boolean, default: false }, // Shareholders, Voting, Meetings, Compliance
+            finance: { type: Boolean, default: false },
+            marketing: { type: Boolean, default: false },
+            integrations: { type: Boolean, default: false },
+            saas: { type: Boolean, default: true } // Access to billing/subscription UI
         },
     },
     {

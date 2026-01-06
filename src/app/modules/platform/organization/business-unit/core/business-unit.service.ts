@@ -351,7 +351,11 @@ export class BusinessUnitService {
       // For now, standard filter is enough.
 
       // 2. Build Query
-      const buQuery = new QueryBuilder(BusinessUnit.find(), query)
+      // 2. Build Query
+      const buQuery = new QueryBuilder(
+        BusinessUnit.find().populate({ path: 'outlets', select: 'name code address phone email city' }),
+        query
+      )
         .search(['branding.name', 'slug'])
         .filter()
         .sort()

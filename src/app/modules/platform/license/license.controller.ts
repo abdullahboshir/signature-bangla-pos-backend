@@ -45,9 +45,16 @@ const revokeLicense = catchAsync(async (req: Request, res: Response) => {
 });
 
 
+const updateLicense = catchAsync(async (req: Request, res: Response) => {
+    const id = req.params['id'] as string;
+    const result = await LicenseService.updateLicense(id, req.body);
+    ApiResponse.success(res, result, 'License updated successfully', httpStatus.OK);
+});
+
 export const LicenseController = {
     createLicense,
     getAllLicenses,
     validateLicense,
-    revokeLicense
+    revokeLicense,
+    updateLicense
 };

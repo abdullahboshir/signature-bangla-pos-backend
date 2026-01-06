@@ -10,13 +10,21 @@ import { Permission } from "@app/modules/iam/permission/permission.model.ts";
 import { Role } from "@app/modules/iam/role/role.model.ts";
 import { RoleScope } from "@app/modules/iam/role/role.constant.ts";
 import { USER_ROLE } from "@app/modules/iam/user/user.constant.ts";
+import { getModuleByResource } from "@app/modules/iam/permission/module.constant.ts";
 import mongoose, { Types } from "mongoose";
 
 const SYSTEM_USER_ID = new Types.ObjectId(
   process.env["system_user_id"] || "66f000000000000000000000"
 );
 
-export async function runRolePermissionSeeder({ clean = false } = {}) {
+const DEFAULT_LIMITS = {
+  financial: { maxDiscountPercent: 0, maxDiscountAmount: 0, maxRefundAmount: 0, maxCreditLimit: 0, maxCashTransaction: 0 },
+  dataAccess: { maxProducts: 0, maxOrders: 0, maxCustomers: 0, maxOutlets: 0, maxWarehouses: 0 },
+  security: { maxLoginSessions: 1, ipWhitelistEnabled: false, loginTimeRestricted: false },
+  approval: { maxPurchaseOrderAmount: 0, maxExpenseEntry: 0 }
+};
+
+export async function runRolePermissionSeeder({ clean = false, session }: { clean?: boolean, session?: mongoose.ClientSession } = {}) {
   console.log("--- Seeder started ---");
 
   if (mongoose.connection.readyState !== 1) {
@@ -27,58 +35,74 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
   // CLEAN
   // --------------------------
   if (clean) {
-    await Permission.deleteMany({});
-    await PermissionGroup.deleteMany({});
-    await Role.deleteMany({});
+    const options = session ? { session } : {};
+    await Permission.deleteMany({}, options);
+    await PermissionGroup.deleteMany({}, options);
+    await Role.deleteMany({}, options);
     console.log("✅ Cleaned permissions, permission groups and roles.");
   }
 
   // --------------------------
-  // STEP 1: PERMISSIONS (Incremental)
+  // STEP 1: PERMISSIONS (Upsert via BulkWrite for Atomicity)
   // --------------------------
-  const existingPermissions = await Permission.find({}).select("id").lean();
-  const existingPermissionIds = new Set(existingPermissions.map((p: any) => p.id));
+  console.log("   Authorized Seeding: Syncing Permissions...");
 
-  const permissionsToInsert: any[] = [];
+  const permissionOps = [];
 
   for (const resource of PermissionResourceType as readonly ResourceType[]) {
     for (const action of PermissionActionType as readonly ActionType[]) {
       const id = `${resource}_${action}`.toUpperCase();
-      if (!existingPermissionIds.has(id)) {
-        permissionsToInsert.push({
-          id,
-          resource,
-          action,
-          scope: "global",
-          effect: "allow",
-          attributes: [],
-          conditions: [],
-          resolver: { strategy: "first-match", fallback: "deny" },
-          description: `Permission to ${action} ${resource}`,
-          isActive: true,
-          createdBy: SYSTEM_USER_ID,
-          updatedBy: SYSTEM_USER_ID,
-        });
+
+      // Determine default scope based on resource type (Heuristic)
+      let defaultScope = "business"; // Most are business level
+      if (['system', 'plugin', 'currency', 'language', 'theme', 'backup', 'auditLog'].includes(resource)) {
+        defaultScope = "global";
+      } else if (['pos', 'cashRegister', 'terminal'].includes(resource)) {
+        defaultScope = "outlet";
       }
+
+      permissionOps.push({
+        updateOne: {
+          filter: { id },
+          update: {
+            $set: {
+              resource,
+              action,
+              module: getModuleByResource(resource) || 'system',
+              scope: defaultScope,
+              effect: "allow",
+              description: `Permission to ${action} ${resource}`,
+              isActive: true,
+              updatedBy: SYSTEM_USER_ID,
+            },
+            $setOnInsert: {
+              attributes: [],
+              conditions: [],
+              resolver: { strategy: "first-match", fallback: "deny" },
+              createdBy: SYSTEM_USER_ID,
+            }
+          },
+          upsert: true
+        }
+      });
     }
   }
 
-  if (permissionsToInsert.length) {
+  if (permissionOps.length > 0) {
     try {
-      await Permission.insertMany(permissionsToInsert, { ordered: false });
-      console.log(`✅ Inserted ${permissionsToInsert.length} new permissions`);
-    } catch (error: any) {
-      if (error.code === 11000) {
-        console.warn("⚠️ Duplicate permissions skipped during seeding (Harmless race condition).");
-      } else {
-        throw error;
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < permissionOps.length; i += BATCH_SIZE) {
+        const batch = permissionOps.slice(i, i + BATCH_SIZE);
+        await Permission.bulkWrite(batch as any, session ? { session } : {});
+        console.log(`✅ Synced permissions batch ${i / BATCH_SIZE + 1} (${batch.length} items)`);
       }
+    } catch (error: any) {
+      console.error("❌ Permission Sync Failed:", error.message || error);
+      throw error;
     }
-  } else {
-    console.log("✅ Permissions already up to date");
   }
 
-  const allPermissions = await Permission.find({}).lean();
+  const allPermissions = await Permission.find({}).session(session || null).lean();
   const allPermissionIds = allPermissions.map((p) => p._id);
 
   // --------------------------
@@ -88,10 +112,7 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
 
   for (const perm of allPermissions) {
     if (!perm || !perm.resource || !perm._id) continue;
-
-    // Explicitly cast resource to string to satisfy TS index signature if needed
     const resourceName = perm.resource as string;
-
     if (!permissionsByResource[resourceName]) {
       permissionsByResource[resourceName] = [];
     }
@@ -103,74 +124,112 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
   for (const [resource, permIds] of Object.entries(permissionsByResource)) {
     const name = `${resource.charAt(0).toUpperCase()}${resource.slice(1)} Management`;
 
-    const group =
-      (await PermissionGroup.findOne({ name })) ||
-      (await PermissionGroup.create({
-        name,
-        description: `Manage ${resource}`,
-        permissions: permIds,
-        resolver: { strategy: "first-match", priority: 5, fallback: "deny" },
-        isActive: true,
-        createdBy: SYSTEM_USER_ID,
-        updatedBy: SYSTEM_USER_ID,
-      }));
+    let group = await PermissionGroup.findOne({ name }).session(session || null);
 
-    // Ensure permissions are up to date (Check before save to avoid redundant writes/audits)
-    const currentPerms = group.permissions.map((p: any) => p.toString()).sort().join(',');
-    const newPerms = permIds.map((p: any) => p.toString()).sort().join(',');
-
-    if (currentPerms !== newPerms) {
-      group.permissions = permIds as any;
-      await group.save();
-      // console.log(`🔄 Updated group permissions for ${name}`);
+    if (!group) {
+      // Safe creation
+      try {
+        const created = await PermissionGroup.create([{
+          name,
+          module: getModuleByResource(resource) || 'system',
+          description: `Manage ${resource}`,
+          permissions: permIds,
+          resolver: { strategy: "first-match", priority: 5, fallback: "deny" },
+          isActive: true,
+          createdBy: SYSTEM_USER_ID,
+          updatedBy: SYSTEM_USER_ID,
+        }], session ? { session } : {}) as any;
+        group = created[0];
+      } catch (e) {
+        console.log(`⚠️ Group creation failed for ${name}, might exist.`, e);
+        continue;
+      }
+    } else {
+      // Update check
+      if (group.permissions.length !== permIds.length) {
+        group.permissions = permIds as any;
+        await group.save(session ? { session } : {});
+      }
     }
 
-    resourceGroupsMap[resource] = group._id;
+    if (group) {
+      resourceGroupsMap[resource] = group._id as Types.ObjectId;
+    }
   }
 
   // Full Access (Super Admin)
-  const fullAccessGroup =
-    (await PermissionGroup.findOne({ name: "Full Access Group" })) ||
-    (await PermissionGroup.create({
+  let fullAccessGroup = await PermissionGroup.findOne({ name: "Full Access Group" }).session(session || null);
+  if (!fullAccessGroup) {
+    // Create if missing
+    const created = await PermissionGroup.create([{
       name: "Full Access Group",
+      module: 'system',
       description: "All permissions",
       permissions: allPermissionIds,
       resolver: { strategy: "cumulative", priority: 10, fallback: "deny" },
       isActive: true,
       createdBy: SYSTEM_USER_ID,
       updatedBy: SYSTEM_USER_ID,
-    }));
-
-  const currentFullPerms = fullAccessGroup.permissions.map((p: any) => p.toString()).sort().join(',');
-  const newFullPerms = allPermissionIds.map((p: any) => p.toString()).sort().join(',');
-
-  if (currentFullPerms !== newFullPerms) {
-    fullAccessGroup.permissions = allPermissionIds as any;
-    await fullAccessGroup.save();
+    }], session ? { session } : {}) as any;
+    fullAccessGroup = created[0];
+  } else {
+    // Sync permissions
+    if (fullAccessGroup.permissions.length !== allPermissionIds.length) {
+      fullAccessGroup.permissions = allPermissionIds as any;
+      await fullAccessGroup.save(session ? { session } : {});
+    }
   }
+  const fullGroupId = fullAccessGroup!._id as Types.ObjectId;
 
-  const fullGroupId = fullAccessGroup._id;
-
+  // Helper to safely get group ID
   const get = (r: string) => resourceGroupsMap[r] || null;
 
   // --------------------------
-  // STEP 3: ROLES (INDUSTRIAL STANDARD)
+  // STEP 3: ROLES (INDUSTRIAL STANDARD & RESTORED)
   // --------------------------
   /* 
    * SYSTEM / GLOBAL ROLES (Platform Level) 
    * Scope: GLOBAL
    */
-  /* 
-   * SYSTEM / GLOBAL ROLES (Platform Level) 
-   * Scope: GLOBAL
-   */
-  const roleConfigs = [
+
+  const roleConfigs: any[] = [
+    // 🔴 LEVEL 1: SUPER-ADMIN (Platform)
     {
       name: USER_ROLE.SUPER_ADMIN,
-      permissionGroups: [fullGroupId],
+      permissionGroups: [
+        get(PermissionSourceObj.system),
+        get(PermissionSourceObj.setting),
+        get(PermissionSourceObj.backup),
+        get(PermissionSourceObj.auditLog),
+        get(PermissionSourceObj.apiKey),
+        get(PermissionSourceObj.webhook),
+        get(PermissionSourceObj.plugin),
+        get(PermissionSourceObj.theme),
+        get(PermissionSourceObj.language),
+        get(PermissionSourceObj.currency),
+        get(PermissionSourceObj.zone),
+        get(PermissionSourceObj.blacklist),
+        get(PermissionSourceObj.analytics),
+        get(PermissionSourceObj.report),
+        get(PermissionSourceObj.dashboard),
+        get(PermissionSourceObj.account),
+        get(PermissionSourceObj.subscription),
+        get(PermissionSourceObj.payout),
+        get(PermissionSourceObj.settlement),
+        get(PermissionSourceObj.reconciliation),
+        get(PermissionSourceObj.transaction),
+        get(PermissionSourceObj.user),
+        get(PermissionSourceObj.role),
+        get(PermissionSourceObj.permission),
+        get(PermissionSourceObj.businessUnit),
+        get(PermissionSourceObj.notification),
+        get(PermissionSourceObj.emailTemplate),
+        get(PermissionSourceObj.smsTemplate),
+      ].filter(Boolean),
       hierarchyLevel: 100,
       roleScope: RoleScope.GLOBAL,
       isDefault: false,
+      limits: DEFAULT_LIMITS
     },
     {
       name: USER_ROLE.PLATFORM_ADMIN,
@@ -180,6 +239,7 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
         get(PermissionSourceObj.system),
         get(PermissionSourceObj.setting),
         get(PermissionSourceObj.report),
+        get(PermissionSourceObj.billing),
       ].filter(Boolean),
       hierarchyLevel: 95,
       roleScope: RoleScope.GLOBAL,
@@ -270,44 +330,130 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
     },
 
     /* 
-     * BUSINESS UNIT ROLES (Tenant Level) 
+     * COMPANY ROLES (Tenant Level) 
+     * Scope: COMPANY 
+     */
+    {
+      name: USER_ROLE.COMPANY_OWNER, // Group Chairman/MD
+      permissionGroups: [
+        get(PermissionSourceObj.businessUnit), // Manage Business Units
+        get(PermissionSourceObj.user), // Manage Admin Users
+        get(PermissionSourceObj.role), // Manage Roles
+        get(PermissionSourceObj.report), // All Reports
+        get(PermissionSourceObj.dashboard), // Global Dashboard
+        get(PermissionSourceObj.subscription), // Manage SaaS Subscription
+        get(PermissionSourceObj.billing), // Pay SaaS Fees
+        // Governance
+        get(PermissionSourceObj.shareholder),
+        get(PermissionSourceObj.voting),
+        get(PermissionSourceObj.meeting),
+        get(PermissionSourceObj.compliance),
+      ].filter(Boolean),
+      hierarchyLevel: 95,
+      roleScope: RoleScope.COMPANY, // New Scope
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.SHAREHOLDER,
+      permissionGroups: [
+        get(PermissionSourceObj.voting),
+        get(PermissionSourceObj.meeting),
+        get(PermissionSourceObj.compliance),
+        get(PermissionSourceObj.report),
+        get(PermissionSourceObj.dashboard),
+      ].filter(Boolean),
+      hierarchyLevel: 80,
+      roleScope: RoleScope.COMPANY, // Changed default to COMPANY so they can be global investors by default, or overridden to BUSINESS in assignment
+      isDefault: false,
+    },
+
+    /* 
+     * BUSINESS UNIT ROLES (Vertical Level) 
      * Scope: BUSINESS 
      */
     {
       name: USER_ROLE.ADMIN, // Business Owner/Admin
       permissionGroups: [
+        get(PermissionSourceObj.businessUnit), // Added for Settings access
         get(PermissionSourceObj.product),
+        get(PermissionSourceObj.category),
+        get(PermissionSourceObj.brand),
+        get(PermissionSourceObj.attribute),
+        get(PermissionSourceObj.attributeGroup),
+        get(PermissionSourceObj.unit),
+        get(PermissionSourceObj.tax),
         get(PermissionSourceObj.order),
+        get(PermissionSourceObj.quotation),
+        get(PermissionSourceObj.invoice),
+        get(PermissionSourceObj.return),
+        get(PermissionSourceObj.review),
+        get(PermissionSourceObj.coupon),
+        get(PermissionSourceObj.promotion),
+        get(PermissionSourceObj.abandonedCart),
+        get(PermissionSourceObj.customer),
+        get(PermissionSourceObj.wishlist),
+        get(PermissionSourceObj.cart),
         get(PermissionSourceObj.inventory),
+        get(PermissionSourceObj.warehouse),
         get(PermissionSourceObj.purchase),
         get(PermissionSourceObj.supplier),
-        get(PermissionSourceObj.customer),
-        get(PermissionSourceObj.user),
-        get(PermissionSourceObj.role),
-        get(PermissionSourceObj.report),
-        get(PermissionSourceObj.account), // Valid
-        get(PermissionSourceObj.payment), // Valid
-        get(PermissionSourceObj.expense), // Valid
-        get(PermissionSourceObj.unit), // Valid general setting
-        get(PermissionSourceObj.tax), // Valid general setting
-        // get(PermissionSourceObj.leave), // Invalid? Checking... "leave" not in list. 
-        // get(PermissionSourceObj.attendance), // Invalid?
+        get(PermissionSourceObj.vendor),
+        get(PermissionSourceObj.adjustment),
+        get(PermissionSourceObj.transfer),
+        get(PermissionSourceObj.outlet),
         get(PermissionSourceObj.storefront),
+        get(PermissionSourceObj.terminal),
+        get(PermissionSourceObj.cashRegister),
+        get(PermissionSourceObj.payment),
+        get(PermissionSourceObj.expense),
+        get(PermissionSourceObj.expenseCategory),
+        get(PermissionSourceObj.budget),
+        get(PermissionSourceObj.account),
+        get(PermissionSourceObj.transaction),
+        get(PermissionSourceObj.staff),
+        get(PermissionSourceObj.attendance),
+        get(PermissionSourceObj.leave),
+        get(PermissionSourceObj.payroll),
+        get(PermissionSourceObj.department),
+        get(PermissionSourceObj.designation),
+        get(PermissionSourceObj.asset),
+        get(PermissionSourceObj.role),
+        get(PermissionSourceObj.user),
+        get(PermissionSourceObj.affiliate),
+        get(PermissionSourceObj.adCampaign),
+        get(PermissionSourceObj.loyalty),
+        get(PermissionSourceObj.subscription),
+        get(PermissionSourceObj.notification),
+        get(PermissionSourceObj.emailTemplate),
+        get(PermissionSourceObj.smsTemplate),
+        get(PermissionSourceObj.report),
+        get(PermissionSourceObj.salesReport),
+        get(PermissionSourceObj.purchaseReport),
+        get(PermissionSourceObj.stockReport),
+        get(PermissionSourceObj.profitLossReport),
+        get(PermissionSourceObj.dashboard),
+        get(PermissionSourceObj.shipping),
+        get(PermissionSourceObj.delivery),
+        get(PermissionSourceObj.role),
+        get(PermissionSourceObj.user),
+
+        // Governance permissions REMOVED for Business Admin (Manager)
+        // Managers manage operations, not the Board of Directors.
       ].filter(Boolean),
       hierarchyLevel: 90,
       roleScope: RoleScope.BUSINESS,
       isDefault: false,
     },
     {
-      name: USER_ROLE.MANAGER,
+      name: USER_ROLE.MANAGER, // General Manager
       permissionGroups: [
         get(PermissionSourceObj.product),
         get(PermissionSourceObj.order),
         get(PermissionSourceObj.inventory),
-        get(PermissionSourceObj.purchase),
         get(PermissionSourceObj.customer),
         get(PermissionSourceObj.report),
         get(PermissionSourceObj.expense),
+        get(PermissionSourceObj.staff),
       ].filter(Boolean),
       hierarchyLevel: 70,
       roleScope: RoleScope.BUSINESS,
@@ -354,11 +500,31 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
       name: USER_ROLE.HR_MANAGER,
       permissionGroups: [
         get(PermissionSourceObj.user),
-        // get(PermissionSourceObj.department), // Invalid
-        // get(PermissionSourceObj.designation), // Invalid
-        // get(PermissionSourceObj.attendance), // Invalid
-        // get(PermissionSourceObj.leave), // Invalid
-        // get(PermissionSourceObj.payroll), // Invalid
+        get(PermissionSourceObj.staff),
+      ].filter(Boolean),
+      hierarchyLevel: 60,
+      roleScope: RoleScope.BUSINESS,
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.BUSINESS_ANALYST,
+      permissionGroups: [
+        get(PermissionSourceObj.report),
+        get(PermissionSourceObj.product), // View access usually
+      ].filter(Boolean),
+      hierarchyLevel: 60,
+      roleScope: RoleScope.BUSINESS,
+      isDefault: false,
+    },
+    {
+      name: USER_ROLE.BUSINESS_FINANCE,
+      permissionGroups: [
+        get(PermissionSourceObj.account),
+        get(PermissionSourceObj.transaction),
+        get(PermissionSourceObj.payment),
+        get(PermissionSourceObj.invoice),
+        get(PermissionSourceObj.expense),
+        get(PermissionSourceObj.report),
       ].filter(Boolean),
       hierarchyLevel: 60,
       roleScope: RoleScope.BUSINESS,
@@ -369,6 +535,20 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
      * OUTLET ROLES (Context: Outlet)
      * Scope: OUTLET
      */
+    {
+      name: USER_ROLE.OUTLET_MANAGER,
+      permissionGroups: [
+        get(PermissionSourceObj.order),
+        get(PermissionSourceObj.inventory),
+        get(PermissionSourceObj.customer),
+        get(PermissionSourceObj.report), // Outlet specific report
+        get(PermissionSourceObj.staff), // Manage outlet staff
+        get(PermissionSourceObj.storefront),
+      ].filter(Boolean),
+      hierarchyLevel: 45, // Higher than Store Keeper (40)
+      roleScope: RoleScope.OUTLET,
+      isDefault: false,
+    },
     {
       name: USER_ROLE.STORE_KEEPER,
       permissionGroups: [
@@ -394,6 +574,10 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
       hierarchyLevel: 30,
       roleScope: RoleScope.OUTLET,
       isDefault: false,
+      limits: {
+        ...DEFAULT_LIMITS,
+        financial: { ...DEFAULT_LIMITS.financial, maxDiscountPercent: 5, maxRefundAmount: 500 } // POS Constraint Example
+      }
     },
     {
       name: USER_ROLE.SALES_ASSOCIATE,
@@ -447,7 +631,7 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
     {
       name: USER_ROLE.STAFF, // General Staff
       permissionGroups: [
-        // Attendance/Leave not in core list yet?
+        get(PermissionSourceObj.attendance),
       ].filter(Boolean),
       hierarchyLevel: 15,
       roleScope: RoleScope.BUSINESS,
@@ -489,6 +673,7 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
             isDefault: cfg.isDefault,
             isActive: true,
             updatedBy: SYSTEM_USER_ID,
+            limits: cfg.limits || DEFAULT_LIMITS
           },
           $setOnInsert: {
             createdBy: SYSTEM_USER_ID,
@@ -499,12 +684,12 @@ export async function runRolePermissionSeeder({ clean = false } = {}) {
     }));
 
     if (bulkOps.length > 0) {
-      const result = await Role.bulkWrite(bulkOps as any);
+      const result = await Role.bulkWrite(bulkOps as any, session ? { session } : {});
       console.log(`✅ Roles synced: ${result.upsertedCount} created, ${result.modifiedCount} updated.`);
     }
   } catch (error) {
     console.error("❌ Failed to seed roles atomically:", error);
-    throw error; // Re-throw to stop the process if seeded partially
+    throw error;
   }
 
   console.log("--- Seeder finished successfully ---");

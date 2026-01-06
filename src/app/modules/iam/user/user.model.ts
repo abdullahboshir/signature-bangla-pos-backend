@@ -240,10 +240,9 @@ UserSchema.statics["isUserExists"] = async function (email: string): Promise<IUs
         model: 'Permission',
         select: 'resource action scope effect conditions resolver attributes'
       },
-      // Virtual Business Access (Scoped Roles)
       {
         path: 'businessAccess',
-        select: 'role scope businessUnit outlet status isPrimary dataScopeOverride',
+        select: 'role scope company businessUnit outlet status isPrimary dataScopeOverride',
         populate: [
           {
             path: 'role',
@@ -254,6 +253,7 @@ UserSchema.statics["isUserExists"] = async function (email: string): Promise<IUs
               populate: { path: 'permissions', model: 'Permission', select: 'resource action scope effect conditions resolver attributes' }
             }
           },
+          { path: 'company', select: 'name id' },
           { path: 'businessUnit', select: 'name slug id' },
           { path: 'outlet', select: 'name' }
         ]

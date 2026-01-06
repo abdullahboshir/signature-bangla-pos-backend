@@ -24,6 +24,7 @@ const getAllOutlets = catchAsync(async (req: Request, res: Response) => {
 
 const getOutletById = catchAsync(async (req: Request, res: Response) => {
     const id = req.params['id'];
+    console.log("IDddddddddddddddddddddddd", req.params, id);
     if (!id) {
         throw new Error("ID is required");
     }

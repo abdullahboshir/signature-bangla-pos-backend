@@ -6,28 +6,21 @@ import type {
   IPermissionCondition,
   IPermissionContext,
   IPermissionResult,
+  IAuthorizationContext,
 } from './permission.interface.js';
 import { CacheManager as _CacheManager } from "../../../../core/utils/caching/cache-manager.js";
 import logger from '@core/utils/logger.ts';
 import { Role } from '../role/role.model.ts';
 import { Permission } from './permission.model.ts';
 
-export interface IAuthorizationContext {
-  permissions: IPermission[];
-  maxDataAccess: {
-    products: number;
-    orders: number;
-    customers: number;
-  };
-  hierarchyLevel: number;
-}
+
 
 
 
 const MAX_ROLE_HIERARCHY_DEPTH = 15;
 const _CACHE_TTL_SECONDS = 600; // 10 minutes
-const _ALL_ROLES_CACHE_KEY = 'sys:iam:all-active-roles:v2'; // Changed key to force refresh
-const _ALL_ROLES_TTL = 60; // Reduced to 60 seconds for faster updates during dev
+const _ALL_ROLES_CACHE_KEY = 'sys:iam:all-active-roles:v3'; // Bumped to v3 for debugging
+const _ALL_ROLES_TTL = 30; // Short TTL for debug
 
 export class PermissionService {
   /* ---------------------------------------------------------------------- */
@@ -40,12 +33,13 @@ export class PermissionService {
     context: IPermissionContext,
   ): Promise<IPermissionResult> {
     const effectivePermissions = await this.getUserPermissions(user, context.scope);
-    const matching = this.findMatchingPermissions(
+    const matching = this.filterPermissionsByScopeAndRules(
       effectivePermissions,
       resource,
       action,
-      context,
+      context
     );
+
     return this.resolvePermissions(matching, context);
   }
 
@@ -78,10 +72,12 @@ export class PermissionService {
     const userId = user.id || (user as any)._id?.toString();
     if (!userId) {
       // Should not happen for authenticated users
-      return { permissions: [], maxDataAccess: { products: 0, orders: 0, customers: 0 }, hierarchyLevel: 0 };
+      return { permissions: [], maxDataAccess: { products: 0, orders: 0, customers: 0 }, hierarchyLevel: 0, scopeRank: 0, dataScope: 'own' };
+
     }
 
-    const _cacheKey = await buildUserPermissionsKey(userId, targetScope);
+    const _cacheKey = (await buildUserPermissionsKey(userId, targetScope)) + ':force_v7';
+    console.log(`[AUTH-DEBUG] Cache Key Generated: ${_cacheKey}`);
 
     // Attempt cache fetch
     const cached = await _CacheManager.get<IAuthorizationContext>(_cacheKey);
@@ -102,8 +98,11 @@ export class PermissionService {
       const result = {
         permissions: [{ action: '*', resource: '*', effect: 'allow' } as any],
         hierarchyLevel: 100,
-        maxDataAccess: { products: 0, orders: 0, customers: 0 } // 0 = Unlimited
+        scopeRank: 100, // Global Scope
+        maxDataAccess: { products: 0, orders: 0, customers: 0 }, // 0 = Unlimited
+        dataScope: 'global'
       };
+
       // Cache this lightweight result
       await _CacheManager.set(_cacheKey, result, _CACHE_TTL_SECONDS);
       return result;
@@ -208,11 +207,14 @@ export class PermissionService {
 
     // 2. Collect Business Access (Scoped Roles)
     if (Array.isArray(user.businessAccess)) {
+      console.log(`[AUTH-DEBUG] BusinessAccess Count: ${user.businessAccess.length}`);
+      console.log(`[AUTH-DEBUG] TargetScope:`, targetScope);
+
       user.businessAccess.forEach(assignment => {
         if (!assignment.role) return;
 
         // Check Status
-        if (assignment.status && assignment.status !== 'active') return;
+        if (assignment.status && assignment.status.toLowerCase() !== 'active') return;
 
         // Check Expiry
         if (assignment.expiresAt) {
@@ -237,30 +239,41 @@ export class PermissionService {
           ? ((assignment.outlet as any)._id || assignment.outlet).toString()
           : null;
 
+        console.log(`[AUTH-DEBUG] Checking Assignment: Role=${(assignment.role as any).name}, BU=${buId}, Outlet=${outletId}`);
+
         // 1. Global Role (No specific scope assigned) - usually handled by globalRoles, but check just in case
         if (!buId && !outletId) {
           includeRole = true;
+          console.log(`[AUTH-DEBUG] -> Global Role (No Scope)`);
         }
         // 2. Scoped Role
         else {
           if (targetScope) {
             // Check Business Unit match
-            if (buId && targetScope.businessUnitId && buId === targetScope.businessUnitId) {
+            const targetBuId = targetScope.businessUnitId?.toString();
+            if (buId && targetBuId && buId === targetBuId) {
               includeRole = true;
+              console.log(`[AUTH-DEBUG] -> BU Match: ${buId} === ${targetBuId}`);
             }
             // Check Outlet match
-            if (outletId && targetScope.outletId && outletId === targetScope.outletId) {
+            const targetOutletId = targetScope.outletId?.toString();
+            if (outletId && targetOutletId && outletId === targetOutletId) {
               includeRole = true;
+              console.log(`[AUTH-DEBUG] -> Outlet Match: ${outletId} === ${targetOutletId}`);
             }
           } else {
             // No specific scope requested (Union context) -> Include all roles
             includeRole = true;
+            console.log(`[AUTH-DEBUG] -> Union Context (No Target Scope)`);
           }
         }
 
         if (includeRole) {
           const roleId = ((assignment.role as any).forceId || (assignment.role as any)._id || (assignment.role as any).id || assignment.role).toString();
           roleIds.add(roleId);
+          console.log(`[AUTH-DEBUG] -> Role Added: ${roleId}`);
+        } else {
+          console.log(`[AUTH-DEBUG] -> Role SKIPPED`);
         }
       });
     }
@@ -343,15 +356,24 @@ export class PermissionService {
 
         // Recurse for Inherited Roles (using the map)
         if (Array.isArray(role.inheritedRoles)) {
-          role.inheritedRoles.forEach((parent: any) => {
-            const parentId = (parent && parent._id) ? String(parent._id) : String(parent);
-            collect(parentId, depth + 1);
+          role.inheritedRoles.forEach((ir: any) => {
+            const irId = ir._id?.toString() || ir.toString();
+            collect(irId, depth + 1);
           });
         }
       };
 
-      // Start collection from user's assigned roles
-      roleIds.forEach(id => collect(id));
+      // Start Collection
+      console.log(`[AUTH-DEBUG] Starting permission collection for ${roleIds.size} roles:`, Array.from(roleIds));
+      roleIds.forEach(rid => collect(rid));
+      console.log(`[AUTH-DEBUG] Collection complete. Total Permissions Found: ${permissions.length}`);
+      console.log(`[AUTH-DEBUG] Unique Resources: ${new Set(permissions.map(p => p.resource)).size}`);
+
+      // Performance Audit
+      const duration = Date.now() - (logicStart || 0);
+      if (duration > 200) {
+        logger.warn(`[PERF] Permission Calculation took ${duration}ms`);
+      }
     }
 
     // 3️⃣ Derive Data Scope from Permissions (if higher than override)
@@ -383,8 +405,23 @@ export class PermissionService {
       permissions,
       hierarchyLevel: maxHierarchy,
       maxDataAccess: finalLimits,
-      dataScope: finalDataScope
+      dataScope: finalDataScope,
+      scopeRank: maxScopeLevel > 100 ? 100 : (maxScopeLevel < 0 ? 0 : maxScopeLevel * 20) // Approximation if exact map missing, or fix below
     };
+
+    // Fix ScopeRank mapping based on dataScope string
+    const SCOPE_RANK_MAP: Record<string, number> = {
+      'global': 100,
+      'business': 80,
+      'warehouse': 60,
+      'outlet': 50,
+      'department': 40,
+      'staff': 20,
+      'self': 10,
+      'own': 10
+    };
+    result.scopeRank = SCOPE_RANK_MAP[finalDataScope] || 10;
+
 
     // Cache the result
     await _CacheManager.set(_cacheKey, result, _CACHE_TTL_SECONDS);
@@ -421,16 +458,26 @@ export class PermissionService {
   /* ---------------------------------------------------------------------- */
   /* 3️⃣  PRIVATE helpers – matching, condition evaluation, resolution        */
   /* ---------------------------------------------------------------------- */
-  private findMatchingPermissions(
+
+  /**
+   * Filter and Match permissions based on:
+   * 1. Resource & Action match
+   * 2. Golden Rules (Platform ≠ Business)
+   * 3. ScopeRank Restrictions
+   * 4. Conditions
+   */
+  private filterPermissionsByScopeAndRules(
     permissions: IPermission[],
     resource: string,
     action: string,
     context: IPermissionContext,
   ): IPermission[] {
-    return permissions.filter((p) => {
+
+    return permissions.filter((p: any) => {
       if (!p.isActive) return false;
-      if (p.resource !== resource) return false;
-      if (p.action !== action) return false;
+      if (p.resource !== resource && p.resource !== '*') return false; // Support wildcard resource
+      if (p.action !== action && p.action !== '*') return false;       // Support wildcard action
+
 
       if (Array.isArray(p.conditions) && p.conditions.length) {
         return this.evaluateConditions(p.conditions, context);
@@ -438,6 +485,9 @@ export class PermissionService {
       return true;
     });
   }
+
+
+
 
   private evaluateConditions(
     conditions: IPermissionCondition[],

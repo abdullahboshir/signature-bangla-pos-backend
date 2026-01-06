@@ -9,7 +9,29 @@ const generateLicenseKey = (): string => {
     return crypto.randomBytes(8).toString('hex').toUpperCase().match(/.{1,4}/g)?.join('-') || 'KEY-ERROR';
 };
 
+import { Types } from 'mongoose';
+import BusinessUnit from '../organization/business-unit/core/business-unit.model.ts';
+
+
 const createLicense = async (payload: Partial<ILicense>) => {
+    // Resolve Client ID (Slug to ObjectId)
+    if (payload.clientId) {
+        const isObjectId = Types.ObjectId.isValid(payload.clientId.toString());
+        if (!isObjectId) {
+            const businessUnit = await BusinessUnit.findOne({ slug: payload.clientId });
+            if (!businessUnit) {
+                throw new AppError(httpStatus.NOT_FOUND, `Business Unit with slug '${payload.clientId}' not found`);
+            }
+            payload.clientId = businessUnit._id;
+            payload.clientName = businessUnit.name;
+        } else if (!payload.clientName) {
+            const businessUnit = await BusinessUnit.findById(payload.clientId);
+            if (businessUnit) {
+                payload.clientName = businessUnit.name;
+            }
+        }
+    }
+
     // Generate Key
     payload.key = generateLicenseKey();
     payload.activationDate = new Date();
@@ -38,9 +60,32 @@ const revokeLicense = async (id: string) => {
     return result;
 };
 
+const updateLicense = async (id: string, payload: Partial<ILicense>) => {
+    // Prevent key update safely
+    delete payload.key;
+
+    // Resolve Client ID if changed (Optional)
+    if (payload.clientId) {
+        // Logic similar to create can be reused or simplified
+        const isObjectId = Types.ObjectId.isValid(payload.clientId.toString());
+        if (!isObjectId) {
+            const businessUnit = await BusinessUnit.findOne({ slug: payload.clientId });
+            if (businessUnit) {
+                payload.clientId = businessUnit._id;
+                payload.clientName = businessUnit.name;
+            }
+        }
+    }
+
+    const result = await License.findByIdAndUpdate(id, payload, { new: true });
+    if (!result) throw new AppError(httpStatus.NOT_FOUND, 'License not found');
+    return result;
+};
+
 export const LicenseService = {
     createLicense,
     getAllLicenses,
     getLicenseByKey,
+    updateLicense,
     revokeLicense
 };
