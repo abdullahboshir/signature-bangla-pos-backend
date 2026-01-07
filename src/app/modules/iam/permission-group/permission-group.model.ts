@@ -1,5 +1,6 @@
 // modules/permission/permissionGroup.model.ts
 import mongoose, { Schema } from 'mongoose';
+import { PermissionModule } from '../permission/permission.resource.js';
 import type { IPermissionGroup } from '../permission/permission.interface.js';
 
 const PermissionGroupSchema = new Schema<IPermissionGroup>({
@@ -12,7 +13,7 @@ const PermissionGroupSchema = new Schema<IPermissionGroup>({
   // Which module this group belongs to (e.g. 'erp' for Inventory, 'pos' for Sales)
   module: {
     type: String,
-    enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system'],
+    enum: [...PermissionModule],
     required: true,
     index: true
   },

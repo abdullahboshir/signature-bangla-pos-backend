@@ -2,7 +2,7 @@ import { Leave, type ILeave } from "./leave.model.ts";
 import AppError from "@shared/errors/app-error.ts";
 import httpStatus from "http-status";
 import { Types } from "mongoose";
-import BusinessUnit from "@app/modules/platform/organization/business-unit/core/business-unit.model.ts";
+import { BusinessUnit } from "@app/modules/platform/index.js";
 
 
 const createLeave = async (userId: string, payload: Partial<ILeave>) => {

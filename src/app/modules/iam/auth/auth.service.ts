@@ -23,11 +23,12 @@ export const loginService = async (email: string, pass: string) => {
       },
       {
         path: 'businessAccess',
-        select: 'role scope businessUnit outlet status isPrimary',
+        select: 'role scope businessUnit outlet company status isPrimary',
         populate: [
           { path: 'role', select: 'name title isSystemRole' },
           { path: 'businessUnit', select: 'name id slug' },
-          { path: 'outlet', select: 'name _id' }
+          { path: 'outlet', select: 'name _id' },
+          { path: 'company', select: 'name id slug activeModules' }
         ]
       }
     ])
@@ -96,11 +97,17 @@ export const loginService = async (email: string, pass: string) => {
 
       if (primaryAccess) {
         businessAccessInfo.primary = {
-          businessUnit: {
-            _id: primaryAccess.businessUnit?._id,
-            slug: primaryAccess.businessUnit?.slug,
-            id: primaryAccess.businessUnit?.id
-          },
+          businessUnit: primaryAccess.businessUnit ? {
+            _id: primaryAccess.businessUnit._id,
+            slug: primaryAccess.businessUnit.slug,
+            id: primaryAccess.businessUnit.id
+          } : null,
+          company: primaryAccess.company ? {
+            _id: primaryAccess.company._id,
+            name: primaryAccess.company.name,
+            slug: primaryAccess.company.slug
+          } : null,
+          scope: primaryAccess.scope,
           outlet: primaryAccess.outlet ? {
             _id: primaryAccess.outlet._id,
             name: primaryAccess.outlet.name
@@ -113,18 +120,23 @@ export const loginService = async (email: string, pass: string) => {
       const buMap = new Map();
 
       isUserExists.businessAccess.forEach((access: any) => {
-        if (!access.businessUnit) return;
-
-        const buId = access.businessUnit._id.toString();
+        // Business Context vs Company Context handling
+        const buId = access.businessUnit?._id.toString() || access.company?._id?.toString() || 'none';
 
         if (!buMap.has(buId)) {
           buMap.set(buId, {
-            businessUnit: {
+            businessUnit: access.businessUnit ? {
               _id: access.businessUnit._id,
               slug: access.businessUnit.slug,
               id: access.businessUnit.id,
               name: access.businessUnit.name
-            },
+            } : null,
+            company: access.company ? {
+              _id: access.company._id,
+              name: access.company.name,
+              slug: access.company.slug
+            } : null,
+            scope: access.scope,
             outlets: [],
             outletCount: 0
           });
@@ -307,14 +319,15 @@ export const authMeService = async (
     },
     {
       path: 'businessAccess',
-      select: 'role scope businessUnit outlet status isPrimary dataScopeOverride',
+      select: 'role scope businessUnit outlet company status isPrimary dataScopeOverride',
       populate: [
         {
           path: 'role',
           select: 'name title isSystemRole' // No nested permissions needed 
         },
         { path: 'businessUnit', select: 'name id slug' },
-        { path: 'outlet', select: 'name' }
+        { path: 'outlet', select: 'name' },
+        { path: 'company', select: 'name id slug activeModules' }
       ]
     }
   ]).lean();
@@ -395,11 +408,17 @@ export const authMeService = async (
 
         if (primaryAccess) {
           businessAccessInfo.primary = {
-            businessUnit: {
-              _id: primaryAccess.businessUnit?._id,
-              slug: primaryAccess.businessUnit?.slug,
-              id: primaryAccess.businessUnit?.id
-            },
+            businessUnit: primaryAccess.businessUnit ? {
+              _id: primaryAccess.businessUnit._id,
+              slug: primaryAccess.businessUnit.slug,
+              id: primaryAccess.businessUnit.id
+            } : null,
+            company: primaryAccess.company ? {
+              _id: primaryAccess.company._id,
+              name: primaryAccess.company.name,
+              slug: primaryAccess.company.slug
+            } : null,
+            scope: primaryAccess.scope,
             outlet: primaryAccess.outlet ? {
               _id: primaryAccess.outlet._id,
               name: primaryAccess.outlet.name
@@ -412,18 +431,22 @@ export const authMeService = async (
         const buMap = new Map();
 
         res.businessAccess.forEach((access: any) => {
-          if (!access.businessUnit) return;
-
-          const buId = access.businessUnit._id.toString();
+          const buId = access.businessUnit?._id.toString() || access.company?._id?.toString() || 'none';
 
           if (!buMap.has(buId)) {
             buMap.set(buId, {
-              businessUnit: {
+              businessUnit: access.businessUnit ? {
                 _id: access.businessUnit._id,
                 slug: access.businessUnit.slug,
                 id: access.businessUnit.id,
                 name: access.businessUnit.name
-              },
+              } : null,
+              company: access.company ? {
+                _id: access.company._id,
+                name: access.company.name,
+                slug: access.company.slug
+              } : null,
+              scope: access.scope,
               outlets: [],
               outletCount: 0
             });

@@ -157,12 +157,15 @@ export const businessUnitCoreSchema = new Schema<
 
     // ====== ACTIVE MODULES ======
     activeModules: {
-      pos: { type: Boolean, default: true },
-      erp: { type: Boolean, default: true },
-      hrm: { type: Boolean, default: false },
-      ecommerce: { type: Boolean, default: false },
-      crm: { type: Boolean, default: false },
-      logistics: { type: Boolean, default: false }
+      pos: { type: Schema.Types.Mixed, default: true },
+      erp: { type: Schema.Types.Mixed, default: true },
+      hrm: { type: Schema.Types.Mixed, default: false },
+      ecommerce: { type: Schema.Types.Mixed, default: false },
+      crm: { type: Schema.Types.Mixed, default: false },
+      logistics: { type: Schema.Types.Mixed, default: false },
+      governance: { type: Schema.Types.Mixed, default: false },
+      integrations: { type: Schema.Types.Mixed, default: false },
+      saas: { type: Schema.Types.Mixed, default: false }
     },
 
     // ====== POLICIES & SEO ======

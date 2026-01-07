@@ -4,7 +4,7 @@ import { validateRequest } from "@core/middleware/validateRequest.ts";
 import { UnitController } from "./unit.controller.ts";
 import { UnitValidations } from "./unit.validation.ts";
 import auth from "@core/middleware/auth.ts";
-import { USER_ROLE } from "@app/modules/iam/user/user.constant.ts";
+import { USER_ROLE } from "@app/modules/iam/index.js";
 
 const router = Router();
 

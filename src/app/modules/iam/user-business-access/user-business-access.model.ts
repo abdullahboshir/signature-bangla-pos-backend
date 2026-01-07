@@ -79,12 +79,12 @@ UserBusinessAccessSchema.pre('save', function (next) {
         if (this.businessUnit || this.outlet) return next(new Error('COMPANY scope cannot have businessUnit or outlet assigned.'));
     }
     if (this.scope === 'BUSINESS') {
-        // A business unit MUST belong to a company, but we might not enforce company ID here if we rely on businessUnit.company linkage.
-        // However, for strict explicit access, let's require it if possible, or at least validate businessUnit.
+        if (!this.company) return next(new Error('BUSINESS scope must have company assigned for tenant binding.'));
         if (!this.businessUnit) return next(new Error('BUSINESS scope must have businessUnit assigned.'));
         if (this.outlet) return next(new Error('BUSINESS scope cannot have outlet assigned (use OUTLET scope).'));
     }
     if (this.scope === 'OUTLET') {
+        if (!this.company) return next(new Error('OUTLET scope must have company assigned for tenant binding.'));
         if (!this.businessUnit) return next(new Error('OUTLET scope must have businessUnit assigned.'));
         if (!this.outlet) return next(new Error('OUTLET scope must have outlet assigned.'));
     }

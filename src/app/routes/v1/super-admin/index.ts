@@ -1,4 +1,5 @@
 import { Router } from "express";
+import requireModule from "@core/middleware/license.middleware.ts";
 
 ;
 import orderRoutes from "../../../modules/commerce/sales/order/order.routes.js";
@@ -41,7 +42,7 @@ import { SalesReportRoutes } from "@app/modules/erp/reports/sales-report/sales-r
 import { PurchaseReportRoutes } from "@app/modules/erp/reports/purchase-report/purchase-report.routes.js";
 import { StockReportRoutes } from "@app/modules/erp/reports/stock-report/stock-report.routes.js";
 import { ProfitLossRoutes } from "@app/modules/erp/reports/profit-loss/profit-loss.routes.js";
-import { marketingRoutes } from "@app/modules/marketing/marketing.routes.js";
+import { marketingRoutes } from "@app/modules/marketing/core/marketing.routes.js";
 import { automationRoutes } from "@app/modules/platform/automation/automation.routes.js";
 // ERP & Commerce
 import { logisticsRoutes } from "../../../modules/erp/logistics/logistics.routes.js";
@@ -93,39 +94,39 @@ import { SMSTemplateRoutes } from "@app/modules/platform/system/sms-template/sms
 
 const superAdminRoutes = Router();
 
-// --- ERP CORE ---
-superAdminRoutes.use("/products", moduleGuard('erp'), productRoutes);
-superAdminRoutes.use("/orders", moduleGuard('erp'), orderRoutes);
-superAdminRoutes.use("/categories", moduleGuard('erp'), categoryRoutes);
-superAdminRoutes.use("/brands", moduleGuard('erp'), BrandRoutes);
-superAdminRoutes.use("/units", moduleGuard('erp'), UnitRoutes);
-superAdminRoutes.use("/taxes", moduleGuard('erp'), TaxRoutes);
-superAdminRoutes.use("/attributes", moduleGuard('erp'), attributeRoutes);
-superAdminRoutes.use("/attribute-groups", moduleGuard('erp'), AttributeGroupRoutes);
-superAdminRoutes.use("/suppliers", moduleGuard('erp'), SupplierRoutes);
-superAdminRoutes.use("/purchases", moduleGuard('erp'), PurchaseRoutes);
-superAdminRoutes.use("/inventory", moduleGuard('erp'), InventoryRoutes);
-superAdminRoutes.use("/expenses", moduleGuard('erp'), ExpenseRoutes);
-superAdminRoutes.use("/expense-categories", moduleGuard('erp'), ExpenseCategoryRoutes);
-superAdminRoutes.use("/cash-registers", moduleGuard('erp'), CashRegisterRoutes); // Cash/Finance is usually ERP
-superAdminRoutes.use("/reports/sales", moduleGuard('erp'), SalesReportRoutes);
-superAdminRoutes.use("/reports/purchases", moduleGuard('erp'), PurchaseReportRoutes);
-superAdminRoutes.use("/reports/stock", moduleGuard('erp'), StockReportRoutes);
-superAdminRoutes.use("/reports/profit-loss", moduleGuard('erp'), ProfitLossRoutes);
+// --- ERP CORE (Licensed) ---
+superAdminRoutes.use("/products", moduleGuard('erp'), requireModule('erp'), productRoutes);
+superAdminRoutes.use("/orders", moduleGuard('erp'), requireModule('erp'), orderRoutes);
+superAdminRoutes.use("/categories", moduleGuard('erp'), requireModule('erp'), categoryRoutes);
+superAdminRoutes.use("/brands", moduleGuard('erp'), requireModule('erp'), BrandRoutes);
+superAdminRoutes.use("/units", moduleGuard('erp'), requireModule('erp'), UnitRoutes);
+superAdminRoutes.use("/taxes", moduleGuard('erp'), requireModule('erp'), TaxRoutes);
+superAdminRoutes.use("/attributes", moduleGuard('erp'), requireModule('erp'), attributeRoutes);
+superAdminRoutes.use("/attribute-groups", moduleGuard('erp'), requireModule('erp'), AttributeGroupRoutes);
+superAdminRoutes.use("/suppliers", moduleGuard('erp'), requireModule('erp'), SupplierRoutes);
+superAdminRoutes.use("/purchases", moduleGuard('erp'), requireModule('erp'), PurchaseRoutes);
+superAdminRoutes.use("/inventory", moduleGuard('erp'), requireModule('erp'), InventoryRoutes);
+superAdminRoutes.use("/expenses", moduleGuard('erp'), requireModule('erp'), ExpenseRoutes);
+superAdminRoutes.use("/expense-categories", moduleGuard('erp'), requireModule('erp'), ExpenseCategoryRoutes);
+superAdminRoutes.use("/cash-registers", moduleGuard('erp'), requireModule('erp'), CashRegisterRoutes);
+superAdminRoutes.use("/reports/sales", moduleGuard('erp'), requireModule('erp'), SalesReportRoutes);
+superAdminRoutes.use("/reports/purchases", moduleGuard('erp'), requireModule('erp'), PurchaseReportRoutes);
+superAdminRoutes.use("/reports/stock", moduleGuard('erp'), requireModule('erp'), StockReportRoutes);
+superAdminRoutes.use("/reports/profit-loss", moduleGuard('erp'), requireModule('erp'), ProfitLossRoutes);
 
-// --- CRM ---
-superAdminRoutes.use("/customers", moduleGuard('crm'), customerRoutes);
-superAdminRoutes.use("/marketing", moduleGuard('crm'), marketingRoutes);
-superAdminRoutes.use("/automation", moduleGuard('crm'), automationRoutes);
+// --- CRM (Licensed) ---
+superAdminRoutes.use("/customers", moduleGuard('crm'), requireModule('crm'), customerRoutes);
+superAdminRoutes.use("/marketing", moduleGuard('crm'), requireModule('crm'), marketingRoutes);
+superAdminRoutes.use("/automation", moduleGuard('crm'), requireModule('crm'), automationRoutes);
 
-// --- E-COMMERCE ---
-superAdminRoutes.use("/storefront", moduleGuard('ecommerce'), storefrontRoutes);
-superAdminRoutes.use("/product-questions", moduleGuard('ecommerce'), ProductQARoutes); // Usually ecommerce feature
-superAdminRoutes.use("/reviews", moduleGuard('ecommerce'), ProductReviewRoutes); // Usually ecommerce feature
+// --- E-COMMERCE (Licensed) ---
+superAdminRoutes.use("/storefront", moduleGuard('ecommerce'), requireModule('ecommerce'), storefrontRoutes);
+superAdminRoutes.use("/product-questions", moduleGuard('ecommerce'), requireModule('ecommerce'), ProductQARoutes);
+superAdminRoutes.use("/reviews", moduleGuard('ecommerce'), requireModule('ecommerce'), ProductReviewRoutes);
 
-// --- LOGISTICS ---
-superAdminRoutes.use("/risk", moduleGuard('logistics'), riskRoutes);
-superAdminRoutes.use("/logistics", moduleGuard('logistics'), logisticsRoutes);
+// --- LOGISTICS (Licensed) ---
+superAdminRoutes.use("/risk", moduleGuard('logistics'), requireModule('logistics'), riskRoutes);
+superAdminRoutes.use("/logistics", moduleGuard('logistics'), requireModule('logistics'), logisticsRoutes);
 
 // --- CORE SYSTEM (Unguarded) ---
 superAdminRoutes.use("/upload", UploadRoutes);

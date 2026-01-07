@@ -18,6 +18,8 @@ import { VotingRoutes } from "../../modules/governance/voting/voting.routes.ts";
 import { MeetingRoutes } from "../../modules/governance/meeting/meeting.routes.ts";
 import { ComplianceRoutes } from "../../modules/governance/compliance/compliance.routes.ts";
 
+import requireModule from "../../../core/middleware/license.middleware.ts";
+
 const router = Router();
 
 router.use("/super-admin", adminGroupRoutes);
@@ -30,12 +32,16 @@ router.use("/user", userRoutes); // Registered User Routes (Profile, Settings, e
 router.use("/platform/packages", PackageRoutes);
 router.use("/platform/licenses", LicenseRoutes);
 router.use("/platform/companies", CompanyRoutes);
-router.use("/hrm/departments", DepartmentRoutes);
-router.use("/hrm/attendance", AttendanceRoutes);
-router.use("/hrm/leave", LeaveRoutes);
-router.use("/governance/shareholders", ShareholderRoutes);
-router.use("/governance/voting", VotingRoutes);
-router.use("/governance/meetings", MeetingRoutes);
-router.use("/governance/compliance", ComplianceRoutes);
+
+// HRM Module - Licensed
+router.use("/hrm/departments", requireModule('hrm'), DepartmentRoutes);
+router.use("/hrm/attendance", requireModule('hrm'), AttendanceRoutes);
+router.use("/hrm/leave", requireModule('hrm'), LeaveRoutes);
+
+// Governance Module - Licensed
+router.use("/governance/shareholders", requireModule('governance'), ShareholderRoutes);
+router.use("/governance/voting", requireModule('governance'), VotingRoutes);
+router.use("/governance/meetings", requireModule('governance'), MeetingRoutes);
+router.use("/governance/compliance", requireModule('governance'), ComplianceRoutes);
 
 export const v1Routes = router;

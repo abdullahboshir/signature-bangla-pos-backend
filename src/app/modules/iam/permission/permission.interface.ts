@@ -4,6 +4,7 @@ import type {
   ActionType,
   PermissionConditionOperatorType,
   PermissionEffectType,
+  PermissionModuleType,
   PermissionScopeType,
   ResolveStrategy,
   ResourceType,
@@ -29,7 +30,7 @@ export interface IPermissionResolver {
 
 export interface IPermission {
   id: string;
-  module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
+  module: PermissionModuleType;
   resource: ResourceType;
   action: ActionType;
   scope: PermissionScopeType;
@@ -56,7 +57,7 @@ export interface IPermission {
 // separate model for permission groups
 export interface IPermissionGroup extends Document {
   name: string;
-  module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
+  module: PermissionModuleType;
   description: string;
   permissions: Types.ObjectId[] | IPermission[];
   resolver: IPermissionResolver;

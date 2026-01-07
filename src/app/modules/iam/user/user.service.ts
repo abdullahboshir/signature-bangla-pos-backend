@@ -15,14 +15,14 @@ import AppError from "@shared/errors/app-error.ts";
 const permissionService = new PermissionService();
 
 
-import { Staff } from "@app/modules/platform/staff/staff.model.ts";
-import type { IStaff } from "@app/modules/platform/staff/staff.interface.ts";
+import { Staff } from "@app/modules/platform/index.js";
+import type { IStaff } from "@app/modules/platform/index.js";
 import { sendImageToCloudinary } from "@core/utils/file-upload.ts";
 
 import { QueryBuilder } from "../../../../core/database/QueryBuilder.js";
 import mongoose from "mongoose";
-import type { ICustomer } from "@app/modules/contacts/customers/customer.interface.ts";
-import Customer from "@app/modules/contacts/customers/customer.model.ts";
+import type { ICustomer } from "@app/modules/contacts/index.js";
+import { Customer } from "@app/modules/contacts/index.js";
 
 // ...
 

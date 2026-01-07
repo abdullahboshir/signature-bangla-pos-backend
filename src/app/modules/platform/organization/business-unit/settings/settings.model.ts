@@ -1,203 +1,41 @@
 import { Schema, model } from "mongoose";
 import type { IBusinessUnitSettingsDocument, IBusinessUnitSettingsModel } from "./settings.interface.js";
+import { displaySettingsSchema } from "./general/display.schema.js";
+import { checkoutSettingsSchema } from "./commerce/checkout.schema.js";
+import { shippingSettingsSchema } from "./commerce/shipping.schema.js";
+import { taxSettingsSchema } from "./finance/tax.schema.js";
+import { paymentSettingsSchema } from "./finance/payment.schema.js";
+import { notificationSettingsSchema } from "./general/notification.schema.js";
+import { securitySettingsSchema } from "./general/security.schema.js";
+import { maintenanceSettingsSchema } from "./general/maintenance.schema.js";
+import { seoSettingsSchema } from "./general/seo.schema.js";
+import { socialSettingsSchema } from "./general/social.schema.js";
+import { prefixesSettingsSchema } from "./finance/prefixes.schema.js";
+import { posSettingsSchema } from "./pos/pos.schema.js";
+import { inventorySettingsSchema } from "./commerce/inventory.schema.js";
+import { rewardPointsSettingsSchema } from "./commerce/reward-points.schema.js";
+import { hrmSettingsSchema } from "./hrm/hrm.schema.js";
 
 
 const businessUnitSettingsSchema = new Schema<IBusinessUnitSettingsDocument, IBusinessUnitSettingsModel>({
   businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, unique: true },
 
-  // Display Settings
-  display: {
-    showOutOfStock: { type: Boolean, default: true },
-    showStockQuantity: { type: Boolean, default: true },
-    showProductReviews: { type: Boolean, default: true },
-    showRelatedProducts: { type: Boolean, default: true },
-    productsPerPage: { type: Number, default: 24, min: 12, max: 100 },
-    defaultSort: {
-      type: String,
-      enum: ["newest", "popular", "price_low", "price_high", "rating"],
-      default: "newest"
-    },
-    enableQuickView: { type: Boolean, default: true },
-    enableWishlist: { type: Boolean, default: true },
-    enableCompare: { type: Boolean, default: true }
-  },
+  display: displaySettingsSchema,
+  checkout: checkoutSettingsSchema,
+  shipping: shippingSettingsSchema,
+  tax: taxSettingsSchema,
+  payment: paymentSettingsSchema,
+  notifications: notificationSettingsSchema,
+  security: securitySettingsSchema,
+  maintenance: maintenanceSettingsSchema,
+  seo: seoSettingsSchema,
+  social: socialSettingsSchema,
+  prefixes: prefixesSettingsSchema,
+  pos: posSettingsSchema,
+  inventory: inventorySettingsSchema,
+  rewardPoints: rewardPointsSettingsSchema,
+  hrm: hrmSettingsSchema
 
-  // Checkout Settings
-  checkout: {
-    guestCheckout: { type: Boolean, default: true },
-    requireAccount: { type: Boolean, default: false },
-    enableCoupons: { type: Boolean, default: true },
-    enableGiftCards: { type: Boolean, default: true },
-    minimumOrderAmount: { type: Number, min: 0 },
-    termsAndConditions: { type: String, required: true },
-    privacyPolicy: { type: String, required: true }
-  },
-
-  // Shipping Settings
-  shipping: {
-    enabled: { type: Boolean, default: true },
-    calculation: {
-      type: String,
-      enum: ["flat", "weight", "price", "free"],
-      default: "flat"
-    },
-    defaultRate: { type: Number, default: 0, min: 0 },
-    freeShippingEnabled: { type: Boolean, default: false },
-    freeShippingMinimum: { type: Number, min: 0 },
-    handlingFee: { type: Number, default: 0, min: 0 },
-    processingTime: { type: Number, default: 2, min: 1, max: 30 },
-    shippingZones: [{
-      name: { type: String, required: true },
-      countries: [{ type: String, required: true }],
-      regions: [{ type: String }],
-      rates: [{
-        minWeight: { type: Number, min: 0 },
-        maxWeight: { type: Number, min: 0 },
-        minPrice: { type: Number, min: 0 },
-        maxPrice: { type: Number, min: 0 },
-        cost: { type: Number, required: true, min: 0 }
-      }]
-    }]
-  },
-
-  // Tax Settings
-  tax: {
-    enabled: { type: Boolean, default: true },
-    pricesIncludeTax: { type: Boolean, default: false },
-    taxBasedOn: {
-      type: String,
-      enum: ["shipping", "billing", "businessUnit"],
-      default: "businessUnit"
-    },
-    taxClasses: [{
-      name: { type: String, required: true },
-      rate: { type: Number, required: true, min: 0, max: 100 },
-      countries: [{ type: String, required: true }],
-      states: [{ type: String }]
-    }]
-  },
-
-  // Payment Settings
-  payment: {
-    acceptedMethods: [{
-      type: String,
-      enum: ["card", "cash", "bank", "mobile", "digital"]
-    }],
-    cashOnDelivery: { type: Boolean, default: true },
-    bankTransfer: { type: Boolean, default: true },
-    mobileBanking: { type: Boolean, default: true },
-    autoCapture: { type: Boolean, default: true },
-    paymentInstructions: { type: String }
-  },
-
-  // Notification Settings
-  notifications: {
-    email: {
-      newOrders: { type: Boolean, default: true },
-      lowStock: { type: Boolean, default: true },
-      newReviews: { type: Boolean, default: true },
-      customerQueries: { type: Boolean, default: true }
-    },
-    push: {
-      newOrders: { type: Boolean, default: true },
-      importantUpdates: { type: Boolean, default: true }
-    },
-    sms: {
-      orderUpdates: { type: Boolean, default: false },
-      securityAlerts: { type: Boolean, default: true }
-    }
-  },
-
-  // Security Settings
-  security: {
-    enableHttps: { type: Boolean, default: true },
-    enableCaptcha: { type: Boolean, default: false },
-    blockFailedLogins: { type: Boolean, default: true },
-    sessionTimeout: { type: Number, default: 60, min: 5 },
-    ipBlacklist: [{ type: String }]
-  },
-
-  // Maintenance Settings
-  maintenance: {
-    enableMaintenanceMode: { type: Boolean, default: false },
-    maintenanceMessage: { type: String },
-    allowAdmins: { type: Boolean, default: true },
-    scheduledMaintenance: {
-      start: { type: Date },
-      end: { type: Date },
-      message: { type: String }
-    }
-  },
-
-  // SEO Settings
-  seo: {
-    metaRobots: { type: String, default: 'index, follow' },
-    canonicalUrls: { type: Boolean, default: true },
-    structuredData: { type: Boolean, default: true },
-    twitterCard: { type: Boolean, default: true },
-    openGraph: { type: Boolean, default: true },
-    sitemap: {
-      enabled: { type: Boolean, default: true },
-      frequency: {
-        type: String,
-        enum: ["daily", "weekly", "monthly"],
-        default: "weekly"
-      },
-      priority: { type: Number, default: 0.8, min: 0, max: 1 }
-    }
-  },
-
-  // Social Media Settings
-  social: {
-    shareButtons: { type: Boolean, default: true },
-    socialLogin: { type: Boolean, default: false },
-    facebookAppId: { type: String },
-    googleClientId: { type: String },
-    socialProof: {
-      showPurchaseNotifications: { type: Boolean, default: true },
-      showReviewCount: { type: Boolean, default: true },
-      showVisitorCount: { type: Boolean, default: false }
-    }
-  },
-
-  // Prefixes
-  prefixes: {
-    invoice: { type: String, default: "INV-" },
-    order: { type: String, default: "ORD-" },
-    purchase: { type: String, default: "PUR-" },
-    sku: { type: String, default: "SKU-" }
-  },
-
-  // POS Settings
-  pos: {
-    defaultCustomer: { type: Schema.Types.Mixed, default: "walk-in" },
-    disableSuspend: { type: Boolean, default: false },
-    enableCredit: { type: Boolean, default: false },
-    receiptLayout: { type: String, enum: ["simple", "detailed", "thermal"], default: "thermal" },
-    soundEffects: { type: Boolean, default: true },
-    // Receipt Customization
-    receiptHeader: { type: String },
-    receiptFooter: { type: String },
-    showLogo: { type: Boolean, default: true },
-    logoPosition: { type: String, enum: ["top", "bottom"], default: "top" }
-  },
-
-  // Inventory Settings
-  inventory: {
-    allowNegativeStock: { type: Boolean, default: false },
-    enableLowStockAlerts: { type: Boolean, default: true },
-    lowStockThreshold: { type: Number, default: 5 },
-    barcodeFormat: { type: String, enum: ["EAN13", "UPCA", "CODE128"], default: "CODE128" }
-  },
-
-  // Reward Points
-  rewardPoints: {
-    enabled: { type: Boolean, default: false },
-    pointsPerCurrency: { type: Number, default: 1 },
-    currencyPerPoint: { type: Number, default: 0.01 },
-    minimumRedemption: { type: Number, default: 100 },
-    expiryPeriod: { type: Number, default: 12 }
-  }
 }, {
   timestamps: true
 });
@@ -326,6 +164,25 @@ businessUnitSettingsSchema.statics['getDefaultSettings'] = function (): Partial<
       currencyPerPoint: 0.01,
       minimumRedemption: 100,
       expiryPeriod: 12
+    },
+    hrm: {
+      attendance: {
+        enableBiometric: false,
+        gracePeriodMinutes: 15,
+        overtimeCalculation: true,
+        workDays: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday']
+      },
+      payroll: {
+        currency: 'BDT',
+        autoGenerate: false,
+        payCycle: 'monthly'
+      },
+      leave: {
+        annualLeaveDays: 14,
+        sickLeaveDays: 10,
+        casualLeaveDays: 10,
+        carryForwardLimit: 5
+      }
     }
   };
 };

@@ -4,7 +4,7 @@ import { validateRequest } from "@core/middleware/validateRequest.ts";
 import { createAttributeZodSchema, updateAttributeZodSchema } from "./attribute.validation.js";
 import type { AnyZodObject } from "zod/v3";
 import auth from "@core/middleware/auth.ts";
-import { USER_ROLE } from "@app/modules/iam/user/user.constant.ts";
+import { USER_ROLE } from "@app/modules/iam/index.js";
 
 const router = express.Router();
 

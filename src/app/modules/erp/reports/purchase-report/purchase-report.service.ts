@@ -1,4 +1,4 @@
-import { Purchase } from "@app/modules/erp/purchase/purchase.model.js";
+import { Purchase } from "@app/modules/erp/index.js";
 import { resolveBusinessUnitId } from "@core/utils/mutation-helper.js";
 import mongoose, { type PipelineStage } from "mongoose";
 import type { IPurchaseReportFilters } from "./purchase-report.interface.js";

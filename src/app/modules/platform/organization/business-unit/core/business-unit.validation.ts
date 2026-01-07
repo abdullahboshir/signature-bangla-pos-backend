@@ -9,9 +9,18 @@ const objectIdSchema = z.string().refine((val) => mongoose.Types.ObjectId.isVali
 
 const urlSchema = z.string().url().optional().or(z.literal(''));
 
+const moduleStatusSchema = z.union([
+  z.boolean(),
+  z.object({
+    enabled: z.boolean(),
+    features: z.record(z.string(), z.boolean()).optional()
+  })
+]);
+
 // Main BusinessUnit validation schema
 export const createBusinessUnitValidationSchema = z.object({
   vendor: objectIdSchema,
+  // ... previous fields ...
 
   branding: z.object({
     name: z.string().min(1, "BusinessUnit name is required").max(100, "BusinessUnit name too long"),
@@ -121,12 +130,15 @@ export const createBusinessUnitValidationSchema = z.object({
   }).optional(),
 
   activeModules: z.object({
-    pos: z.boolean().optional(),
-    erp: z.boolean().optional(),
-    hrm: z.boolean().optional(),
-    ecommerce: z.boolean().optional(),
-    crm: z.boolean().optional(),
-    logistics: z.boolean().optional()
+    pos: moduleStatusSchema.optional(),
+    erp: moduleStatusSchema.optional(),
+    hrm: moduleStatusSchema.optional(),
+    ecommerce: moduleStatusSchema.optional(),
+    crm: moduleStatusSchema.optional(),
+    logistics: moduleStatusSchema.optional(),
+    governance: moduleStatusSchema.optional(),
+    integrations: moduleStatusSchema.optional(),
+    saas: moduleStatusSchema.optional()
   }).optional(),
 
   // Optional fields with defaults

@@ -3,7 +3,7 @@ import { TaxController } from "./tax.controller.ts";
 import { validateRequest } from "@core/middleware/validateRequest.ts";
 import { TaxValidations } from "./tax.validation.ts";
 import auth from "@core/middleware/auth.ts";
-import { USER_ROLE } from "@app/modules/iam/user/user.constant.ts";
+import { USER_ROLE } from "@app/modules/iam/index.js";
 import type { AnyZodObject } from "zod/v3";
 
 import { resolveBusinessUnit } from "@core/middleware/resolveBusinessUnit.ts";

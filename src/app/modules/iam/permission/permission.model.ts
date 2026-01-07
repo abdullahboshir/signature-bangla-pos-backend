@@ -7,7 +7,8 @@ import {
   PermissionScope,
   PermissionResolveStrategy,
   PermissionConditionOperator,
-} from "./permission.constant.js";
+  PermissionModule
+} from "./permission.resource.js";
 
 // Condition Schema
 const PermissionConditionSchema = new Schema(
@@ -80,7 +81,7 @@ const PermissionSchema = new Schema<IPermission>(
     // Top-level module categorization for faster lookups
     module: {
       type: String,
-      enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system'],
+      enum: [...PermissionModule],
       required: true,
       index: true
     },

@@ -81,13 +81,27 @@ export interface IBusinessUnitCore {
   };
 
   // ====== ACTIVE MODULES (LICENSE GUARD) ======
+  /**
+   * Module activation flags with optional granular feature control
+   * @example
+   * activeModules: {
+   *   pos: true,  // Simple boolean (backward compatible)
+   *   commerce: { // Or granular object
+   *     enabled: true,
+   *     features: { reviews: true, wishlist: false }
+   *   }
+   * }
+   */
   activeModules: {
-    pos: boolean;
-    erp: boolean;
-    hrm: boolean;
-    ecommerce: boolean;
-    crm: boolean;
-    logistics: boolean;
+    pos: boolean | { enabled: boolean; features?: Record<string, boolean> };
+    erp: boolean | { enabled: boolean; features?: Record<string, boolean> };
+    hrm: boolean | { enabled: boolean; features?: Record<string, boolean> };
+    ecommerce: boolean | { enabled: boolean; features?: Record<string, boolean> };
+    crm: boolean | { enabled: boolean; features?: Record<string, boolean> };
+    logistics: boolean | { enabled: boolean; features?: Record<string, boolean> };
+    governance: boolean | { enabled: boolean; features?: Record<string, boolean> };
+    integrations: boolean | { enabled: boolean; features?: Record<string, boolean> };
+    saas: boolean | { enabled: boolean; features?: Record<string, boolean> };
   };
 
   // ====== PERFORMANCE & RATINGS ======

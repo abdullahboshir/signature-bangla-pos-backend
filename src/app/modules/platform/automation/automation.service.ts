@@ -68,8 +68,8 @@ const deleteRule = async (id: string) => {
 /**
  * Logic Operations
  */
-import { QueueService } from "@app/modules/platform/queue/queue.service.ts";
-import { QUEUE_NAMES } from "@app/modules/platform/queue/queue.interface.ts";
+import { QueueService } from "@app/modules/platform/index.js";
+import { QUEUE_NAMES } from "@app/modules/platform/index.js";
 
 /**
  * Logic Operations

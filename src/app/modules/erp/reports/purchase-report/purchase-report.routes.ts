@@ -1,7 +1,7 @@
 import express from "express";
 import { PurchaseReportController } from "./purchase-report.controller.js";
 import auth from "@core/middleware/auth.ts";
-import { USER_ROLE } from "@app/modules/iam/user/user.constant.js";
+import { USER_ROLE } from "@app/modules/iam/index.js";
 
 const router = express.Router();
 

@@ -145,11 +145,17 @@ const auth = (...requiredRoles: string[]) => {
     const uniqueBusinessUnits = new Map();
     const uniqueCompanies = new Map();
     const uniqueOutlets = new Map();
+    const companyModules = new Map();
 
     if (Array.isArray(isUserExists.businessAccess)) {
       isUserExists.businessAccess.forEach((a: any) => {
         if (a.businessUnit) uniqueBusinessUnits.set(a.businessUnit._id.toString(), a.businessUnit);
-        if (a.company) uniqueCompanies.set(a.company._id.toString(), a.company._id.toString()); // Store ID string
+        if (a.company) {
+          uniqueCompanies.set(a.company._id.toString(), a.company._id.toString()); // Store ID string
+          if (a.company.activeModules) {
+            companyModules.set(a.company._id.toString(), a.company.activeModules);
+          }
+        }
         if (a.outlet) uniqueOutlets.set(a.outlet._id.toString(), a.outlet._id.toString()); // Store outlet ID
         // If Business Unit implies a Company, we should ideally fetch it too, but for strict ACL we rely on direct 'company' scope assignment or BU->Company link
       });
@@ -165,6 +171,7 @@ const auth = (...requiredRoles: string[]) => {
       businessUnits: Array.from(uniqueBusinessUnits.values()),
       companies: Array.from(uniqueCompanies.values()), // Added companies list
       outlets: Array.from(uniqueOutlets.values()), // Added outlets list
+      companyModules: Object.fromEntries(companyModules), // Injected Module Config
       ...(isUserExists.branches !== undefined && { branches: isUserExists.branches }),
       ...(isUserExists.vendorId !== undefined && { vendorId: isUserExists.vendorId }),
       ...(isUserExists.region !== undefined && { region: isUserExists.region }),

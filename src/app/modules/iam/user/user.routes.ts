@@ -33,7 +33,7 @@ import { validateRequest } from "@core/middleware/validateRequest.ts";
 import { roleRoutes } from "../role/role.routes.js";
 import { USER_ROLE } from "./user.constant.ts";
 import moduleGuard from "@app/middlewares/moduleGuard.ts";
-import { createCustomerZodSchema } from "@app/modules/contacts/customers/customer.validation.ts";
+import { createCustomerZodSchema } from "@app/modules/contacts/index.js";
 
 
 const router = Router();

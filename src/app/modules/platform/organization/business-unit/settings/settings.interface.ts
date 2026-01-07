@@ -178,6 +178,27 @@ export interface IBusinessUnitSettings {
     expiryPeriod: number; // months
   };
 
+  // HRM Settings
+  hrm: {
+    attendance: {
+      enableBiometric: boolean;
+      gracePeriodMinutes: number;
+      overtimeCalculation: boolean;
+      workDays: string[];
+    };
+    payroll: {
+      currency: string;
+      autoGenerate: boolean;
+      payCycle: "monthly" | "weekly";
+    };
+    leave: {
+      annualLeaveDays: number;
+      sickLeaveDays: number;
+      casualLeaveDays: number;
+      carryForwardLimit: number;
+    };
+  };
+
   createdAt: Date;
   updatedAt: Date;
 }

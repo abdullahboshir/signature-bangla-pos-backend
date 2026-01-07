@@ -1,4 +1,4 @@
-import { Order } from "@app/modules/commerce/sales/order/order.model.js";
+import { Order } from "@app/modules/commerce/index.js";
 import { resolveBusinessUnitId } from "@core/utils/mutation-helper.js";
 import mongoose, { type PipelineStage } from "mongoose";
 import type { ISalesReportFilters } from "./sales-report.interface.js";

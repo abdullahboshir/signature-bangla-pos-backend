@@ -1,6 +1,14 @@
 import { PermissionSourceObj } from "./permission.constant.ts";
 
 export const MODULE_RESOURCE_MAP = {
+    // IAM System
+    iam: [
+        PermissionSourceObj.auth,
+        PermissionSourceObj.user,
+        PermissionSourceObj.role,
+        PermissionSourceObj.permission,
+    ],
+
     // POS System
     pos: [
         PermissionSourceObj.storefront,
@@ -9,6 +17,7 @@ export const MODULE_RESOURCE_MAP = {
         PermissionSourceObj.cart,
         PermissionSourceObj.wishlist,
         PermissionSourceObj.abandonedCart,
+        PermissionSourceObj.outlet,
     ],
 
     // ERP Core (Catalog, Sales, Finance, Inventory)
@@ -19,8 +28,10 @@ export const MODULE_RESOURCE_MAP = {
         PermissionSourceObj.brand,
         PermissionSourceObj.attribute,
         PermissionSourceObj.attributeGroup,
+        PermissionSourceObj.variant,
         PermissionSourceObj.unit,
         PermissionSourceObj.tax,
+        PermissionSourceObj.warranty,
 
         // Sales & Billing
         PermissionSourceObj.order,
@@ -65,8 +76,12 @@ export const MODULE_RESOURCE_MAP = {
         PermissionSourceObj.driver,
         PermissionSourceObj.vehicle,
 
-        // Risk
+        // Risk & Automation
         PermissionSourceObj.fraudDetection,
+        PermissionSourceObj.riskRule,
+        PermissionSourceObj.riskProfile,
+        PermissionSourceObj.automation,
+        PermissionSourceObj.workflow,
     ],
 
     // HRM & Payroll
@@ -88,7 +103,7 @@ export const MODULE_RESOURCE_MAP = {
         PermissionSourceObj.review,
         PermissionSourceObj.content,
         PermissionSourceObj.landingPage,
-        PermissionSourceObj.subscription,
+        PermissionSourceObj.question,
     ],
 
     // CRM & Marketing (Consolidated)
@@ -101,8 +116,7 @@ export const MODULE_RESOURCE_MAP = {
         PermissionSourceObj.pixel,
         PermissionSourceObj.event,
         PermissionSourceObj.loyalty,
-        PermissionSourceObj.emailTemplate,
-        PermissionSourceObj.smsTemplate,
+        // Moved to system for infrastructure orchestration
         // Moved from E-Commerce
         PermissionSourceObj.promotion,
         PermissionSourceObj.coupon,
@@ -120,13 +134,41 @@ export const MODULE_RESOURCE_MAP = {
 
     // Integrations
     integrations: [
+        PermissionSourceObj.integration,
         PermissionSourceObj.webhook,
         PermissionSourceObj.apiKey,
     ],
 
-    // SaaS Platform
+    // Infrastructure & Configuration
+    system: [
+        PermissionSourceObj.systemConfig,
+        PermissionSourceObj.companySetting,
+        PermissionSourceObj.businessSetting,
+        PermissionSourceObj.outletSetting,
+        PermissionSourceObj.backup,
+        PermissionSourceObj.auditLog,
+        PermissionSourceObj.language,
+        PermissionSourceObj.currency,
+        PermissionSourceObj.blacklist,
+        PermissionSourceObj.notification,
+        PermissionSourceObj.global,
+        PermissionSourceObj.dashboard,
+        PermissionSourceObj.report,
+        PermissionSourceObj.analyticsReport,
+        PermissionSourceObj.emailTemplate,
+        PermissionSourceObj.smsTemplate,
+    ],
+
+    // SaaS & Platform
     saas: [
+        PermissionSourceObj.subscription,
         PermissionSourceObj.license,
+        PermissionSourceObj.feature,
+    ],
+
+    platform: [
+        PermissionSourceObj.businessUnit,
+        PermissionSourceObj.platformSetting,
     ],
 } as const;
 

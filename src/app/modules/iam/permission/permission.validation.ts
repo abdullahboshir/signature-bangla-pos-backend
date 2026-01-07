@@ -1,30 +1,20 @@
 // schemas/permission.schema.ts
 import { z } from 'zod';
 
-export const ResourceTypeSchema = z.enum([
-  'product', 'order', 'customer', 'category', 'brand', 'vendor',
-  'supplier', 'promotion', 'content', 'user', 'role', 'payment',
-  'shipping', 'report', 'analytics', 'system', 'inventory',
-  'coupon', 'review', 'return', 'ticket', 'delivery',
-  'staff', 'attribute', 'attributeGroup', 'unit', 'tax',
-  'warehouse', 'storefront', 'purchase', 'dispute', 'settlement',
-  'payout', 'chat', 'fraudDetection', 'auditLog', 'seo', 'notification', 'loyalty', 'subscription', 'affiliate', 'adCampaign',
-  'attendance', 'leave', 'payroll', 'department', 'designation', 'asset', 'expense', 'budget', 'account', 'transaction',
-  'cashRegister', 'terminal', 'currency', 'language', 'zone', 'backup', 'apiKey', 'webhook', 'wishlist', 'cart',
-  'theme', 'plugin', 'emailTemplate', 'smsTemplate', 'shareholder', 'meeting', 'voting', 'compliance'
-]);
+import {
+  PermissionActionType,
+  PermissionResourceType,
+  PermissionScope,
+  PermissionModule,
+} from "./permission.resource.js";
 
-export const PermissionActionTypeSchema = z.enum([
-  'create', 'read', 'update', 'delete', 'approve', 'reject',
-  'export', 'import', 'manage', 'view', 'ship', 'refund',
-  'dispatch', 'assign', 'print', 'cancel', 'verify', 'download'
-]);
+export const ResourceTypeSchema = z.enum(PermissionResourceType as unknown as [string, ...string[]]);
 
-export const PermissionScopeSchema = z.enum([
-  'global', 'company', 'vendor', 'category', 'region', 'business',
-  'team', 'branch', 'warehouse', 'department', 'self',
-  'channel', 'segment', 'outlet', 'businessUnit' // keeping businessUnit for backward compat if needed, but 'business' is key
-]);
+export const PermissionActionTypeSchema = z.enum(PermissionActionType as unknown as [string, ...string[]]);
+
+export const PermissionScopeSchema = z.enum(PermissionScope as unknown as [string, ...string[]]);
+
+export const PermissionModuleSchema = z.enum(PermissionModule as unknown as [string, ...string[]]);
 
 export const PermissionEffectSchema = z.enum(['allow', 'deny']);
 
@@ -71,6 +61,7 @@ export const PermissionMetadataSchema = z.object({
 
 export const PermissionSchema = z.object({
   id: z.string().uuid(),
+  module: PermissionModuleSchema,
   resource: ResourceTypeSchema,
   action: PermissionActionTypeSchema,
   scope: PermissionScopeSchema,
@@ -97,6 +88,7 @@ export const PermissionSchema = z.object({
 export const PermissionGroupSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1, "Name is required").max(100),
+  module: PermissionModuleSchema,
   description: z.string().min(1, "Description is required").max(500),
   permissions: z.array(z.string().uuid()),
   resolver: PermissionResolverSchema,

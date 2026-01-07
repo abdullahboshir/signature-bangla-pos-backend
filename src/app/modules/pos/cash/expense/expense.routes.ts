@@ -3,7 +3,7 @@ import express from "express";
 import { ExpenseValidation } from "./expense.validation.js";
 import { ExpenseController } from "./expense.controller.js";
 import auth from "@core/middleware/auth.ts";
-import { USER_ROLE } from "@app/modules/iam/user/user.constant.js";
+import { USER_ROLE } from "@app/modules/iam/index.js";
 import { validateRequest } from "@core/middleware/validateRequest.ts";
 
 const router = express.Router();

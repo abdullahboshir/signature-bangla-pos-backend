@@ -1,4 +1,4 @@
-import BusinessUnit from "@app/modules/platform/organization/business-unit/core/business-unit.model.ts";
+import { BusinessUnit } from "@app/modules/platform/index.js";
 import { Attendance } from "./attendance.model.ts";
 import type { IAttendance } from "./attendance.model.ts";
 import AppError from "@shared/errors/app-error.ts";

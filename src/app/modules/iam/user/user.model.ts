@@ -253,7 +253,7 @@ UserSchema.statics["isUserExists"] = async function (email: string): Promise<IUs
               populate: { path: 'permissions', model: 'Permission', select: 'resource action scope effect conditions resolver attributes' }
             }
           },
-          { path: 'company', select: 'name id' },
+          { path: 'company', select: 'name id activeModules' },
           { path: 'businessUnit', select: 'name slug id' },
           { path: 'outlet', select: 'name' }
         ]
