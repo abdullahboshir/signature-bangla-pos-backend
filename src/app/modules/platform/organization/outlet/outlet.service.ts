@@ -1,77 +1,76 @@
-import type { IOutlet } from "./outlet.interface.ts";
 import { Outlet } from "./outlet.model.ts";
-import { Types, model } from "mongoose";
-// import ApiError from "../../../../errors/ApiError.js";
+import { Types, model, startSession } from "mongoose";
+import { OutletSettings } from "./settings/settings.model.js";
+import { resolveBusinessUnitId } from "@core/utils/mutation-helper.ts";
+import { QueryBuilder } from "@core/database/QueryBuilder.ts";
+import AppError from "@shared/errors/app-error.ts";
+import httpStatus from "http-status";
+import type { IOutlet } from "./outlet.interface.ts";
 
-const createOutlet = async (payload: IOutlet): Promise<IOutlet> => {
-    const BusinessUnit = model("BusinessUnit");
-
-    // Resolve Business Unit ID if it's a string (ULID) or Slug
-    if (typeof payload.businessUnit === 'string' && !Types.ObjectId.isValid(payload.businessUnit)) {
-        const identifier = (payload.businessUnit as string).trim();
-        const bu = await BusinessUnit.findOne({
-            $or: [{ id: identifier }, { slug: identifier }]
-        });
-        if (!bu) {
-            throw new Error(`Business Unit not found with the provided ID or Slug: '${identifier}'`);
-        }
-        payload.businessUnit = bu._id as Types.ObjectId;
+const createOutlet = async (payload: any, user?: any): Promise<any> => {
+    // 🛡️ Resolve Business Unit ID SECURELY with ownership verification
+    if (payload.businessUnit) {
+        payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit, user);
     }
 
-    // Check if code exists in the same business unit
-    if (payload.code) {
-        const isExist = await Outlet.isCodeTaken(payload.code, payload.businessUnit.toString());
-        if (isExist) {
-            throw new Error("Outlet code already exists in this Business Unit");
-        }
-    } else {
-        // Auto-generate code if not provided
-        // Pattern: [NAME_PREFIX]-[SEQ] (e.g. DHM-01)
-        const namePrefix = payload.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, "OUT");
-        let sequence = 1;
-        let generatedCode = `${namePrefix}-${String(sequence).padStart(2, '0')}`;
+    const session = await startSession();
+    session.startTransaction();
 
-        while (await Outlet.isCodeTaken(generatedCode, payload.businessUnit.toString())) {
-            sequence++;
-            generatedCode = `${namePrefix}-${String(sequence).padStart(2, '0')}`;
-        }
-        payload.code = generatedCode;
-    }
-
-    const result = await Outlet.create(payload);
-    return result;
-};
-
-const getAllOutlets = async (businessUnitId: string): Promise<IOutlet[]> => {
-    let query: any = {};
-
-    // Helper to check if a value is effectively valid
-    const isValidId = (id: any) => id && id !== 'undefined' && id !== 'null';
-
-    // Resolve Business Unit ID if it's a string (ULID) or Slug
-    if (isValidId(businessUnitId)) {
-        if (!Types.ObjectId.isValid(businessUnitId)) {
-            const identifier = (businessUnitId as string).trim();
-            const BusinessUnit = model("BusinessUnit");
-            const bu = await BusinessUnit.findOne({
-                $or: [{ id: identifier }, { slug: identifier }]
-            });
-
-            if (bu) {
-                query.businessUnit = bu._id;
-            } else {
-                // If invalid ID/Slug passed, assuming we want results for that SPECIFIC invalid ID which are none
-                return [];
+    try {
+        // Check if code exists in the same business unit
+        if (payload.code) {
+            const isExist = await Outlet.isCodeTaken(payload.code, payload.businessUnit.toString(), session);
+            if (isExist) {
+                throw new Error("Outlet code already exists in this Business Unit");
             }
         } else {
-            query.businessUnit = businessUnitId;
+            // Auto-generate code if not provided
+            // Pattern: [NAME_PREFIX]-[SEQ] (e.g. DHM-01)
+            const namePrefix = payload.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, "OUT");
+            let sequence = 1;
+            let generatedCode = `${namePrefix}-${String(sequence).padStart(2, '0')}`;
+
+            while (await Outlet.isCodeTaken(generatedCode, payload.businessUnit.toString(), session)) {
+                sequence++;
+                generatedCode = `${namePrefix}-${String(sequence).padStart(2, '0')}`;
+            }
+            payload.code = generatedCode;
         }
+
+        const [result] = await Outlet.create([payload], { session });
+
+        // Atomic Settings Creation
+        await OutletSettings.getSettings(result?._id as string, session);
+
+        await session.commitTransaction();
+        return result;
+    } catch (error) {
+        await session.abortTransaction();
+        throw error;
+    } finally {
+        await session.endSession();
+    }
+};
+
+const getAllOutlets = async (businessUnitId: string, user?: any): Promise<any> => {
+    // 🛡️ Data isolation is now centrally handled by queryContext + QueryBuilder
+    // We just ensure businessUnitId is in filters if explicitly passed
+    const filters: any = {};
+    if (businessUnitId && businessUnitId !== 'undefined') {
+        filters.businessUnit = businessUnitId;
     }
 
-    const result = await Outlet.find(query)
-        .populate("manager", "name email")
-        .populate("businessUnit", "name id")
-        .sort({ createdAt: -1 });
+    const outletQuery = new QueryBuilder(
+        Outlet.find()
+            .populate("manager", "name email")
+            .populate("businessUnit", "name id"),
+        filters
+    )
+        .filter()
+        .sort()
+        .paginate();
+
+    const result = await outletQuery.modelQuery;
     return result;
 };
 
@@ -106,7 +105,7 @@ const deleteOutlet = async (id: string): Promise<IOutlet | null> => {
     return result;
 };
 
-const getOutletStats = async (outletId: string) => {
+const getOutletStats = async (outletId: string, user?: any) => {
     // Dynamically import models to avoid circular dependency issues if any, or just use model()
     const Order = model("Order");
     // const CashRegister = model("CashRegister"); // Check if exists

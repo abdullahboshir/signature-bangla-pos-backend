@@ -45,18 +45,18 @@ const mapFrontendToBackendVariant = (frontendVariant: any, parentId: string, par
 
 const productRepository = new ProductRepository();
 
-import { resolveBusinessUnitId } from "../../../../../../../core/utils/mutation-helper.js";
+import { resolveBusinessUnitId } from "@core/utils/mutation-helper.ts";
 
 // ... (existing imports)
 
-export const createProductService = async (payload: any) => {
+export const createProductService = async (payload: any, user?: any) => {
   const session = await startSession();
   session.startTransaction();
 
   try {
-    // 0. Resolve Business Unit First
+    // 0. Resolve Business Unit First with ownership check
     if (payload.businessUnit) {
-      payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit);
+      payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit, user);
     }
 
     // 1. Validate Category to generate SKU prefix
@@ -182,7 +182,7 @@ export const getProductByIdService = async (id: string) => {
   }, 300);
 }
 
-export const updateProductService = async (id: string, payload: any) => {
+export const updateProductService = async (id: string, payload: any, user?: any) => {
   const session = await startSession();
   session.startTransaction();
 
@@ -193,7 +193,7 @@ export const updateProductService = async (id: string, payload: any) => {
     }
 
     if (payload.businessUnit) {
-      payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit);
+      payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit, user);
     }
 
     // Update Sub-documents

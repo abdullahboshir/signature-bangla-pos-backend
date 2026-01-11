@@ -17,7 +17,7 @@ export const createBusinessUnitController = catchAsync(async (req: any, res) => 
 })
 
 export const getAllBusinessUnitsController = catchAsync(async (req, res) => {
-  const result = await BusinessUnitService.getAllBusinessUnits(req.query);
+  const result = await BusinessUnitService.getAllBusinessUnits(req.query, (req as any).user);
 
   if (result && result.meta) {
     ApiResponse.paginated(

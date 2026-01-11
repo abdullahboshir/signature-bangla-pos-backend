@@ -9,40 +9,57 @@ import AppError from "@shared/errors/app-error.ts";
  * @returns Promise<mongoose.Types.ObjectId>
  * @throws AppError if not found
  */
-export const resolveBusinessUnitId = async (identifier: string | mongoose.Types.ObjectId | undefined | null): Promise<mongoose.Types.ObjectId | undefined> => {
+/**
+ * Resolves a Business Unit Identifier (ID or Slug) to a MongoDB ObjectId.
+ * Includes ownership verification if a user object is provided.
+ * 
+ * @param identifier - The Business Unit ID or Slug
+ * @param verifiedUser - (Optional) The authenticated user from req.user
+ * @returns Promise<mongoose.Types.ObjectId>
+ * @throws AppError 404 if not found, 403 if ownership fails
+ */
+export const resolveBusinessUnitId = async (
+    identifier: string | mongoose.Types.ObjectId | undefined | null,
+    verifiedUser?: any
+): Promise<mongoose.Types.ObjectId | undefined> => {
     if (!identifier) return undefined;
 
-    // If it's already a valid ObjectId instance, return it (cast to be sure)
+    const BusinessUnit = mongoose.models['BusinessUnit'] || mongoose.model("BusinessUnit");
+    let resolvedId: mongoose.Types.ObjectId | null = null;
+
     if (identifier instanceof mongoose.Types.ObjectId) {
-        return identifier;
+        resolvedId = identifier;
+    } else {
+        const idStr = identifier.toString().trim();
+        const isObjectId = mongoose.Types.ObjectId.isValid(idStr) && /^[0-9a-fA-F]{24}$/.test(idStr);
+
+        if (isObjectId) {
+            resolvedId = new mongoose.Types.ObjectId(idStr);
+        } else {
+            const buDoc = await BusinessUnit.findOne({
+                $or: [{ id: idStr }, { slug: idStr }]
+            }).select('_id').lean();
+
+            if (!buDoc) {
+                throw new AppError(404, `Business Unit Not Found: '${idStr}'`);
+            }
+            resolvedId = (buDoc as any)._id as mongoose.Types.ObjectId;
+        }
     }
 
-    const idStr = identifier.toString().trim();
+    if (!resolvedId) return undefined;
 
-    // Check if it's a valid ObjectId string
-    const isObjectId = mongoose.Types.ObjectId.isValid(idStr) && /^[0-9a-fA-F]{24}$/.test(idStr);
+    // 🛡️ SECURITY LAYER: Ownership Verification
+    if (verifiedUser && !verifiedUser.roleName?.includes('super-admin') && !verifiedUser.isSuperAdmin) {
+        const authorizedBUs = verifiedUser.businessUnits || [];
+        const hasAccess = authorizedBUs.some((bu: any) => (bu._id?.toString() || bu.toString()) === resolvedId!.toString());
 
-    if (isObjectId) {
-        // Optimistically return as ObjectId. 
-        // Note: We don't verify existence here to save a DB call if the caller trusts the ID.
-        // But if the user wants verification, they can use resolveBusinessUnitIdWithVerification (below)
-        // For backwards compatibility with current logic (which often falls back to find), let's just return it.
-        // However, current logic often checks if valid, if NOT valid then searches.
-        return new mongoose.Types.ObjectId(idStr);
+        if (!hasAccess) {
+            throw new AppError(403, "Ownership Security Error: You do not have permission for this Business Unit.");
+        }
     }
 
-    // It's a slug or custom ID, search for it
-    const BusinessUnit = mongoose.models['BusinessUnit'] || mongoose.model("BusinessUnit"); // Dynamic import/access
-
-    const buDoc = await BusinessUnit.findOne({
-        $or: [{ id: idStr }, { slug: idStr }]
-    });
-
-    if (!buDoc) {
-        throw new AppError(404, `Business Unit Not Found: '${idStr}'`);
-    }
-
-    return buDoc._id;
+    return resolvedId;
 };
 
 /**

@@ -45,7 +45,7 @@ router.get("/all-users", getUsersController);
 
 router.patch(
   "/profile",
-  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.CUSTOMER),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.COMPANY_OWNER, USER_ROLE.CUSTOMER),
   upload.single("file"),
   (req: Request, _res: Response, next: NextFunction) => {
     if (req.body.data) {
@@ -58,14 +58,14 @@ router.patch(
 
 router.post(
   "/create",
-  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.COMPANY_OWNER, USER_ROLE.ADMIN),
   // authorize(PermissionSourceObj.user, PermissionActionObj.create),
   createUserController
 );
 
 router.post(
   "/create-customer",
-  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.COMPANY_OWNER, USER_ROLE.ADMIN),
   moduleGuard('crm'),
   authorize(PermissionSourceObj.customer, PermissionActionObj.create),
   upload.single("file"),
@@ -93,27 +93,27 @@ router.post(
 // Settings Routes
 router.get(
   "/settings",
-  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.CUSTOMER),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.COMPANY_OWNER, USER_ROLE.CUSTOMER),
   getUserSettingsController
 );
 
 router.patch(
   "/settings",
-  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.CUSTOMER),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.COMPANY_OWNER, USER_ROLE.CUSTOMER),
   updateUserSettingsController
 );
 
 // Get Single User
 router.get(
   "/:id",
-  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.COMPANY_OWNER, USER_ROLE.ADMIN),
   getSingleUserController
 );
 
 // Update user (roles, status, etc.)
 router.patch(
   "/:id",
-  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.COMPANY_OWNER, USER_ROLE.ADMIN),
   // authorize(PermissionSourceObj.user, PermissionActionObj.update),
   upload.single("file"),
   (req: Request, _res: Response, next: NextFunction) => {
@@ -128,7 +128,7 @@ router.patch(
 // Delete user
 router.delete(
   "/:id",
-  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.COMPANY_OWNER, USER_ROLE.ADMIN),
   // authorize(PermissionSourceObj.user, PermissionActionObj.delete),
   deleteUserController
 );

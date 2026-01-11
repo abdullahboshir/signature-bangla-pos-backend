@@ -6,13 +6,14 @@ export class CompanyRepository {
     async create(data: Partial<ICompanyDocument>, session: ClientSession | null = null): Promise<ICompanyDocument> {
         if (session) {
             const [company] = await Company.create([data], { session });
-            return company;
+            if (!company) throw new Error("Failed to create company");
+            return company as ICompanyDocument;
         }
         return await Company.create(data);
     }
 
-    async findAll(): Promise<ICompanyDocument[]> {
-        return await Company.find();
+    async findAll(filter: Record<string, any> = {}): Promise<ICompanyDocument[]> {
+        return await Company.find(filter);
     }
 
     async findById(id: string): Promise<ICompanyDocument | null> {

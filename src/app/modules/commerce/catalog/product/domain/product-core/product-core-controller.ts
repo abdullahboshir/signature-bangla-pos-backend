@@ -10,7 +10,7 @@ export const createProductController = catchAsync(async (req, res) => {
   // Sanitize payload (Service handles BU resolution)
   const cleanPayload = sanitizePayload(req.body, ['primaryCategory', 'unit', 'outlet', 'businessUnit']);
 
-  const data = await createProductService(cleanPayload);
+  const data = await createProductService(cleanPayload, (req as any).user);
 
   ApiResponse.success(
     res,
@@ -61,7 +61,7 @@ export const updateProductController = catchAsync(async (req, res) => {
   // Sanitize payload (Service handles BU resolution)
   const cleanPayload = sanitizePayload(req.body, ['primaryCategory', 'unit', 'outlet', 'businessUnit']);
 
-  const data = await updateProductService(id as string, cleanPayload);
+  const data = await updateProductService(id as string, cleanPayload, (req as any).user);
   ApiResponse.success(
     res,
     data,

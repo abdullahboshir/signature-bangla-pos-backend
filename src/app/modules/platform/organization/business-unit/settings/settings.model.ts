@@ -1,189 +1,131 @@
 import { Schema, model } from "mongoose";
 import type { IBusinessUnitSettingsDocument, IBusinessUnitSettingsModel } from "./settings.interface.js";
-import { displaySettingsSchema } from "./general/display.schema.js";
-import { checkoutSettingsSchema } from "./commerce/checkout.schema.js";
-import { shippingSettingsSchema } from "./commerce/shipping.schema.js";
-import { taxSettingsSchema } from "./finance/tax.schema.js";
-import { paymentSettingsSchema } from "./finance/payment.schema.js";
-import { notificationSettingsSchema } from "./general/notification.schema.js";
-import { securitySettingsSchema } from "./general/security.schema.js";
-import { maintenanceSettingsSchema } from "./general/maintenance.schema.js";
-import { seoSettingsSchema } from "./general/seo.schema.js";
-import { socialSettingsSchema } from "./general/social.schema.js";
-import { prefixesSettingsSchema } from "./finance/prefixes.schema.js";
-import { posSettingsSchema } from "./pos/pos.schema.js";
-import { inventorySettingsSchema } from "./commerce/inventory.schema.js";
-import { rewardPointsSettingsSchema } from "./commerce/reward-points.schema.js";
-import { hrmSettingsSchema } from "./hrm/hrm.schema.js";
-
+import { paymentSettingsSchema, operatingHoursSchema, inventoryPolicySchema, posHardwareSchema, communicationChannelSchema, pricingPolicySchema, fulfillmentPolicySchema, rewardPointsPolicySchema, workflowPolicySchema, templateRegistrySchema, displayPolicySchema, checkoutPolicySchema, shippingPolicySchema, seoPolicySchema, hrmPolicySchema, prefixPolicySchema, brandingSchema, complianceSchema, internationalizationHubSchema, securityHardeningSchema, taxIntelligenceSchema, integrationRegistrySchema, legalGovernanceSchema, smtpConfigSchema, maintenancePolicySchema, ssoHubSchema, webhookOrchestratorSchema, apiDeveloperRegistrySchema, contactSchema } from "../../shared/common.schema.js";
+import {
+  DEFAULT_BRANDING, DEFAULT_COMPLIANCE, DEFAULT_INTERNATIONALIZATION,
+  DEFAULT_SECURITY_HARDENING, DEFAULT_TAX_INTELLIGENCE, DEFAULT_DISPLAY_POLICY,
+  DEFAULT_CHECKOUT_POLICY, DEFAULT_SHIPPING_POLICY, DEFAULT_PAYMENT_SETTINGS,
+  DEFAULT_MAINTENANCE_POLICY, DEFAULT_SEO_POLICY, DEFAULT_PREFIX_POLICY,
+  DEFAULT_OPERATING_HOURS, DEFAULT_POS_HARDWARE, DEFAULT_INVENTORY_POLICY,
+  DEFAULT_REWARD_POINTS_POLICY, DEFAULT_HRM_POLICY, DEFAULT_PRICING_POLICY,
+  DEFAULT_FULFILLMENT_POLICY, DEFAULT_WORKFLOW_POLICY, DEFAULT_TEMPLATE_REGISTRY,
+  DEFAULT_COMMUNICATION_CHANNEL, DEFAULT_LEGAL_GOVERNANCE, DEFAULT_SMTP_CONFIG,
+  DEFAULT_SSO_HUB, DEFAULT_WEBHOOK_ORCHESTRATOR, DEFAULT_API_DEVELOPER_REGISTRY
+} from "../../shared/common.defaults.js";
 
 const businessUnitSettingsSchema = new Schema<IBusinessUnitSettingsDocument, IBusinessUnitSettingsModel>({
   businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, unique: true },
+  branding: { type: brandingSchema, default: DEFAULT_BRANDING },
+  compliance: { type: complianceSchema, default: DEFAULT_COMPLIANCE },
+  internationalizationHub: { type: internationalizationHubSchema, default: DEFAULT_INTERNATIONALIZATION },
+  securityHardening: { type: securityHardeningSchema, default: DEFAULT_SECURITY_HARDENING },
+  taxIntelligence: { type: taxIntelligenceSchema, default: DEFAULT_TAX_INTELLIGENCE },
 
-  display: displaySettingsSchema,
-  checkout: checkoutSettingsSchema,
-  shipping: shippingSettingsSchema,
-  tax: taxSettingsSchema,
-  payment: paymentSettingsSchema,
-  notifications: notificationSettingsSchema,
-  security: securitySettingsSchema,
-  maintenance: maintenanceSettingsSchema,
-  seo: seoSettingsSchema,
-  social: socialSettingsSchema,
-  prefixes: prefixesSettingsSchema,
-  pos: posSettingsSchema,
-  inventory: inventorySettingsSchema,
-  rewardPoints: rewardPointsSettingsSchema,
-  hrm: hrmSettingsSchema
+  display: { type: displayPolicySchema, default: DEFAULT_DISPLAY_POLICY },
+  checkout: { type: checkoutPolicySchema, default: DEFAULT_CHECKOUT_POLICY },
+  shipping: { type: shippingPolicySchema, default: DEFAULT_SHIPPING_POLICY },
+  payment: { type: paymentSettingsSchema, default: DEFAULT_PAYMENT_SETTINGS },
+  maintenance: { type: maintenancePolicySchema, default: DEFAULT_MAINTENANCE_POLICY },
+  seo: { type: seoPolicySchema, default: DEFAULT_SEO_POLICY },
+  prefixes: { type: prefixPolicySchema, default: DEFAULT_PREFIX_POLICY },
 
+  operatingHours: { type: operatingHoursSchema, default: DEFAULT_OPERATING_HOURS },
+  pos: { type: posHardwareSchema, default: DEFAULT_POS_HARDWARE },
+  inventory: { type: inventoryPolicySchema, default: DEFAULT_INVENTORY_POLICY },
+  rewardPoints: { type: rewardPointsPolicySchema, default: DEFAULT_REWARD_POINTS_POLICY },
+  hrm: { type: hrmPolicySchema, default: DEFAULT_HRM_POLICY },
+
+  pricingPolicy: { type: pricingPolicySchema, default: DEFAULT_PRICING_POLICY },
+  fulfillmentPolicy: { type: fulfillmentPolicySchema, default: DEFAULT_FULFILLMENT_POLICY },
+  workflow: { type: workflowPolicySchema, default: DEFAULT_WORKFLOW_POLICY },
+
+  templates: { type: templateRegistrySchema, default: DEFAULT_TEMPLATE_REGISTRY },
+  communication: { type: communicationChannelSchema, default: DEFAULT_COMMUNICATION_CHANNEL },
+
+  integrations: [{ type: integrationRegistrySchema }], // No default or empty array
+
+  legal: { type: legalGovernanceSchema, default: DEFAULT_LEGAL_GOVERNANCE },
+  smtp: { type: smtpConfigSchema, default: DEFAULT_SMTP_CONFIG },
+  ssoHub: { type: ssoHubSchema, default: DEFAULT_SSO_HUB },
+  webhookOrchestrator: { type: webhookOrchestratorSchema, default: DEFAULT_WEBHOOK_ORCHESTRATOR },
+  apiDeveloperRegistry: { type: apiDeveloperRegistrySchema, default: DEFAULT_API_DEVELOPER_REGISTRY },
+  contact: { type: contactSchema, default: { email: "bu@example.com", socialMedia: {} } }
 }, {
   timestamps: true
 });
 
-// Indexes
-businessUnitSettingsSchema.index({ businessUnit: 1 });
-
 // Static Methods
+businessUnitSettingsSchema.statics['getSettings'] = async function (businessUnitId: string, session?: any) {
+  let settings = await this.findOne({ businessUnit: businessUnitId }).session(session || null);
+  if (!settings) {
+    const created = await this.create([{
+      businessUnit: businessUnitId,
+      branding: DEFAULT_BRANDING,
+      compliance: DEFAULT_COMPLIANCE,
+      internationalizationHub: DEFAULT_INTERNATIONALIZATION,
+      securityHardening: DEFAULT_SECURITY_HARDENING,
+      taxIntelligence: DEFAULT_TAX_INTELLIGENCE,
+      display: DEFAULT_DISPLAY_POLICY,
+      checkout: DEFAULT_CHECKOUT_POLICY,
+      shipping: DEFAULT_SHIPPING_POLICY,
+      payment: DEFAULT_PAYMENT_SETTINGS,
+      maintenance: DEFAULT_MAINTENANCE_POLICY,
+      seo: DEFAULT_SEO_POLICY,
+      prefixes: DEFAULT_PREFIX_POLICY,
+      operatingHours: DEFAULT_OPERATING_HOURS,
+      pos: DEFAULT_POS_HARDWARE,
+      inventory: DEFAULT_INVENTORY_POLICY,
+      rewardPoints: DEFAULT_REWARD_POINTS_POLICY,
+      hrm: DEFAULT_HRM_POLICY,
+      pricingPolicy: DEFAULT_PRICING_POLICY,
+      fulfillmentPolicy: DEFAULT_FULFILLMENT_POLICY,
+      workflow: DEFAULT_WORKFLOW_POLICY,
+      templates: DEFAULT_TEMPLATE_REGISTRY,
+      communication: DEFAULT_COMMUNICATION_CHANNEL,
+      integrations: [],
+      legal: DEFAULT_LEGAL_GOVERNANCE,
+      smtp: DEFAULT_SMTP_CONFIG,
+      ssoHub: DEFAULT_SSO_HUB,
+      webhookOrchestrator: DEFAULT_WEBHOOK_ORCHESTRATOR,
+      apiDeveloperRegistry: DEFAULT_API_DEVELOPER_REGISTRY,
+      contact: { email: "bu@example.com", socialMedia: {} }
+    }], { session: session || null });
+    return created[0];
+  }
+  return settings;
+};
+
 businessUnitSettingsSchema.statics['getDefaultSettings'] = function (): Partial<IBusinessUnitSettingsDocument> {
   return {
-    display: {
-      showOutOfStock: true,
-      showStockQuantity: true,
-      showProductReviews: true,
-      showRelatedProducts: true,
-      productsPerPage: 24,
-      defaultSort: "newest",
-      enableQuickView: true,
-      enableWishlist: true,
-      enableCompare: true
-    },
-    checkout: {
-      guestCheckout: true,
-      requireAccount: false,
-      enableCoupons: true,
-      enableGiftCards: true,
-      termsAndConditions: "Default terms...",
-      privacyPolicy: "Default privacy policy..."
-    },
-    shipping: {
-      enabled: true,
-      calculation: "flat",
-      defaultRate: 0,
-      freeShippingEnabled: false,
-      handlingFee: 0,
-      processingTime: 2,
-      shippingZones: []
-    },
-    tax: {
-      enabled: true,
-      pricesIncludeTax: false,
-      taxBasedOn: "businessUnit",
-      taxClasses: []
-    },
-    payment: {
-      acceptedMethods: ["card", "cash", "bank", "mobile"],
-      cashOnDelivery: true,
-      bankTransfer: true,
-      mobileBanking: true,
-      autoCapture: true
-    },
-    notifications: {
-      email: {
-        newOrders: true,
-        lowStock: true,
-        newReviews: true,
-        customerQueries: true
-      },
-      push: {
-        newOrders: true,
-        importantUpdates: true
-      },
-      sms: {
-        orderUpdates: false,
-        securityAlerts: true
-      }
-    },
-    security: {
-      enableHttps: true,
-      enableCaptcha: false,
-      blockFailedLogins: true,
-      sessionTimeout: 60,
-      ipBlacklist: []
-    },
-    maintenance: {
-      enableMaintenanceMode: false,
-      allowAdmins: true
-    },
-    seo: {
-      metaRobots: 'index, follow',
-      canonicalUrls: true,
-      structuredData: true,
-      twitterCard: true,
-      openGraph: true,
-      sitemap: {
-        enabled: true,
-        frequency: "weekly",
-        priority: 0.8
-      }
-    },
-    social: {
-      shareButtons: true,
-      socialLogin: false,
-      socialProof: {
-        showPurchaseNotifications: true,
-        showReviewCount: true,
-        showVisitorCount: false
-      }
-    },
-    prefixes: {
-      invoice: "INV-",
-      order: "ORD-",
-      purchase: "PUR-",
-      sku: "SKU-"
-    },
-    pos: {
-      defaultCustomer: "walk-in",
-      disableSuspend: false,
-      enableCredit: false,
-      receiptLayout: "thermal",
-      soundEffects: true,
-      receiptHeader: "",
-      receiptFooter: "",
-      showLogo: true,
-      logoPosition: "top"
-    },
-    inventory: {
-      allowNegativeStock: false,
-      enableLowStockAlerts: true,
-      lowStockThreshold: 5,
-      barcodeFormat: "CODE128"
-    },
-    rewardPoints: {
-      enabled: false,
-      pointsPerCurrency: 1,
-      currencyPerPoint: 0.01,
-      minimumRedemption: 100,
-      expiryPeriod: 12
-    },
-    hrm: {
-      attendance: {
-        enableBiometric: false,
-        gracePeriodMinutes: 15,
-        overtimeCalculation: true,
-        workDays: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday']
-      },
-      payroll: {
-        currency: 'BDT',
-        autoGenerate: false,
-        payCycle: 'monthly'
-      },
-      leave: {
-        annualLeaveDays: 14,
-        sickLeaveDays: 10,
-        casualLeaveDays: 10,
-        carryForwardLimit: 5
-      }
-    }
+    branding: DEFAULT_BRANDING,
+    compliance: DEFAULT_COMPLIANCE,
+    internationalizationHub: DEFAULT_INTERNATIONALIZATION,
+    securityHardening: DEFAULT_SECURITY_HARDENING,
+    taxIntelligence: DEFAULT_TAX_INTELLIGENCE,
+    display: DEFAULT_DISPLAY_POLICY,
+    checkout: DEFAULT_CHECKOUT_POLICY,
+    shipping: DEFAULT_SHIPPING_POLICY,
+    payment: DEFAULT_PAYMENT_SETTINGS,
+    maintenance: DEFAULT_MAINTENANCE_POLICY,
+    seo: DEFAULT_SEO_POLICY,
+    prefixes: DEFAULT_PREFIX_POLICY,
+    operatingHours: DEFAULT_OPERATING_HOURS,
+    pos: DEFAULT_POS_HARDWARE,
+    inventory: DEFAULT_INVENTORY_POLICY,
+    rewardPoints: DEFAULT_REWARD_POINTS_POLICY,
+    hrm: DEFAULT_HRM_POLICY,
+    pricingPolicy: DEFAULT_PRICING_POLICY,
+    fulfillmentPolicy: DEFAULT_FULFILLMENT_POLICY,
+    workflow: DEFAULT_WORKFLOW_POLICY,
+    templates: DEFAULT_TEMPLATE_REGISTRY,
+    communication: DEFAULT_COMMUNICATION_CHANNEL,
+    integrations: [],
+    legal: DEFAULT_LEGAL_GOVERNANCE,
+    smtp: DEFAULT_SMTP_CONFIG,
+    ssoHub: DEFAULT_SSO_HUB,
+    webhookOrchestrator: DEFAULT_WEBHOOK_ORCHESTRATOR,
+    apiDeveloperRegistry: DEFAULT_API_DEVELOPER_REGISTRY,
+    contact: { email: "bu@example.com", socialMedia: {} }
   };
 };
 

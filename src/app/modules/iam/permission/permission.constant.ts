@@ -49,21 +49,12 @@ export type PermissionConditionOperatorType =
  * 8️⃣ ENUM OBJECTS (SAFE FOR RUNTIME USE)
  * ------------------------------------------------------------------ */
 
-export const PermissionSourceObj = PermissionResourceType.reduce(
-  (acc: any, resource) => {
-    acc[resource] = resource;
-    return acc;
-  },
-  {} as Record<ResourceType, ResourceType>
-);
+/* ------------------------------------------------------------------
+ * 8️⃣ ENUM OBJECTS (SAFE FOR RUNTIME USE)
+ * ------------------------------------------------------------------ */
 
-export const PermissionActionObj = PermissionActionType.reduce(
-  (acc: any, action) => {
-    acc[action] = action;
-    return acc;
-  },
-  {} as Record<ActionType, ActionType>
-);
+// Re-exported from resource file to prevent circular dependency
+export { PermissionSourceObj, PermissionActionObj } from "./permission.resource.js";
 
 /* ------------------------------------------------------------------
  * 9️⃣ 🔒 SCOPE RANK (BACKEND ENFORCEMENT – MUST USE)

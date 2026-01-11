@@ -1,10 +1,10 @@
-import { PermissionGroup } from "@app/modules/iam/permission-group/permission-group.model.ts";
-import { Permission } from "@app/modules/iam/permission/permission.model.ts";
-import { PermissionActionType, PermissionSourceObj } from "@app/modules/iam/permission/permission.constant.ts";
-import { getModuleByResource } from "@app/modules/iam/permission/module.constant.ts";
-import { getScopeForResource } from "./data/scope-map.ts";
+import { PermissionGroup } from "@app/modules/iam/permission-group/permission-group.model.js";
+import { Permission } from "@app/modules/iam/permission/permission.model.js";
+import { PermissionActionType, PermissionSourceObj } from "@app/modules/iam/permission/permission.resource.js";
+import { getModuleByResource } from "@app/modules/iam/permission/module.constant.js";
+import { getScopeForResource } from "./data/scope-map.js";
 import mongoose, { Types } from "mongoose";
-import { SYSTEM_USER_ID } from "./data/constants.ts";
+import { SYSTEM_USER_ID } from "./data/constants.js";
 
 /**
  * Ensures all individual permissions (Resource:Action) exist in the database.
@@ -24,16 +24,16 @@ export async function syncPermissions(session?: mongoose.ClientSession): Promise
 
             permissionOps.push({
                 updateOne: {
-                    filter: { name },
+                    filter: { id: name },
                     update: {
                         $set: {
-                            name,
+                            id: name,
                             resource: resource as string,
                             action: action as string,
                             module,
                             description: `Permission to ${action} ${resource}`,
-                            defaultScope,
-                            status: "active",
+                            scope: defaultScope,
+                            isActive: true,
                             updatedBy: SYSTEM_USER_ID,
                         },
                         $setOnInsert: {
@@ -47,11 +47,28 @@ export async function syncPermissions(session?: mongoose.ClientSession): Promise
     }
 
     if (permissionOps.length > 0) {
-        await Permission.bulkWrite(permissionOps as any, {
-            ordered: false,
-            session: session as any
-        });
-        console.log(`✅ ${permissionOps.length} Permissions synced.`);
+        try {
+            const options: any = { ordered: false };
+            if (session) {
+                options.session = session;
+            }
+
+            const result = await Permission.bulkWrite(permissionOps as any, options);
+            console.log(`✅ ${permissionOps.length} Permissions synced.`);
+            console.log(`   Detailed Result: Upserted: ${result.upsertedCount}, Modified: ${result.modifiedCount}, Inserted: ${result.insertedCount}, Matched: ${result.matchedCount}`);
+            if (result.hasWriteErrors()) {
+                console.error("❌ BulkWrite has errors:", result.getWriteErrors());
+            }
+
+            const count = await Permission.countDocuments();
+            console.log(`[DEBUG] Immediate count after syncPermissions: ${count}`);
+
+        } catch (error) {
+            console.error("❌ Permission sync failed:", error);
+            throw error;
+        }
+    } else {
+        console.log("ℹ️ No permissions to sync.");
     }
 }
 
@@ -64,6 +81,7 @@ export async function syncResourceGroups(session?: mongoose.ClientSession): Prom
 
     // 1. Get all available permissions
     const allPermissions = await Permission.find({}).session(session || null);
+    console.log(`[DEBUG] syncResourceGroups found ${allPermissions.length} permissions in DB.`);
 
     // 2. Group permissions by resource
     const permissionsByResource: Record<string, mongoose.Types.ObjectId[]> = {};
@@ -84,10 +102,25 @@ export async function syncResourceGroups(session?: mongoose.ClientSession): Prom
     const allPermissionIds = allPermissions.map((p: any) => (p._id as mongoose.Types.ObjectId));
 
     // 3. Create or Update Permission Groups for each resource
+    const dbOptions = session ? { session } : undefined;
+
     for (const [resource, permIds] of Object.entries(permissionsByResource)) {
         const groupModule = getModuleByResource(resource) || 'system';
         const name = `${groupModule}.${resource}`;
-        let group = await PermissionGroup.findOne({ name }).session(session || null);
+
+        let group = await PermissionGroup.findOne({ name }).session(session ?? null);
+
+        // DEBUG: Double check with native driver if mongoose misses it
+        if (!group) {
+            const nativeGroup = await mongoose.connection.db?.collection("permissiongroups").findOne({ name }, dbOptions as any);
+            if (nativeGroup) {
+                console.error(`🚨 CRITICAL: Mongoose missed existing group '${name}' but Native found it! Possible Schema/Plugin issue.`);
+                // Recover by using the native ID but we can't fully use it as a doc without hydration, 
+                // but better to skip creation.
+                console.log("   Recovering: treating as found.");
+                group = nativeGroup as any;
+            }
+        }
 
         if (!group) {
             try {
@@ -100,21 +133,39 @@ export async function syncResourceGroups(session?: mongoose.ClientSession): Prom
                     isActive: true,
                     createdBy: SYSTEM_USER_ID,
                     updatedBy: SYSTEM_USER_ID,
-                }], session ? { session } : {}) as any;
+                }], dbOptions as any) as any;
                 group = created[0];
-            } catch (e) {
-                console.log(`⚠️ Group creation failed for ${name}, might exist.`, e);
-                continue;
+            } catch (e: any) {
+                if (e.code === 11000) {
+                    console.log(`⚠️ Race condition avoided for ${name}, fetching again.`);
+                    group = await PermissionGroup.findOne({ name }).session(session ?? null);
+                } else {
+                    console.log(`⚠️ Group creation failed for ${name}, might exist.`, e.message);
+                    continue;
+                }
             }
         } else {
-            // Content-aware sync
+            // Existing group logic
+            // Check if we need to update permissions
+            const currentPermIds = group.permissions.map((p: any) => p.toString());
+            const newPermIds = permIds.map(p => p.toString());
+
             const isSame =
-                group.permissions.length === permIds.length &&
-                group.permissions.every(id => permIds.some(p => p.toString() === id.toString()));
+                currentPermIds.length === newPermIds.length &&
+                currentPermIds.every(id => newPermIds.includes(id));
 
             if (!isSame) {
-                group.permissions = permIds as any;
-                await group.save(session ? { session } : {});
+                // Determine if 'group' is a Mongoose document or POJO from native recovery
+                if (group instanceof mongoose.Model || typeof (group as any).save === 'function') {
+                    group.permissions = permIds as any;
+                    await group.save(dbOptions as any);
+                } else {
+                    await PermissionGroup.updateOne(
+                        { _id: group._id },
+                        { $set: { permissions: permIds } },
+                        dbOptions as any
+                    );
+                }
             }
         }
 
@@ -123,28 +174,42 @@ export async function syncResourceGroups(session?: mongoose.ClientSession): Prom
         }
     }
 
-    // 4. Create/Sync Full Access Group (Special Technical Group)
-    let fullAccessGroup = await PermissionGroup.findOne({ name: "system.full_access" }).session(session || null);
-    if (!fullAccessGroup) {
-        const created = await PermissionGroup.create([{
-            name: "system.full_access",
-            module: 'system',
-            description: "All permissions (Technical Full Access)",
-            permissions: allPermissionIds,
-            resolver: { strategy: "cumulative", priority: 10, fallback: "deny" },
-            isActive: true,
-            createdBy: SYSTEM_USER_ID,
-            updatedBy: SYSTEM_USER_ID,
-        }], session ? { session } : {}) as any;
-        fullAccessGroup = created[0];
-    } else {
-        if (fullAccessGroup.permissions.length !== allPermissionIds.length) {
-            fullAccessGroup.permissions = allPermissionIds as any;
-            await fullAccessGroup.save(session ? { session } : {});
+    // 4. Create/Sync Full Access Group
+    try {
+        let fullAccessGroup = await PermissionGroup.findOne({ name: "system.full_access" }).session(session ?? null);
+        if (!fullAccessGroup) {
+            try {
+                const created = await PermissionGroup.create([{
+                    name: "system.full_access",
+                    module: 'system',
+                    description: "All permissions (Technical Full Access)",
+                    permissions: allPermissionIds,
+                    resolver: { strategy: "cumulative", priority: 10, fallback: "deny" },
+                    isActive: true,
+                    createdBy: SYSTEM_USER_ID,
+                    updatedBy: SYSTEM_USER_ID,
+                }], dbOptions as any) as any;
+                fullAccessGroup = created[0];
+            } catch (e: any) {
+                if (e.code === 11000) {
+                    console.log(`⚠️ Race condition avoided for system.full_access.`);
+                    fullAccessGroup = await PermissionGroup.findOne({ name: "system.full_access" }).session(session ?? null);
+                } else {
+                    throw e;
+                }
+            }
+        } else {
+            if (fullAccessGroup.permissions.length !== allPermissionIds.length) {
+                fullAccessGroup.permissions = allPermissionIds as any;
+                await fullAccessGroup.save(dbOptions as any);
+            }
         }
+        if (fullAccessGroup) {
+            resourceGroupsMap['FULL_ACCESS'] = fullAccessGroup._id as Types.ObjectId;
+        }
+    } catch (e) {
+        console.error("❌ Failed to sync full access group:", e);
     }
-
-    resourceGroupsMap['FULL_ACCESS'] = fullAccessGroup!._id as Types.ObjectId;
 
     return resourceGroupsMap;
 }

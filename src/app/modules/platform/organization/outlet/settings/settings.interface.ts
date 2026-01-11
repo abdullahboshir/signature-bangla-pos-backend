@@ -1,5 +1,6 @@
 import { Document, Model } from 'mongoose';
-import type { IOutlet } from '../outlet.interface.ts';
+import type { IOutlet } from '../outlet.interface.js';
+import type { ISharedOperatingHours, ISharedPaymentSettings, ISharedPOSHardware, ISharedCompliance, ISharedDisplayPolicy, ISharedCheckoutPolicy, ISharedServiceArea, ISharedCashierRegistry, ISharedBranding, ISharedInventoryPolicy, ISharedPricingPolicy, ISharedFulfillmentPolicy, ISharedCommunicationChannel, ISharedSEOPolicy, ISharedIntegrationRegistry, ISharedLegalGovernance, ISharedSmtpConfig, ISharedPrefixPolicy } from '../../shared/common.interface.js';
 
 /**
  * Outlet-specific configuration.
@@ -7,15 +8,28 @@ import type { IOutlet } from '../outlet.interface.ts';
  */
 export interface IOutletSettings extends Document {
     outlet: IOutlet['_id'];
-    pos: {
-        counterName: string;
-        isTableManagementEnabled: boolean;
-        receiptPrinterIp?: string;
-    };
-    operatingHours: {
-        open: string; // "09:00"
-        close: string; // "22:00"
-    };
+    branding: ISharedBranding;
+    pos: ISharedPOSHardware;
+    compliance: ISharedCompliance;
+    operatingHours: ISharedOperatingHours;
+    display?: ISharedDisplayPolicy;
+    checkout?: ISharedCheckoutPolicy;
+    payment: ISharedPaymentSettings;
+    serviceArea: ISharedServiceArea;
+    cashier: ISharedCashierRegistry;
+    inventory?: ISharedInventoryPolicy;
+    pricingPolicy?: ISharedPricingPolicy;
+    fulfillmentPolicy?: ISharedFulfillmentPolicy;
+    communication?: ISharedCommunicationChannel;
+    seo?: ISharedSEOPolicy;
+    integrations?: ISharedIntegrationRegistry[];
+    legal?: ISharedLegalGovernance;
+    smtp?: ISharedSmtpConfig;
+    prefixes?: ISharedPrefixPolicy;
 }
 
-export type IOutletSettingsModel = Model<IOutletSettings>;
+
+
+export interface IOutletSettingsModel extends Model<IOutletSettings> {
+    getSettings(outletId: string, session?: any): Promise<IOutletSettings>;
+}

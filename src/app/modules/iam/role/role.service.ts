@@ -33,7 +33,7 @@ class RoleService {
   }
 
   // Get all roles
-  async getAllRoles(query: any) {
+  async getAllRoles(query: any, user: JwtPayload) {
     const filter: any = {};
 
     if (query.isActive !== undefined) {
@@ -48,10 +48,13 @@ class RoleService {
       filter.roleScope = query.roleScope;
     }
 
-    // Role Scope Filtering Logic based on Requestor (if needed, or purely query based for now)
-    // Ideally, we should filter out GLOBAL roles for Business users here if we had user context.
-    // However, the controller passes `req.query`, not `req.user` context for filtering typically.
-    // For now, enabling query parameter filtering is sufficient for frontend usage.
+    // 🛡️ Hierarchy filtering: Only see roles at your level or below
+    // Note: In our system hierarchyLevel 100 is Super Admin (Most Power).
+    const authUser = user as any;
+    if (authUser && !authUser.isSuperAdmin) {
+      const userHierarchy = authUser.hierarchyLevel || 0;
+      filter.hierarchyLevel = { $lte: userHierarchy };
+    }
 
     const roles = await Role.find(filter)
       .populate('permissions', 'id resource action description')
@@ -100,6 +103,19 @@ class RoleService {
       // ENFORCE SCOPE GUARD
       if (payload.roleScope) {
         await this.validateScopeConsistency(payload.roleScope, payload.permissions as unknown as string[]);
+      }
+    }
+
+    // 🛡️ HIERARCHY ESCALATION GUARD
+    const authUser = user as any;
+    if (authUser && !authUser.isSuperAdmin) {
+      const userLevel = authUser.hierarchyLevel || 0;
+      if (payload.hierarchyLevel && payload.hierarchyLevel > userLevel) {
+        throw new AppError(status.FORBIDDEN, `Security Violation: Cannot create a role with hierarchy level (${payload.hierarchyLevel}) higher than your own (${userLevel}).`);
+      }
+      // If no level provided, default to user's level or lower
+      if (!payload.hierarchyLevel) {
+        payload.hierarchyLevel = Math.min(userLevel, 1);
       }
     }
 
@@ -181,6 +197,22 @@ class RoleService {
 
       if (validPermissions.length !== payload.permissions.length) {
         throw new AppError(status.BAD_REQUEST, 'Some permissions are invalid');
+      }
+    }
+
+    // 🛡️ HIERARCHY ESCALATION GUARD
+    const authUser = user as any;
+    if (authUser && !authUser.isSuperAdmin) {
+      const userLevel = authUser.hierarchyLevel || 0;
+
+      // 1. Cannot set a new level higher than your own
+      if (payload.hierarchyLevel && payload.hierarchyLevel > userLevel) {
+        throw new AppError(status.FORBIDDEN, `Security Violation: Cannot set hierarchy level higher than your own (${userLevel}).`);
+      }
+
+      // 2. Cannot update a role that is already more powerful than you
+      if (role.hierarchyLevel > userLevel) {
+        throw new AppError(status.FORBIDDEN, `Security Violation: Cannot modify a role with higher authority than your own.`);
       }
     }
 

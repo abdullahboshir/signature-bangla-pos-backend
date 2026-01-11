@@ -18,8 +18,9 @@ const moduleStatusSchema = z.union([
 ]);
 
 // Main BusinessUnit validation schema
-export const createBusinessUnitValidationSchema = z.object({
-  vendor: objectIdSchema,
+const createBusinessUnitBodySchema = z.object({
+  vendor: objectIdSchema.optional(),
+  company: objectIdSchema,
   // ... previous fields ...
 
   branding: z.object({
@@ -156,7 +157,13 @@ export const createBusinessUnitValidationSchema = z.object({
   path: ["primaryCategory"],
 });
 
-export const updateBusinessUnitSchema = createBusinessUnitValidationSchema.partial();
+export const createBusinessUnitValidationSchema = z.object({
+  body: createBusinessUnitBodySchema
+});
 
-export type CreateBusinessUnitInput = z.infer<typeof createBusinessUnitValidationSchema>;
-export type UpdateBusinessUnitInput = z.infer<typeof updateBusinessUnitSchema>;
+export const updateBusinessUnitSchema = z.object({
+  body: createBusinessUnitBodySchema.partial()
+});
+
+export type CreateBusinessUnitInput = z.infer<typeof createBusinessUnitBodySchema>;
+export type UpdateBusinessUnitInput = z.infer<typeof updateBusinessUnitSchema>['body'];

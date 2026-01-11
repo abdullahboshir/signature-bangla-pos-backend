@@ -509,3 +509,34 @@ export const authMeService = async (
 export const logoutService = async () => {
   return true;
 };
+
+/**
+ * Setup Password Service
+ * Used for new Company Owners to set their initial password via email token
+ */
+export const setupPasswordService = async (token: string, password: string) => {
+  // 1. Find user by setup token
+  const user = await User.findOne({
+    setupPasswordToken: token,
+    setupPasswordExpires: { $gt: new Date() }
+  }).select('+setupPasswordToken +setupPasswordExpires');
+
+  if (!user) {
+    throw new AppError(status.BAD_REQUEST, 'Invalid or expired setup token. Please contact support for a new invitation.');
+  }
+
+  // 2. Set password and clear token
+  user.password = password;
+  user.setupPasswordToken = undefined as any;
+  user.setupPasswordExpires = undefined as any;
+  user.needsPasswordChange = false;
+  user.status = USER_STATUS.ACTIVE;
+  user.isEmailVerified = true;
+
+  await user.save();
+
+  return {
+    message: 'Password set successfully. You can now login.',
+    email: user.email
+  };
+};

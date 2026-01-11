@@ -1,19 +1,14 @@
-import { BusinessUnit } from "@app/modules/platform/index.js";
+import { QueryBuilder } from "@core/database/QueryBuilder.ts";
+import { resolveBusinessUnitId } from "@core/utils/mutation-helper.ts";
 import { Attendance } from "./attendance.model.ts";
 import type { IAttendance } from "./attendance.model.ts";
 import AppError from "@shared/errors/app-error.ts";
 import httpStatus from "http-status";
-import { Types } from "mongoose";
 
-
-const checkIn = async (userId: string, payload: Partial<IAttendance>) => {
-    // Resolve Business Unit Slug
+const checkIn = async (userId: string, payload: any, user?: any) => {
+    // 🛡️ Resolve Business Unit ID SECURELY with ownership verification
     if (payload.businessUnit) {
-        const isObjectId = Types.ObjectId.isValid(payload.businessUnit.toString());
-        if (!isObjectId) {
-            const bu = await BusinessUnit.findOne({ slug: payload.businessUnit });
-            if (bu) payload.businessUnit = bu._id;
-        }
+        payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit, user);
     }
 
     // 1. Check if already checked in today
@@ -48,14 +43,15 @@ const checkIn = async (userId: string, payload: Partial<IAttendance>) => {
 };
 
 const getAllAttendance = async (filters: any) => {
-    // Basic filter implementation
-    const query: any = {};
-    if (filters.staff) query.staff = filters.staff;
-    if (filters.date) query.date = new Date(filters.date);
-    if (filters.status) query.status = filters.status;
-    if (filters.businessUnit) query.businessUnit = filters.businessUnit;
+    const attendanceQuery = new QueryBuilder(
+        Attendance.find().populate('staff', 'name email'),
+        filters
+    )
+        .filter()
+        .sort()
+        .paginate();
 
-    const result = await Attendance.find(query).populate('staff', 'name email').sort({ createdAt: -1 });
+    const result = await attendanceQuery.modelQuery;
     return result;
 };
 

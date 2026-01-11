@@ -1,22 +1,17 @@
 import { Model, Document } from "mongoose";
+import type { ISharedStorageRegistry, ISharedGatewayGovernance, ISharedInternationalizationHub, ISharedObservability, ISharedModuleMap, ISharedInfrastructureHub, ISharedSystemCore } from "../../organization/shared/common.interface.js";
 
 export interface ISystemSettings {
     softDeleteRetentionDays: number;
     isRetentionPolicyEnabled: boolean;
     licenseKey?: string;
-    enabledModules: {
-        pos: boolean;
-        erp: boolean;
-        hrm: boolean;
-        ecommerce: boolean;
-        crm: boolean;
-        logistics: boolean;
-        finance: boolean;
-        marketing: boolean;
-        integrations: boolean;
-        governance: boolean;
-        saas: boolean;
-    };
+    enabledModules: ISharedModuleMap;
+    core: ISharedSystemCore;
+    observability: ISharedObservability;
+    infrastructureHub: ISharedInfrastructureHub;
+    storageRegistry: ISharedStorageRegistry;
+    gatewayGovernance: ISharedGatewayGovernance;
+    internationalizationHub: ISharedInternationalizationHub;
 }
 
 export interface ISystemSettingsDocument extends ISystemSettings, Document {
@@ -25,5 +20,5 @@ export interface ISystemSettingsDocument extends ISystemSettings, Document {
 }
 
 export interface ISystemSettingsModel extends Model<ISystemSettingsDocument> {
-    getSettings(): Promise<ISystemSettingsDocument>;
+    getSettings(session?: any): Promise<ISystemSettingsDocument>;
 }

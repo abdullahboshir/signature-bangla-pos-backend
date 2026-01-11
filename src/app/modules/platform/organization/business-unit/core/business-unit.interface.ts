@@ -1,12 +1,6 @@
-// ============================================================================
-// FILE 1: src/app/modules/organization/business-unit/types/business-unit.interface.ts
-// ============================================================================
-
-import type { Document, Model, Types } from "mongoose";
+import type { Document, Model, Types } from 'mongoose';
+import type { ISharedBranding, ISharedContact, ISharedLocation } from '../../shared/common.interface.js';
 import type {
-  IBusinessUnitBranding,
-  IBusinessUnitContact,
-  IBusinessUnitLocation,
   IBusinessUnitPerformance,
   IBusinessUnitPolicy,
   IBusinessUnitSeo,
@@ -17,8 +11,11 @@ export interface IBusinessUnitCore {
   id: string;
   company?: Types.ObjectId;
 
-  // ====== BRANDING ======
-  branding: IBusinessUnitBranding;
+  // ====== SHARED STRUCTURES ======
+  branding: ISharedBranding;
+  contact: ISharedContact;
+  location: ISharedLocation;
+
   slug: string;
 
   // ====== CATEGORIZATION ======
@@ -51,13 +48,8 @@ export interface IBusinessUnitCore {
   | "general"
   | "other";
 
-  // ====== CONTACT & LOCATION ======
-  contact: IBusinessUnitContact;
-  location: IBusinessUnitLocation;
-  multipleLocations?: IBusinessUnitLocation[];
-
-  // ====== SETTINGS ======
-  settings: {
+  // ====== LOCALIZATION (Identity Defaults) ======
+  localization: {
     currency: "BDT" | "USD";
     language: "en" | "bn";
     timezone: string;
@@ -67,6 +59,8 @@ export interface IBusinessUnitCore {
   };
 
   // ====== POLICIES & SEO & FEATURES ======
+
+
   policies?: IBusinessUnitPolicy;
   seo: IBusinessUnitSeo;
   features: {
@@ -150,7 +144,11 @@ export interface IBusinessUnitCore {
 
   isDeleted?: boolean;
   deletedAt?: Date;
+
+  // Virtuals
+  settings?: any; // To be typed as IBusinessUnitSettings in a higher-level combined type
 }
+
 
 // ==================== DOCUMENT INTERFACE ====================
 export interface IBusinessUnitCoreDocument extends Document, IBusinessUnitCore {

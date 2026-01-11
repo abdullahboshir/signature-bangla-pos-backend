@@ -5,6 +5,7 @@ import { ZodError } from 'zod'
 import status from 'http-status'
 import appConfig from '../../shared/config/app.config.js'
 import AppError from '../../shared/errors/app-error.js'
+import { ContextService } from '../services/context.service.js';
 
 // Type definitions for error sources
 type TErrorSource = {
@@ -200,6 +201,9 @@ const globalErrorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
       },
     ]
   }
+
+  // Capture error in context for Audit Logging
+  ContextService.addError(message);
 
   // Send Response
   res.status(statusCode as number).json({

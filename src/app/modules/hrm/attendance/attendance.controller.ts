@@ -10,7 +10,7 @@ const createAttendance = catchAsync(async (req: Request, res: Response) => {
     // Business Unit from header or params? Usually params in this architecture [business-unit]
     // But backend might depend on context.
     // For now assuming body carries data or we infer from context.
-    const result = await AttendanceService.checkIn(userId, req.body);
+    const result = await AttendanceService.checkIn(userId, req.body, (req as any).user);
     ApiResponse.success(res, result, "Checked in successfully", httpStatus.CREATED);
 });
 
@@ -21,18 +21,18 @@ const getAllAttendance = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAttendanceById = catchAsync(async (req: Request, res: Response) => {
-    const result = await AttendanceService.getAttendanceById(req.params['id']);
+    const result = await AttendanceService.getAttendanceById(req.params['id'] as string);
     ApiResponse.success(res, result, "Attendance retrieved successfully");
 });
 
 const updateAttendance = catchAsync(async (req: Request, res: Response) => {
     // Check Out or Update
-    const result = await AttendanceService.updateAttendance(req.params['id'], req.body);
+    const result = await AttendanceService.updateAttendance(req.params['id'] as string, req.body);
     ApiResponse.success(res, result, "Attendance updated successfully");
 });
 
 const deleteAttendance = catchAsync(async (req: Request, res: Response) => {
-    await AttendanceService.deleteAttendance(req.params['id']);
+    await AttendanceService.deleteAttendance(req.params['id'] as string);
     ApiResponse.success(res, null, "Attendance deleted successfully");
 });
 

@@ -2,7 +2,9 @@ import { model, Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import type { IUser, UserStatic } from "./user.interface.js";
 import { USER_STATUS } from "./user.constant.js";
+import { auditDiffPlugin } from '../../../../core/plugins/mongoose-diff.plugin.js';
 import { cachingMiddleware } from "@core/utils/cacheQuery.ts";
+
 
 
 
@@ -107,6 +109,13 @@ const UserSchema = new Schema<IUser, UserStatic>({
   passwordChangedAt: {
     type: Date
   },
+  setupPasswordToken: {
+    type: String,
+    sparse: true
+  },
+  setupPasswordExpires: {
+    type: Date
+  },
   isDeleted: {
     type: Boolean,
     default: false
@@ -130,7 +139,7 @@ const UserSchema = new Schema<IUser, UserStatic>({
     },
     assignedScope: {
       type: String,
-      enum: ['GLOBAL', 'BUSINESS', 'OUTLET'],
+      enum: ['GLOBAL', 'COMPANY', 'BUSINESS', 'OUTLET'],
       required: true
     }
   }],
@@ -174,6 +183,7 @@ UserSchema.index({ 'globalRoles': 1 }); // Main Access Lookup for Global Roles
 UserSchema.index({ vendorId: 1 });
 UserSchema.index({ region: 1 });
 UserSchema.index({ status: 1 });
+UserSchema.index({ setupPasswordToken: 1 }, { sparse: true });
 UserSchema.index({ isActive: 1 });
 UserSchema.index({ isDeleted: 1 });
 UserSchema.index({ createdAt: -1 });
@@ -402,5 +412,8 @@ UserSchema.methods["getPermissionsSummary"] = async function () {
 };
 
 cachingMiddleware(UserSchema);
+
+// Apply Audit Diff Plugin
+(UserSchema as any).plugin(auditDiffPlugin);
 
 export const User = model<IUser, UserStatic>('User', UserSchema);

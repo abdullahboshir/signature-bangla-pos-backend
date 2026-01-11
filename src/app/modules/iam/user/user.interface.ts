@@ -29,6 +29,8 @@ export interface IUser {
   avatar?: string;
   needsPasswordChange: boolean;
   passwordChangedAt?: Date;
+  setupPasswordToken?: string;
+  setupPasswordExpires?: Date;
   isDeleted: boolean;
   directPermissions?: {
     permissionId: Types.ObjectId;

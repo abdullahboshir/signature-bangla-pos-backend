@@ -1,139 +1,28 @@
 
-
 import { model, Schema } from "mongoose";
-import type { IBusinessUnitCoreDocument, IBusinessUnitCoreModel } from "./business-unit.interface.ts";
-import { BUSINESS_MODEL_ARRAY, BUSINESS_INDUSTRY_ARRAY, BUSINESS_MODEL, BUSINESS_INDUSTRY } from "./business-unit.constant.ts";
-
+import type { IBusinessUnitCoreDocument, IBusinessUnitCoreModel } from "./business-unit.interface.js";
+import { brandingSchema, contactSchema, locationSchema } from "../../shared/common.schema.js";
 
 export const businessUnitCoreSchema = new Schema<
   IBusinessUnitCoreDocument,
   IBusinessUnitCoreModel
 >(
   {
+    branding: { type: brandingSchema, required: true },
+    contact: { type: contactSchema, required: true },
+    location: { type: locationSchema, required: true },
+
+    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+
     name: {
       type: String,
       required: true,
       trim: true,
       index: true,
     },
-    id: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true,
-      trim: true,
-    },
-    company: {
-      type: Schema.Types.ObjectId,
-      ref: 'Company',
-      required: false,
-      index: true,
-    },
-    // ====== BRANDING ======
-    branding: {
-      name: { type: String, required: true, trim: true },
-      description: { type: String, required: false },
-      descriptionBangla: { type: String },
-      logo: { type: String, required: false },
-      banner: { type: String },
-      favicon: { type: String },
-      theme: {
-        primaryColor: { type: String, default: "#3B82F6" },
-        secondaryColor: { type: String, default: "#1E40AF" },
-        accentColor: { type: String, default: "#F59E0B" },
-        fontFamily: { type: String, default: "Inter" },
-      },
-    },
-    slug: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      index: true,
-    },
 
-    // ====== CATEGORIZATION ======
-    categories: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Category",
-        required: true,
-        index: true,
-      },
-    ],
-    primaryCategory: {
-      type: Schema.Types.ObjectId,
-      ref: "Category",
-      required: false,
-      index: true,
-    },
-    tags: [{ type: String, trim: true }],
-    specialties: [{ type: String, trim: true }],
-    attributeGroup: {
-      type: Schema.Types.ObjectId,
-      ref: "AttributeGroup",
-      required: false
-    },
-    attributeGroups: [{
-      type: Schema.Types.ObjectId,
-      ref: "AttributeGroup"
-    }],
-    operationalModel: {
-      type: String,
-      enum: BUSINESS_MODEL_ARRAY,
-      default: BUSINESS_MODEL.RETAIL,
-      index: true,
-    },
-    industry: {
-      type: String,
-      enum: BUSINESS_INDUSTRY_ARRAY,
-      default: BUSINESS_INDUSTRY.GENERAL,
-      index: true
-    },
-
-    // ====== CONTACT & LOCATION ======
-    contact: {
-      email: { type: String, required: true },
-      phone: { type: String },
-      website: String,
-      supportHours: { type: String, default: "9 AM - 6 PM" },
-      supportPhone: { type: String },
-      socialMedia: {
-        facebook: { type: String },
-        instagram: { type: String },
-        twitter: { type: String },
-        youtube: { type: String },
-        linkedin: { type: String },
-      },
-    },
-    location: {
-      address: { type: String, required: false },
-      city: { type: String, required: false },
-      state: { type: String, required: false },
-      country: { type: String, required: false },
-      postalCode: { type: String, required: false },
-      coordinates: {
-        lat: { type: Number },
-        lng: { type: Number },
-      },
-      timezone: { type: String, default: "Asia/Dhaka" },
-    },
-    multipleLocations: [
-      {
-        address: { type: String },
-        city: { type: String },
-        state: { type: String },
-        country: { type: String },
-        postalCode: { type: String },
-        coordinates: {
-          lat: { type: Number },
-          lng: { type: Number },
-        },
-      },
-    ],
-
-    // ====== SETTINGS ======
-    settings: {
+    // ====== LOCALIZATION (Identity Defaults) ======
+    localization: {
       currency: { type: String, enum: ["BDT", "USD"], default: "BDT" },
       language: { type: String, enum: ["en", "bn"], default: "en" },
       timezone: { type: String, default: "Asia/Dhaka" },
@@ -143,6 +32,8 @@ export const businessUnitCoreSchema = new Schema<
       inventoryManagement: { type: Boolean, default: true },
       lowStockAlert: { type: Boolean, default: true },
     },
+
+
 
     features: {
       hasInventory: { type: Boolean, default: true },
@@ -304,6 +195,14 @@ businessUnitCoreSchema.virtual("outlets", {
   ref: "Outlet",
   localField: "_id",
   foreignField: "businessUnit"
+});
+
+// Virtual for business unit settings
+businessUnitCoreSchema.virtual('settings', {
+  ref: 'BusinessUnitSettings',
+  localField: '_id',
+  foreignField: 'businessUnit',
+  justOne: true
 });
 
 

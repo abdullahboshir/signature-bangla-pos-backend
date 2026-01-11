@@ -15,12 +15,19 @@ import appConfig from "./shared/config/app.config.ts";
 
 const app = express();
 
+import { maintenanceMode } from "./core/middleware/maintenance.middleware.js";
+app.use(maintenanceMode);
+
+if (appConfig.trust_proxy) {
+  app.enable("trust proxy");
+}
+
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:5173", "http://localhost:3001"],
+    origin: appConfig.cors_origin,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "x-business-unit-id", "x-outlet-id"],
@@ -32,24 +39,23 @@ app.use(compression());
 import path from "path";
 app.use("/uploads", express.static(path.join(process.cwd(), "storage/uploads")));
 
-
-
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Limit each IP to 1000 requests per windowMs
+  windowMs: appConfig.misc.rate_limit.window_ms,
+  max: appConfig.misc.rate_limit.max_requests,
   message: {
     error: "Too many requests from this IP, please try again later.",
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false }, // Trusted proxy is handled globally
 });
 
 app.use(limiter);
 
 // 4. REQUEST PARSERS
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-app.use(cookieParser());
+app.use(express.json({ limit: appConfig.max_upload_size }));
+app.use(express.urlencoded({ extended: true, limit: appConfig.max_upload_size }));
+app.use(cookieParser(appConfig.cookie_secret));
 
 // 5. LOGGING
 if (appConfig.NODE_ENV === "development") {

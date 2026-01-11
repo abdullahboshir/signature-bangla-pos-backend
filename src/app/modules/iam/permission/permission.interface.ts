@@ -10,6 +10,12 @@ import type {
   ResourceType,
 } from "./permission.constant.js";
 
+export interface ITargetScope {
+  businessUnitId?: string | undefined;
+  outletId?: string | undefined;
+  companyId?: string | undefined;
+}
+
 export interface IPermissionCondition {
   field: string;
   operator: PermissionConditionOperatorType;
@@ -90,10 +96,7 @@ export interface IPermissionContext {
     category?: string;
     region?: string;
   };
-  scope?: {
-    businessUnitId?: string;
-    outletId?: string;
-  };
+  scope?: ITargetScope;
   environment?: {
     ip?: string;
     userAgent?: string;

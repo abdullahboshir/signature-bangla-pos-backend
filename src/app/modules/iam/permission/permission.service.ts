@@ -7,6 +7,7 @@ import type {
   IPermissionContext,
   IPermissionResult,
   IAuthorizationContext,
+  ITargetScope,
 } from './permission.interface.js';
 import { CacheManager as _CacheManager } from "../../../../core/utils/caching/cache-manager.js";
 import logger from '@core/utils/logger.ts';
@@ -48,7 +49,7 @@ export class PermissionService {
   /* ---------------------------------------------------------------------- */
   async getUserPermissions(
     user: IUser,
-    targetScope?: { businessUnitId?: string; outletId?: string }
+    targetScope?: ITargetScope
   ): Promise<IPermission[]> {
     const context = await this.getAuthorizationContext(user, targetScope);
     return context.permissions;
@@ -67,7 +68,7 @@ export class PermissionService {
   /* ---------------------------------------------------------------------- */
   async getAuthorizationContext(
     user: IUser,
-    targetScope?: { businessUnitId?: string; outletId?: string }
+    targetScope?: ITargetScope
   ): Promise<IAuthorizationContext> {
     const userId = user.id || (user as any)._id?.toString();
     if (!userId) {
@@ -76,25 +77,23 @@ export class PermissionService {
 
     }
 
-    const _cacheKey = (await buildUserPermissionsKey(userId, targetScope)) + ':force_v7';
-    console.log(`[AUTH-DEBUG] Cache Key Generated: ${_cacheKey}`);
+    const _cacheKey = (await buildUserPermissionsKey(userId, targetScope)) + ':force_v8';
+
 
     // Attempt cache fetch
     const cached = await _CacheManager.get<IAuthorizationContext>(_cacheKey);
     if (cached) {
-      console.log(`[AUTH-PERF] Cache HIT for user ${userId} (Scope: ${targetScope?.businessUnitId || 'Global'})`);
       return cached;
     }
-    console.log(`[AUTH-PERF] Cache MISS for user ${userId} - Calculating...`);
-    console.log(`[AUTH-PERF] Cache MISS for user ${userId} - Calculating...`);
-    const startTime = Date.now();
+
+
 
     // SUPER ADMIN OPTIMIZATION:
     // If user has 'isSuperAdmin' flag set
     const isSuperAdmin = user.isSuperAdmin;
 
     if (isSuperAdmin) {
-      console.log(`[AUTH-PERF] User ${userId} is Super Admin - returning wildcard.`);
+
       const result = {
         permissions: [{ action: '*', resource: '*', effect: 'allow' } as any],
         hierarchyLevel: 100,
@@ -205,16 +204,30 @@ export class PermissionService {
 
     let maxScopeLevel = 1; // Default 'own'
 
-    // 2. Collect Business Access (Scoped Roles)
+    // 2. Identify active company for scope inheritance
+    // Use companyId from targetScope if provided, otherwise derive it from Business Unit
+    let activeCompanyId: string | null = targetScope?.companyId?.toString() || null;
+    const targetBuId = targetScope?.businessUnitId?.toString();
+
+    if (!activeCompanyId && targetBuId && Array.isArray(user.businessAccess)) {
+      const buAccess = user.businessAccess.find((a: any) => {
+        if (!a.businessUnit) return false;
+        const b = a.businessUnit;
+        const bId = b._id?.toString() || b.id || b.toString();
+        const bSlug = b.slug;
+        return bId === targetBuId || bSlug === targetBuId;
+      });
+      if (buAccess && buAccess.company) {
+        activeCompanyId = (buAccess.company._id || buAccess.company.id || buAccess.company).toString();
+      }
+    }
+
+    // 3. Collect Business Access (Scoped Roles)
     if (Array.isArray(user.businessAccess)) {
-      console.log(`[AUTH-DEBUG] BusinessAccess Count: ${user.businessAccess.length}`);
-      console.log(`[AUTH-DEBUG] TargetScope:`, targetScope);
-
       user.businessAccess.forEach(assignment => {
-        if (!assignment.role) return;
-
-        // Check Status
-        if (assignment.status && assignment.status.toLowerCase() !== 'active') return;
+        // Normalize status
+        const statusMatch = !assignment.status || assignment.status.toUpperCase() === 'ACTIVE';
+        if (!statusMatch) return;
 
         // Check Expiry
         if (assignment.expiresAt) {
@@ -238,42 +251,37 @@ export class PermissionService {
         const outletId = assignment.outlet
           ? ((assignment.outlet as any)._id || assignment.outlet).toString()
           : null;
+        const companyId = assignment.company
+          ? ((assignment.company as any)._id || assignment.company).toString()
+          : null;
 
-        console.log(`[AUTH-DEBUG] Checking Assignment: Role=${(assignment.role as any).name}, BU=${buId}, Outlet=${outletId}`);
+        const targetOutletId = targetScope?.outletId?.toString();
 
-        // 1. Global Role (No specific scope assigned) - usually handled by globalRoles, but check just in case
-        if (!buId && !outletId) {
+        // Scope Inheritance Logic:
+        // 1. GLOBAL Scope roles always include
+        if (assignment.scope === 'GLOBAL') {
           includeRole = true;
-          console.log(`[AUTH-DEBUG] -> Global Role (No Scope)`);
         }
-        // 2. Scoped Role
-        else {
-          if (targetScope) {
-            // Check Business Unit match
-            const targetBuId = targetScope.businessUnitId?.toString();
-            if (buId && targetBuId && buId === targetBuId) {
-              includeRole = true;
-              console.log(`[AUTH-DEBUG] -> BU Match: ${buId} === ${targetBuId}`);
-            }
-            // Check Outlet match
-            const targetOutletId = targetScope.outletId?.toString();
-            if (outletId && targetOutletId && outletId === targetOutletId) {
-              includeRole = true;
-              console.log(`[AUTH-DEBUG] -> Outlet Match: ${outletId} === ${targetOutletId}`);
-            }
-          } else {
-            // No specific scope requested (Union context) -> Include all roles
-            includeRole = true;
-            console.log(`[AUTH-DEBUG] -> Union Context (No Target Scope)`);
-          }
+        // 2. COMPANY Scope roles include if they match the active company
+        else if (assignment.scope === 'COMPANY' && activeCompanyId && companyId === activeCompanyId) {
+          includeRole = true;
+        }
+        // 3. BUSINESS Scope roles include if they match the target BU
+        else if (assignment.scope === 'BUSINESS' && targetBuId && buId === targetBuId) {
+          includeRole = true;
+        }
+        // 4. OUTLET Scope roles include if they match the target Outlet
+        else if (assignment.scope === 'OUTLET' && targetOutletId && outletId === targetOutletId) {
+          includeRole = true;
+        }
+        // 5. Fallback: If NO target scope is provided, include ALL roles (Union context)
+        else if (!targetScope) {
+          includeRole = true;
         }
 
         if (includeRole) {
           const roleId = ((assignment.role as any).forceId || (assignment.role as any)._id || (assignment.role as any).id || assignment.role).toString();
           roleIds.add(roleId);
-          console.log(`[AUTH-DEBUG] -> Role Added: ${roleId}`);
-        } else {
-          console.log(`[AUTH-DEBUG] -> Role SKIPPED`);
         }
       });
     }
@@ -284,8 +292,8 @@ export class PermissionService {
       let allActiveRoles = await _CacheManager.get<any[]>(_ALL_ROLES_CACHE_KEY);
 
       if (!allActiveRoles) {
-        console.log('[AUTH-PERF] Global Role Cache MISS - Fetching from DB...');
-        const dbStart = Date.now();
+
+
         allActiveRoles = await Role.find({ isActive: true })
           .populate({ path: 'permissions', match: { isActive: true } })
           .populate({
@@ -294,14 +302,11 @@ export class PermissionService {
             populate: { path: 'permissions', match: { isActive: true } },
           })
           .lean();
-        console.log(`[AUTH-PERF] DB Fetch took ${Date.now() - dbStart}ms`);
         await _CacheManager.set(_ALL_ROLES_CACHE_KEY, allActiveRoles, _ALL_ROLES_TTL);
       } else {
-        console.log('[AUTH-PERF] Global Role Cache HIT');
       }
 
       console.timeEnd('[AUTH-PERF] Role DB Query');
-      console.log(`[AUTH-PERF] All active roles fetched: ${allActiveRoles.length}`);
 
       logicStart = Date.now();
 
@@ -364,10 +369,7 @@ export class PermissionService {
       };
 
       // Start Collection
-      console.log(`[AUTH-DEBUG] Starting permission collection for ${roleIds.size} roles:`, Array.from(roleIds));
       roleIds.forEach(rid => collect(rid));
-      console.log(`[AUTH-DEBUG] Collection complete. Total Permissions Found: ${permissions.length}`);
-      console.log(`[AUTH-DEBUG] Unique Resources: ${new Set(permissions.map(p => p.resource)).size}`);
 
       // Performance Audit
       const duration = Date.now() - (logicStart || 0);
@@ -426,10 +428,8 @@ export class PermissionService {
     // Cache the result
     await _CacheManager.set(_cacheKey, result, _CACHE_TTL_SECONDS);
 
-    const totalTime = Date.now() - startTime;
-    const logicTime = typeof logicStart !== 'undefined' ? Date.now() - logicStart : 0;
 
-    console.log(`[AUTH-PERF] Calculation finished in ${totalTime}ms (Logic: ${logicTime}ms)`);
+
     return result;
   }
 

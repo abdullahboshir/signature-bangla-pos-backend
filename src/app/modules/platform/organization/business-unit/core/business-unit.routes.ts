@@ -14,22 +14,22 @@ const router = Router();
 
 router.get(
   '/',
-  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.COMPANY_OWNER),
   authorize(PermissionSourceObj.businessUnit, PermissionActionObj.view),
   getAllBusinessUnitsController
 );
 
 router.post(
   '/create',
-  auth(USER_ROLE.SUPER_ADMIN), // Only super admin can create business units
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.COMPANY_OWNER), // Both super admin and company owner can create BUs
   // authorize(PermissionSourceObj.businessUnit, PermissionActionObj.create), // Temporarily disabled
-  // validateRequest(createBusinessUnitValidationSchema as unknown as AnyZodObject),
+  validateRequest(_createBusinessUnitValidationSchema as unknown as AnyZodObject),
   createBusinessUnitController
 );
 
 router.delete(
   '/:businessUnitId',
-  auth(USER_ROLE.SUPER_ADMIN),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.COMPANY_OWNER),
   // authorize(PermissionSourceObj.businessUnit, PermissionActionObj.delete),
   deleteBusinessUnitController
 );
@@ -39,6 +39,7 @@ router.get(
   auth(
     USER_ROLE.SUPER_ADMIN,
     USER_ROLE.ADMIN,
+    USER_ROLE.COMPANY_OWNER,
     USER_ROLE.MANAGER,
     USER_ROLE.OUTLET_MANAGER,
     USER_ROLE.SALES_ASSOCIATE,
@@ -50,7 +51,7 @@ router.get(
 
 router.patch(
   '/:businessUnitId',
-  auth(USER_ROLE.SUPER_ADMIN),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.COMPANY_OWNER),
   validateRequest(updateBusinessUnitSchema as unknown as AnyZodObject),
   updateBusinessUnitController
 );
@@ -60,6 +61,7 @@ router.get(
   auth(
     USER_ROLE.SUPER_ADMIN,
     USER_ROLE.ADMIN,
+    USER_ROLE.COMPANY_OWNER,
     USER_ROLE.MANAGER,
     USER_ROLE.OUTLET_MANAGER,
     USER_ROLE.SALES_ASSOCIATE,

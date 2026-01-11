@@ -48,7 +48,7 @@ const RoleSchema = new Schema<IRole>(
     },
     roleScope: {
       type: String,
-      enum: ['GLOBAL', 'BUSINESS', 'OUTLET'],
+      enum: ['GLOBAL', 'COMPANY', 'BUSINESS', 'OUTLET'],
       required: true,
       index: true
     },

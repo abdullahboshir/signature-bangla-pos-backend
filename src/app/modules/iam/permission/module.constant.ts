@@ -1,4 +1,4 @@
-import { PermissionSourceObj } from "./permission.constant.ts";
+import { PermissionSourceObj } from "./permission.resource.js";
 
 export const MODULE_RESOURCE_MAP = {
     // IAM System
@@ -82,6 +82,9 @@ export const MODULE_RESOURCE_MAP = {
         PermissionSourceObj.riskProfile,
         PermissionSourceObj.automation,
         PermissionSourceObj.workflow,
+
+        // Missing Items Added
+        PermissionSourceObj.analyticsReport,
     ],
 
     // HRM & Payroll
@@ -122,6 +125,9 @@ export const MODULE_RESOURCE_MAP = {
         PermissionSourceObj.coupon,
         PermissionSourceObj.adCampaign,
         PermissionSourceObj.affiliate,
+        PermissionSourceObj.notification, // Added from system/missing
+        PermissionSourceObj.emailTemplate, // Added from system/missing
+        PermissionSourceObj.smsTemplate, // Added from system/missing
     ],
 
     // Governance & Compliance
@@ -174,10 +180,12 @@ export const MODULE_RESOURCE_MAP = {
 
 
 export const getModuleByResource = (resource: string): string | null => {
+    // console.log(`[DEBUG] Looking up module for resource: ${resource}`);
     for (const [moduleName, resources] of Object.entries(MODULE_RESOURCE_MAP)) {
         if ((resources as readonly string[]).includes(resource)) {
             return moduleName;
         }
     }
+    // console.warn(`[DEBUG] No module found for resource: ${resource}`);
     return null;
 };

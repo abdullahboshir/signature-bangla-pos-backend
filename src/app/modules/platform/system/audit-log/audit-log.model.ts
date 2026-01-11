@@ -12,7 +12,11 @@ export interface IAuditLog {
         resource: string; // e.g., 'Order'
         resourceId: string;
     };
-    businessUnit: Schema.Types.ObjectId;
+    businessUnit?: Schema.Types.ObjectId; // Optional for platform-level actions
+    scope: 'GLOBAL' | 'COMPANY' | 'BUSINESS' | 'OUTLET';
+    requestPayload?: Record<string, any>; // Sanitized body
+    responseStatus?: number; // HTTP Status
+    duration?: number; // ms
     changes?: Record<string, any>; // Diff
     metadata?: Record<string, any>;
     timestamp: Date;
@@ -35,7 +39,11 @@ const auditLogSchema = new Schema<IAuditLog>({
         resource: { type: String, required: true },
         resourceId: { type: String, required: true }
     },
-    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
+    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: false }, // Optional for platform-level actions
+    scope: { type: String, enum: ['GLOBAL', 'COMPANY', 'BUSINESS', 'OUTLET'], default: 'BUSINESS' },
+    requestPayload: { type: Schema.Types.Mixed }, // Store sanitized payload
+    responseStatus: { type: Number },
+    duration: { type: Number },
     changes: { type: Schema.Types.Mixed }, // Store diffs
     metadata: { type: Schema.Types.Mixed },
     timestamp: { type: Date, default: Date.now }

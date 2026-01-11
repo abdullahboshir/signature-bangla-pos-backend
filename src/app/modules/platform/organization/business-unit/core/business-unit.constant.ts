@@ -21,6 +21,7 @@ export const BUSINESS_INDUSTRY = {
     FURNITURE: 'furniture',         // Home Decor
     AUTOMOTIVE: 'automotive',       // Parts, Vehicles
     BOOKS_STATIONERY: 'books_stationery',
+    STORE: 'store',                 // General Store
     GENERAL: 'general',             // Departmental Store
     OTHER: 'other'
 } as const;

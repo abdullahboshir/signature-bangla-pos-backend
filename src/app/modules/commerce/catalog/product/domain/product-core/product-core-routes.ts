@@ -8,18 +8,22 @@ import { PermissionActionObj, PermissionSourceObj } from "@app/modules/iam/index
 import { authorize } from "@core/middleware/authorize.ts";
 import { validateRequest } from "@core/middleware/validateRequest.ts";
 import moduleGuard from "@app/middlewares/moduleGuard.ts";
+import contextGuard from "@app/middlewares/contextGuard.ts";
+import { resourceOwnerGuard } from "@app/middlewares/resourceOwnerGuard.ts";
+import { Product } from "./product-core.model.js";
 
 
 
 
 const router = Router();
 
-// Apply Module Guard for all Product Operations (ERP Module)
+// Apply Security Layer for all Product Operations (ERP Module with Context Awareness)
 router.use(moduleGuard('erp'));
+router.use(contextGuard());
 
 
 router.post('/create', auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
-  authorize(PermissionSourceObj.customer, PermissionActionObj.create),
+  authorize(PermissionSourceObj.product, PermissionActionObj.create),
   validateRequest(productZodSchema), createProductController)
 
 router.get('/',
@@ -29,19 +33,22 @@ router.get('/',
 
 router.get('/:id',
   auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN, USER_ROLE.VENDOR),
+  resourceOwnerGuard(Product),
   getProductByIdController
 );
 
 router.patch('/:id',
   auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
-  // authorize(PermissionSourceObj.customer, PermissionActionObj.update), // Add detailed auth later
+  authorize(PermissionSourceObj.product, PermissionActionObj.update),
+  resourceOwnerGuard(Product),
   validateRequest(productUpdateSchema),
   updateProductController
 );
 
 router.delete('/:id',
   auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
-  // authorize(PermissionSourceObj.customer, PermissionActionObj.delete), // Add detailed auth later
+  authorize(PermissionSourceObj.product, PermissionActionObj.delete),
+  resourceOwnerGuard(Product),
   deleteProductController
 );
 

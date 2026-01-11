@@ -2,6 +2,7 @@ import type { IStorageProvider } from './interfaces/storage.interface.js';
 import { LocalStorageProvider } from './providers/local.provider.js';
 import { CloudinaryStorageProvider } from './providers/cloudinary.provider.js';
 import { S3StorageProvider } from './providers/s3.provider.js';
+import appConfig from '../config/app.config.js';
 
 export class StorageFactory {
     // Simple singleton or factory method
@@ -10,8 +11,8 @@ export class StorageFactory {
     static getProvider(): IStorageProvider {
         if (this.instance) return this.instance;
 
-        const providerType = process.env['STORAGE_PROVIDER'] || 'local'; // 'local', 'cloudinary', 's3'
-        const isProduction = process.env['NODE_ENV'] === 'production';
+        const providerType = appConfig.storage.provider;
+        const isProduction = appConfig.NODE_ENV === 'production';
 
         if (isProduction && providerType === 'local') {
             throw new Error(

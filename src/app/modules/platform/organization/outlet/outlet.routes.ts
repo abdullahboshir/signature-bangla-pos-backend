@@ -1,7 +1,7 @@
 import express from "express";
 import { OutletController } from "./outlet.controller.ts";
-// import auth from "../../../../middlewares/auth";
-// import { ENUM_USER_ROLE } from "../../../../enums/user";
+import { resourceOwnerGuard } from "@app/middlewares/resourceOwnerGuard.ts";
+import { Outlet } from "./outlet.model.ts";
 
 import { OutletSettingsRoutes } from './settings/settings.routes.js';
 
@@ -9,12 +9,26 @@ const router = express.Router();
 
 router.use('/:outletId/settings', OutletSettingsRoutes);
 
+// Validate outletId middleware
+import mongoose from "mongoose";
+
+const validateOutletId = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const { outletId } = req.params;
+    if (outletId && !mongoose.Types.ObjectId.isValid(outletId)) {
+        return res.status(400).json({
+            success: false,
+            message: `Invalid Outlet ID: ${outletId}`
+        });
+    }
+    next();
+};
+
 // Defined routes
 router.post("/", OutletController.createOutlet);
 router.get("/", OutletController.getAllOutlets);
-router.get("/:id/stats", OutletController.getOutletStats);
-router.get("/:id", OutletController.getOutletById);
-router.patch("/:id", OutletController.updateOutlet);
-router.delete("/:id", OutletController.deleteOutlet);
+router.get("/:outletId/stats", validateOutletId, resourceOwnerGuard(Outlet), OutletController.getOutletStats);
+router.get("/:outletId", validateOutletId, resourceOwnerGuard(Outlet), OutletController.getOutletById);
+router.patch("/:outletId", validateOutletId, resourceOwnerGuard(Outlet), OutletController.updateOutlet);
+router.delete("/:outletId", validateOutletId, resourceOwnerGuard(Outlet), OutletController.deleteOutlet);
 
 export const OutletRoutes = router;

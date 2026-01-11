@@ -2,8 +2,8 @@ import catchAsync from "@core/utils/catchAsync.ts";
 import { ApiResponse } from "@core/utils/api-response.ts";
 import httpStatus from "http-status";
 import type { Request, Response } from "express";
-import { CompanyService } from "./company.service.ts";
 import AppError from "@shared/errors/app-error.ts";
+import { CompanyService } from "./company.service.ts";
 
 const companyService = new CompanyService();
 
@@ -12,8 +12,8 @@ export const createCompany = catchAsync(async (req: Request, res: Response) => {
     ApiResponse.success(res, company, "Company created successfully", httpStatus.CREATED);
 });
 
-export const getAllCompanies = catchAsync(async (_req: Request, res: Response) => {
-    const companies = await companyService.getAllCompanies();
+export const getAllCompanies = catchAsync(async (req: Request, res: Response) => {
+    const companies = await companyService.getAllCompanies(req.user);
     ApiResponse.success(res, companies, "Companies retrieved successfully");
 });
 

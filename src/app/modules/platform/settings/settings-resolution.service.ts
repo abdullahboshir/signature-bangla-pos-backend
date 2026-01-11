@@ -1,54 +1,55 @@
-import { SystemSettings } from '../settings/system-settings/system-settings.model';
-import { CompanySettings } from '../organization/company/settings/settings.model';
-import { BusinessUnitSettings } from '../organization/business-unit/settings/settings.model';
-import { OutletSettings } from '../organization/outlet/settings/settings.model';
-import { Outlet } from '../organization/outlet/outlet.model';
-import _ from 'lodash'; // lodash.get is useful for dot notation
+import { SystemSettings } from '../settings/system-settings/system-settings.model.js';
+import { PlatformSettings } from '../settings/platform-settings/platform-settings.model.js';
+import { CompanySettings } from '../organization/company/settings/settings.model.js';
+import { BusinessUnitSettings } from '../organization/business-unit/settings/settings.model.js';
+import { OutletSettings } from '../organization/outlet/settings/settings.model.js';
+import { Outlet } from '../organization/outlet/outlet.model.js';
+import _ from 'lodash';
 
 /**
  * Resolves a setting value by checking hierarchy:
  * 1. Outlet (Highest priority)
  * 2. Business Unit
  * 3. Company
- * 4. System (Default) - via explicit fallback or hardcoded
+ * 4. Platform (Business Defaults)
+ * 5. System (Infrastructure/Technical)
  */
 const resolveSetting = async (key: string, context: { outletId?: string; businessUnitId?: string; companyId?: string }, defaultValue?: any) => {
-    let outletSettings, buSettings, companySettings, systemSettings;
-
     // 1. Outlet Level
     if (context.outletId) {
-        outletSettings = await OutletSettings.findOne({ outlet: context.outletId }).lean();
-        const startValue = _.get(outletSettings, key);
-        if (startValue !== undefined && startValue !== null) return startValue;
+        const outletSettings = await OutletSettings.findOne({ outlet: context.outletId }).lean();
+        const value = _.get(outletSettings, key);
+        if (value !== undefined && value !== null) return value;
 
-        // If context didn't provide parents, we might need to fetch them from Outlet
         if (!context.businessUnitId) {
-            const outlet = await Outlet.findById(context.outletId);
+            const outlet = await Outlet.findById(context.outletId).lean();
             if (outlet) context.businessUnitId = outlet.businessUnit.toString();
         }
     }
 
     // 2. Business Unit Level
     if (context.businessUnitId) {
-        buSettings = await BusinessUnitSettings.findOne({ businessUnit: context.businessUnitId }).lean();
-        const medValue = _.get(buSettings, key);
-        if (medValue !== undefined && medValue !== null) return medValue;
-
-        // Fetch Company ID from BU if missing (Implementation pending BU->Company link check)
-        // For now relying on context
+        const buSettings = await BusinessUnitSettings.findOne({ businessUnit: context.businessUnitId }).lean();
+        const value = _.get(buSettings, key);
+        if (value !== undefined && value !== null) return value;
     }
 
     // 3. Company Level
     if (context.companyId) {
-        companySettings = await CompanySettings.findOne({ company: context.companyId }).lean();
-        const highValue = _.get(companySettings, key);
-        if (highValue !== undefined && highValue !== null) return highValue;
+        const companySettings = await CompanySettings.findOne({ company: context.companyId }).lean();
+        const value = _.get(companySettings, key);
+        if (value !== undefined && value !== null) return value;
     }
 
-    // 4. System Level
-    // systemSettings = await SystemSettings.getSettings(); // Assuming getSettings static exists and works
-    // const globalValue = _.get(systemSettings, key);
-    // if (globalValue !== undefined && globalValue !== null) return globalValue;
+    // 4. Platform Level (Business Defaults)
+    const platformSettings = await PlatformSettings.getSettings();
+    const platformValue = _.get(platformSettings, key);
+    if (platformValue !== undefined && platformValue !== null) return platformValue;
+
+    // 5. System Level (Technical)
+    const systemSettings = await SystemSettings.getSettings();
+    const systemValue = _.get(systemSettings, key);
+    if (systemValue !== undefined && systemValue !== null) return systemValue;
 
     return defaultValue;
 };
@@ -56,3 +57,4 @@ const resolveSetting = async (key: string, context: { outletId?: string; busines
 export const SettingsResolutionService = {
     resolveSetting
 };
+

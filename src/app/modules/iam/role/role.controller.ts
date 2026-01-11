@@ -6,7 +6,7 @@ import { ApiResponse } from '@core/utils/api-response.ts';
 
 // Get all roles
 export const getAllRoles = catchAsync(async (req, res) => {
-  const result = await roleService.getAllRoles(req.query);
+  const result = await roleService.getAllRoles(req.query, req.user);
 
   ApiResponse.success(res, {
     statusCode: status.OK,
@@ -71,7 +71,7 @@ export const deleteRole = catchAsync(async (req, res) => {
 export const assignPermissionsToRole = catchAsync(async (req, res) => {
   const { id } = req.params;
   const { permissionIds } = req.body;
-  
+
   const result = await roleService.assignPermissions(id as string, permissionIds, req.user);
 
   ApiResponse.success(res, {
@@ -86,7 +86,7 @@ export const assignPermissionsToRole = catchAsync(async (req, res) => {
 export const removePermissionsFromRole = catchAsync(async (req, res) => {
   const { id } = req.params;
   const { permissionIds } = req.body;
-  
+
   const result = await roleService.removePermissions(id as string, permissionIds, req.user);
 
   ApiResponse.success(res, {

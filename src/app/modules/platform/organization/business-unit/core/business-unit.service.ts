@@ -2,7 +2,7 @@
 // FILE: src/app/modules/organization/business-unit/business-unit.service.ts
 // ============================================================================
 
-import { startSession } from "mongoose";
+import { startSession, Types } from "mongoose";
 import { log } from "@core/utils/logger.ts";
 
 import { ULIDGenerator } from "@core/utils/generateULID.ts";
@@ -16,6 +16,7 @@ import { Role } from "@app/modules/iam/index.js";
 import BusinessUnit from "./business-unit.model.js";
 import { QueryBuilder } from "../../../../../../core/database/QueryBuilder.js";
 import { CacheManager } from "../../../../../../core/utils/caching/cache-manager.js";
+import { BusinessUnitSettings } from "../settings/settings.model.ts";
 
 
 /**
@@ -72,10 +73,15 @@ export class BusinessUnitService {
           roles: { $in: [superAdminRole._id] },
         }, { $addToSet: { businessUnits: createdBusinessUnit._id } }).session(session);
 
+
+
       if (!addToAdmin) {
         log.warn("⚠️ Could not link Business Unit to any Super Admin user", { businessUnitId: createdBusinessUnit._id });
         // We do not throw here, allowing creation to proceed even if linkage fails
       }
+
+      // 4. Create Default Business Unit Settings (Atomic)
+      await BusinessUnitSettings.getSettings(createdBusinessUnit._id as string, session);
 
       if (session.inTransaction()) {
         await session.commitTransaction();
@@ -183,7 +189,7 @@ export class BusinessUnitService {
         imgPath
       )) as any;
 
-      businessUnitData.branding.banner = secure_url;
+      businessUnitData.branding.bannerUrl = secure_url;
 
       log.info("✅ Banner image uploaded successfully", { url: secure_url });
 
@@ -344,16 +350,16 @@ export class BusinessUnitService {
     }
   }
 
-  static async getAllBusinessUnits(query: Record<string, unknown> = {}): Promise<any> {
+  static async getAllBusinessUnits(query: Record<string, unknown> = {}, user?: any): Promise<any> {
     try {
-      // 1. Resolve Business Unit Logic
-      // Usually BUs are not filtered by BU (they ARE the BU), but maybe if hierarchical?
-      // For now, standard filter is enough.
+      // 1. Resolve Data Scoping (Now centrally handled by queryContext middleware)
+      const filter: Record<string, any> = {};
 
       // 2. Build Query
-      // 2. Build Query
       const buQuery = new QueryBuilder(
-        BusinessUnit.find().populate({ path: 'outlets', select: 'name code address phone email city' }),
+        BusinessUnit.find(filter)
+          .populate({ path: 'outlets', select: 'name branding code address phone email city' })
+          .populate({ path: 'company', select: 'name' }),
         query
       )
         .search(['branding.name', 'slug'])

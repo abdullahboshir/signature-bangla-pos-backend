@@ -133,9 +133,7 @@ export const authorize = (resource: string, action: string) => {
       // Aggregate Business Units
       const businessUnits = (userWithRoles.businessAccess || []).map((a: any) => a.businessUnit?.id || a.businessUnit?.toString()).filter(Boolean);
 
-      // console.log('USERRRRRRRRRR', roles)
 
-      console.log('USERRRRRRRRRR from req.body', req.params.userId)
       // Build permission context with correct resource info
       const context: IPermissionContext = {
         user: {
@@ -159,7 +157,7 @@ export const authorize = (resource: string, action: string) => {
         }
       };
 
-      console.log('permission context', context)
+
       // Check permission using RBAC/ABAC system
       const result = await permissionService.checkPermission(
         userWithRoles,
@@ -176,7 +174,7 @@ export const authorize = (resource: string, action: string) => {
         );
       }
 
-      console.log("[AUTHORIZE MIDDLEWARE] Permission granted");
+
 
       // Attach permission result and context for use in controllers
       req.permissionResult = result;

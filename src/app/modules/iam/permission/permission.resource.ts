@@ -145,6 +145,16 @@ export const PermissionResourceType = [
     "global",
 ] as const;
 
+export type PermissionResourceTypeUnion = (typeof PermissionResourceType)[number];
+
+export const PermissionSourceObj = PermissionResourceType.reduce(
+    (acc: any, resource) => {
+        acc[resource] = resource;
+        return acc;
+    },
+    {} as Record<PermissionResourceTypeUnion, PermissionResourceTypeUnion>
+);
+
 
 /* ------------------------------------------------------------------
  * 1️⃣.5️⃣ MODULE TYPES
@@ -200,6 +210,16 @@ export const PermissionActionType = [
     "adjust",
     "escalate",
 ] as const;
+
+export type PermissionActionTypeUnion = (typeof PermissionActionType)[number];
+
+export const PermissionActionObj = PermissionActionType.reduce(
+    (acc: any, action) => {
+        acc[action] = action;
+        return acc;
+    },
+    {} as Record<PermissionActionTypeUnion, PermissionActionTypeUnion>
+);
 
 /* ------------------------------------------------------------------
  * 3️⃣ SCOPES

@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import { connectDB } from "./core/database/mongoose/connection.ts";
 import { seedCategories } from "./core/database/mongoose/seeders/category.seeder.ts";
 import { runRolePermissionSeeder } from "./core/database/mongoose/seeders/auth/index.ts";
+import { runSettingsSeeder } from "./core/database/mongoose/seeders/settings/index.ts";
 
 import appConfig from "./shared/config/app.config.ts";
 import { startCleanupJob } from "./app/jobs/cleanup.job.ts";
@@ -41,7 +42,8 @@ async function bootstrap() {
         // session.startTransaction();
 
         await runRolePermissionSeeder(); // Internally handles Roles, Groups, and Super Admin User
-        await seedCategories(); // No session
+        await seedCategories();
+        await runSettingsSeeder(); // Atomic System & Platform Settings
 
         // await session.commitTransaction();
         console.log("✅ All Seeders Completed Successfully".green.bold);

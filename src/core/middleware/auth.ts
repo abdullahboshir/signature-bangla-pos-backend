@@ -7,9 +7,15 @@ import status from "http-status"
 import type { Request, Response } from "express"
 import type { JwtPayload } from "jsonwebtoken"
 import { User } from "@app/modules/iam/user/user.model.ts"
+import { UserBusinessAccess } from "@app/modules/iam/user-business-access/user-business-access.model.ts"
+import mongoose from "mongoose"
 import { verifyToken } from "@app/modules/iam/auth/auth.utils.ts"
 import AppError from "@shared/errors/app-error.ts"
 import catchAsync from "@core/utils/catchAsync.ts"
+import { permissionService } from "@app/modules/iam/permission/permission.service.ts"
+import { BusinessUnit } from "@app/modules/platform/index.ts"
+
+
 
 
 
@@ -53,6 +59,29 @@ const auth = (...requiredRoles: string[]) => {
       throw new AppError(status.NOT_FOUND, 'User is not found');
     }
 
+    // FALLBACK: If businessAccess is empty and ID has suffix, fetch manually using prefix
+    if (!isUserExists.businessAccess || isUserExists.businessAccess.length === 0) {
+      const userIdStr = isUserExists._id?.toString() || "";
+      if (userIdStr.includes('-')) {
+        const prefix = userIdStr.split('-')[0];
+        if (prefix && mongoose.Types.ObjectId.isValid(prefix)) {
+          const manualAccess = await UserBusinessAccess.find({
+            user: new mongoose.Types.ObjectId(prefix as string),
+            status: 'ACTIVE'
+          }).populate([
+            { path: 'role', select: 'name title isSystemRole' },
+            { path: 'businessUnit', select: 'name id slug' },
+            { path: 'outlet', select: 'name _id' },
+            { path: 'company', select: 'name id slug activeModules' }
+          ]).lean();
+
+          if (manualAccess.length > 0) {
+            (isUserExists as any).businessAccess = manualAccess;
+          }
+        }
+      }
+    }
+
     const isDeleted = isUserExists.isDeleted;
     if (isDeleted) {
       throw new AppError(status.FORBIDDEN, 'This user is deleted');
@@ -88,7 +117,42 @@ const auth = (...requiredRoles: string[]) => {
     // ========================================================================
 
     const businessUnitId = req.headers['x-business-unit-id'] as string;
+    const companyHeaderId = req.headers['x-company-id'] as string;
     let effectiveRoleNames: string[] = [];
+
+    // Identify active company for scope inheritance
+    // Strategy: Use x-company-id header if present, otherwise derive from Business Unit
+    let activeCompanyId: string | null = companyHeaderId || null;
+
+    if (!activeCompanyId && businessUnitId && Array.isArray(isUserExists.businessAccess)) {
+      // Find ANY assignment that mentions this business unit to get its company context
+      // (This handles cases where the user has COMPANY or GLOBAL scope but is entering a specific BU)
+      const buFound = isUserExists.businessAccess.find((a: any) => {
+        if (!a.businessUnit) return false;
+        const b = a.businessUnit;
+        const bId = b._id?.toString() || b.id || b.toString();
+        const bSlug = b.slug;
+        return bId === businessUnitId || bSlug === businessUnitId;
+      });
+
+      if (buFound && buFound.company) {
+        activeCompanyId = (buFound.company._id || buFound.company.id || buFound.company).toString();
+      }
+    }
+
+    // Fallback: If still no company but we have a BU context, fetch BU from DB to find parent company
+    if (!activeCompanyId && businessUnitId) {
+      let bu;
+      if (mongoose.Types.ObjectId.isValid(businessUnitId)) {
+        bu = await BusinessUnit.findById(businessUnitId).lean();
+      } else {
+        bu = await BusinessUnit.findOne({ slug: businessUnitId }).lean();
+      }
+
+      if (bu && bu.company) {
+        activeCompanyId = bu.company.toString();
+      }
+    }
 
     // 1. Add Global Roles
     if (Array.isArray(isUserExists.globalRoles)) {
@@ -98,27 +162,44 @@ const auth = (...requiredRoles: string[]) => {
     if (isUserExists.isSuperAdmin) {
       // Super Admin has all access
       effectiveRoleNames = ['super-admin', 'admin', ...requiredRoles];
-    } else if (businessUnitId) {
-      // 2. Add Business Unit Specific Roles
-      if (Array.isArray(isUserExists.businessAccess)) {
-        const access = isUserExists.businessAccess.find((a: any) =>
-          (a.businessUnit && (a.businessUnit._id.toString() === businessUnitId || a.businessUnit.id === businessUnitId))
-        );
-        if (access && access.role) {
-          effectiveRoleNames.push(access.role.name);
-        }
-      }
     } else {
-      // Fallback: If no specific Business Unit is requested, we consider the user's roles across ALL contexts.
-      // This is crucial for endpoints like /auth/me or /user/settings which are not BU-specific but require authentication.
+      // 2. Aggregate Roles from all relevant scopes
       if (Array.isArray(isUserExists.businessAccess)) {
         isUserExists.businessAccess.forEach((a: any) => {
-          if (a.role) {
+          // Normalize status
+          const statusMatch = !a.status || a.status.toUpperCase() === 'ACTIVE';
+          if (!statusMatch) return;
+
+          let include = false;
+
+          // GLOBAL scope always applies
+          if (a.scope === 'GLOBAL') include = true;
+
+          // COMPANY scope applies if it matches the active company (via header or BU inheritance)
+          if (a.scope === 'COMPANY' && activeCompanyId && (a.company?._id?.toString() === activeCompanyId || a.company?.id === activeCompanyId || a.company?.toString() === activeCompanyId)) {
+            include = true;
+          }
+
+          // BUSINESS scope applies if it matches explicitly
+          if (a.scope === 'BUSINESS' && businessUnitId && (a.businessUnit?._id?.toString() === businessUnitId || a.businessUnit?.id === businessUnitId)) {
+            include = true;
+          }
+
+          // Union Context Fallback: If no specific scope ID is provided (e.g., on /auth/me), include EVERYTHING for the user session.
+          if (!businessUnitId && !companyHeaderId) include = true;
+
+          if (include && a.role) {
             effectiveRoleNames.push(a.role.name);
           }
         });
       }
     }
+
+    // Aggregate Permissions using PermissionService (Handles caching & hierarchy)
+    const authContext = await permissionService.getAuthorizationContext(
+      isUserExists as any,
+      (businessUnitId || activeCompanyId) ? { businessUnitId, companyId: activeCompanyId || undefined } : undefined
+    );
 
     // 3. Validate against Required Roles
     if (requiredRoles.length > 0) {
@@ -167,7 +248,11 @@ const auth = (...requiredRoles: string[]) => {
       id: isUserExists.id,
       email: isUserExists.email,
       roleName: effectiveRoleNames, // Injected context-aware roles
-      permissions: [], // TODO: Populate if needed, or rely on PermissionService
+      permissions: authContext.permissions, // Populated from PermissionService
+      effectivePermissions: authContext.permissions, // For frontend compatibility
+      hierarchyLevel: authContext.hierarchyLevel,
+      dataScope: authContext.dataScope,
+      scopeRank: authContext.scopeRank,
       businessUnits: Array.from(uniqueBusinessUnits.values()),
       companies: Array.from(uniqueCompanies.values()), // Added companies list
       outlets: Array.from(uniqueOutlets.values()), // Added outlets list

@@ -21,8 +21,11 @@ import { sendImageToCloudinary } from "@core/utils/file-upload.ts";
 
 import { QueryBuilder } from "../../../../core/database/QueryBuilder.js";
 import mongoose from "mongoose";
+import crypto from "crypto";
 import type { ICustomer } from "@app/modules/contacts/index.js";
+import { MailService } from "@shared/mail/mail.service.js";
 import { Customer } from "@app/modules/contacts/index.js";
+import { Merchant } from "@app/modules/platform/merchant/merchant.model.ts";
 
 // ...
 
@@ -228,7 +231,7 @@ export const createCustomerService = async (
 };
 
 export const createStaffService = async (
-  staffData: IStaff,
+  staffData: IStaff & { directPermissions?: any[] },
   password: string,
   file: any | undefined
 ) => {
@@ -621,7 +624,18 @@ export const deleteUserService = async (userId: string) => {
 };
 
 export const createCompanyOwnerService = async (
-  companyData: { contactEmail: string; name: string; contactPhone: string },
+  companyData: {
+    contactEmail: string;
+    name: string;
+    contactPhone: string;
+    legalRepresentative?: {
+      name?: string;
+      designation?: string;
+      contactPhone?: string;
+      email?: string;
+      nationalId?: string;
+    }
+  },
   companyId: string,
   session: any
 ) => {
@@ -641,9 +655,25 @@ export const createCompanyOwnerService = async (
     // DECISION: For 'Create Company' flow, if email matches, we PROCEED to link them as Owner.
     // This allows one person to own multiple companies.
 
+    // If user exists, we PROCEED to link them as Owner.
+
     // Find COMPANY_OWNER role
     const ownerRole = await Role.findOne({ name: USER_ROLE.COMPANY_OWNER }).session(session);
     if (!ownerRole) throw new AppError(500, "FATAL: COMPANY_OWNER role missing in system");
+
+    // Check & Create Merchant Profile if missing
+    const existingMerchant = await Merchant.findOne({ user: isUserExists._id }).session(session);
+    if (!existingMerchant) {
+      await Merchant.create([{
+        user: isUserExists._id,
+        firstName: companyData.legalRepresentative?.name || companyData.name,
+        lastName: companyData.legalRepresentative?.name ? "" : "Owner",
+        phone: companyData.legalRepresentative?.contactPhone || companyData.contactPhone,
+        nidNumber: companyData.legalRepresentative?.nationalId,
+        isEmailVerified: true,
+        isActive: true
+      }], { session });
+    }
 
     // Create Access
     await UserBusinessAccess.create([{
@@ -655,6 +685,28 @@ export const createCompanyOwnerService = async (
       isPrimary: true
     }], { session });
 
+    try {
+      await MailService.sendEmail(
+        companyData.contactEmail,
+        "New Company Added - Signature Bangla",
+        `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="color: #0F172A; text-align: center;">New Company Added</h2>
+          <p>Hello <strong>${isUserExists.name?.firstName || 'Partner'}</strong>,</p>
+          <p>A new company <strong>${companyData.name}</strong> has been successfully added to your Signature Bangla account.</p>
+          <p>You can now switch to this company from your dashboard.</p>
+          <div style="margin: 30px 0; text-align: center;">
+            <a href="${appConfig.frontend_url}/login" style="background-color: #0F172A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Login to Dashboard</a>
+          </div>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+          <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 Signature Bangla. All rights reserved.</p>
+        </div>
+        `
+      );
+    } catch (e) {
+      console.error("Failed to send association email", e);
+    }
+
     return isUserExists;
   }
 
@@ -663,25 +715,44 @@ export const createCompanyOwnerService = async (
   if (!ownerRole) throw new AppError(500, "FATAL: COMPANY_OWNER role missing in system");
 
   const userId = await genereteCustomerId(companyData.contactEmail, ownerRole._id.toString());
-  const defaultPassword = appConfig.default_pass || "12345678";
+
+  // 2.1 Generate Setup Token (Industrial Standard)
+  const setupToken = crypto.randomBytes(32).toString('hex');
+  const setupExpires = new Date(Date.now() + 72 * 60 * 60 * 1000); // 72 hours expiry
 
   const userData: Partial<IUser> = {
     id: userId,
     email: companyData.contactEmail,
     phone: companyData.contactPhone,
-    password: defaultPassword,
-    status: "active", // Auto-active for owners
-    needsPasswordChange: true, // Force change on first login
+    // Provide a random password to satisfy model requirement (will be reset by user via token)
+    password: crypto.randomBytes(24).toString('hex'),
+    status: "pending", // Pending until password setup
+    needsPasswordChange: true,
+    setupPasswordToken: setupToken,
+    setupPasswordExpires: setupExpires,
     name: {
-      firstName: companyData.name, // Use company name as first name equivalent initially
-      lastName: "Owner"
+      firstName: companyData.legalRepresentative?.name?.split(" ")[0] || "Company",
+      lastName: companyData.legalRepresentative?.name?.split(" ").slice(1).join(" ") || "Admin"
     },
-    globalRoles: [], // Not a global system role
-    isEmailVerified: true // Trust Super Admin input
+    globalRoles: [],
+    isEmailVerified: true
   };
 
   const newUser = await User.create([userData], { session });
   if (!newUser || !newUser[0]) throw new AppError(500, "Failed to create Company Owner user");
+
+  // 2.2 Create Merchant Profile (Industrial Standard Consistency)
+  const merchantData: any = {
+    user: newUser[0]._id,
+    firstName: companyData.legalRepresentative?.name || companyData.name,
+    lastName: companyData.legalRepresentative?.name ? "" : "Owner",
+    phone: companyData.legalRepresentative?.contactPhone || companyData.contactPhone,
+    nidNumber: companyData.legalRepresentative?.nationalId,
+    isEmailVerified: true,
+    isActive: true
+  };
+
+  await Merchant.create([merchantData], { session });
 
   // 3. Create Access
   await UserBusinessAccess.create([{
@@ -692,6 +763,34 @@ export const createCompanyOwnerService = async (
     status: 'ACTIVE',
     isPrimary: true
   }], { session });
+
+  try {
+    // 4. Send Invitation Email (Industrial Standard)
+    const setupUrl = `${appConfig.frontend_url}/auth/setup-password?token=${setupToken}`;
+
+    await MailService.sendEmail(
+      companyData.contactEmail,
+      "Welcome to Signature Bangla - Set up your account",
+      `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <h2 style="color: #0F172A; text-align: center;">Welcome to Signature Bangla</h2>
+        <p>Hello <strong>${companyData.legalRepresentative?.name || 'Partner'}</strong>,</p>
+        <p>Your company <strong>${companyData.name}</strong> has been successfully provisioned in our system.</p>
+        <p>Please utilize the link below to establish a secure password for your administrative account.</p>
+        <div style="margin: 30px 0; text-align: center;">
+          <a href="${setupUrl}" style="background-color: #0F172A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Set Up Password</a>
+        </div>
+        <p style="font-size: 14px; color: #666;">Or copy this link: <br/> <a href="${setupUrl}">${setupUrl}</a></p>
+        <p style="font-size: 14px; color: #666;">This secure link is valid for 72 hours.</p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+        <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 Signature Bangla. All rights reserved.</p>
+      </div>
+      `
+    );
+  } catch (emailError) {
+    console.error("Failed to send welcome email:", emailError);
+    // Suppress error so company creation doesn't fail, but log it critical
+  }
 
   return newUser[0];
 };

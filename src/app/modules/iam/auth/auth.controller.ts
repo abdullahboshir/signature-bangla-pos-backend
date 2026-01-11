@@ -5,6 +5,7 @@ import {
   loginService,
   logoutService,
   refreshTokenAuthService,
+  setupPasswordService,
 } from "./auth.service.js";
 import catchAsync from "@core/utils/catchAsync.ts";
 import { ApiResponse } from "@core/utils/api-response.ts";
@@ -35,7 +36,7 @@ export const loginController = catchAsync(async (req, res) => {
 
 export const refreshTokenController = catchAsync(async (req, res) => {
   const { refreshToken } = req.cookies;
-  console.log("DEBUG: Refresh Token Cookie:", refreshToken ? "Present" : "Missing");
+
 
   const result = await refreshTokenAuthService(refreshToken);
 
@@ -61,9 +62,8 @@ export const authMeController = catchAsync(async (req, res) => {
 
   const scope = businessUnitId ? { businessUnitId: String(businessUnitId) } : undefined;
 
-  // console.log("Auth Me Scope:", scope);
   const result = await authMeService(userInfo, scope);
-  // console.log("Auth Me Result:", result);
+
   ApiResponse.success(
     res,
     result,
@@ -85,5 +85,17 @@ export const logoutController = catchAsync(async (_req, res) => {
     null,
     "User has been logged out successfully",
     200
+  );
+});
+
+export const setupPasswordController = catchAsync(async (req, res) => {
+  const { token, password } = req.body;
+  const result = await setupPasswordService(token, password);
+
+  ApiResponse.success(
+    res,
+    result,
+    "Password has been set successfully",
+    status.OK
   );
 });

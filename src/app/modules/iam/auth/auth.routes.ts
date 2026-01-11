@@ -1,7 +1,7 @@
 import { Router } from "express";
 
-import { loginZodSchema } from "./auth.validation.js";
-import { authMeController, loginController, logoutController, refreshTokenController } from "./auth.controller.js";
+import { loginZodSchema, setupPasswordZodSchema } from "./auth.validation.js";
+import { authMeController, loginController, logoutController, refreshTokenController, setupPasswordController } from "./auth.controller.js";
 import type { AnyZodObject } from "zod/v3";
 import { validateRequest } from "@core/middleware/validateRequest.js";
 import auth from "@core/middleware/auth.js";
@@ -21,6 +21,9 @@ router.post(
 
 router.get('/me', auth(...USER_ROLE_ARRAY), authMeController)
 router.post('/logout', logoutController)
+
+// Public endpoint for new Company Owners to set their initial password
+router.post('/setup-password', validateRequest(setupPasswordZodSchema as unknown as AnyZodObject), setupPasswordController)
 
 
 export const authRoutes = router; 

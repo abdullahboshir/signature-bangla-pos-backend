@@ -19,29 +19,44 @@ import { MeetingRoutes } from "../../modules/governance/meeting/meeting.routes.t
 import { ComplianceRoutes } from "../../modules/governance/compliance/compliance.routes.ts";
 
 import requireModule from "../../../core/middleware/license.middleware.ts";
+import auth from "../../../core/middleware/auth.ts";
+import contextGuard from "@app/middlewares/contextGuard.ts";
+import queryContext from "@app/middlewares/queryContext.ts";
+import { auditMiddleware } from "../../../core/middleware/audit.middleware.ts";
 
 const router = Router();
 
-router.use("/super-admin", adminGroupRoutes);
-// router.use("/business-admin", businessAdminRoutes);
-router.use("/customer", customerGroupRoutes);
-router.use("/public", publicGroupRoutes);
-// router.use("/webhook", webhookRoutes);
+// ========================================================================
+// 🔓 PUBLIC ROUTES
+// ========================================================================
 router.use("/auth", authGroupRoutes);
-router.use("/user", userRoutes); // Registered User Routes (Profile, Settings, etc.)
+router.use("/public", publicGroupRoutes);
+
+// ========================================================================
+// 🛡️ GLOBAL OPERATIONAL SECURITY LAYER (Centralized)
+// ========================================================================
+// Everything mounted below this line is "Default Secure".
+// It requires authentication and automatic query context injection.
+router.use(auth());
+router.use(queryContext());
+router.use(auditMiddleware); // 🔴 Automatic Audit Logging for all mutating requests
+
+router.use("/super-admin", adminGroupRoutes);
+router.use("/customer", customerGroupRoutes);
+router.use("/user", userRoutes); // Profile, Settings, etc.
 router.use("/platform/packages", PackageRoutes);
 router.use("/platform/licenses", LicenseRoutes);
 router.use("/platform/companies", CompanyRoutes);
 
-// HRM Module - Licensed
-router.use("/hrm/departments", requireModule('hrm'), DepartmentRoutes);
-router.use("/hrm/attendance", requireModule('hrm'), AttendanceRoutes);
-router.use("/hrm/leave", requireModule('hrm'), LeaveRoutes);
+// HRM Module - Licensed & Context Guarded
+router.use("/hrm/departments", requireModule('hrm'), contextGuard(), DepartmentRoutes);
+router.use("/hrm/attendance", requireModule('hrm'), contextGuard(), AttendanceRoutes);
+router.use("/hrm/leave", requireModule('hrm'), contextGuard(), LeaveRoutes);
 
-// Governance Module - Licensed
-router.use("/governance/shareholders", requireModule('governance'), ShareholderRoutes);
-router.use("/governance/voting", requireModule('governance'), VotingRoutes);
-router.use("/governance/meetings", requireModule('governance'), MeetingRoutes);
-router.use("/governance/compliance", requireModule('governance'), ComplianceRoutes);
+// Governance Module - Licensed & Context Guarded
+router.use("/governance/shareholders", requireModule('governance'), contextGuard(), ShareholderRoutes);
+router.use("/governance/voting", requireModule('governance'), contextGuard(), VotingRoutes);
+router.use("/governance/meetings", requireModule('governance'), contextGuard(), MeetingRoutes);
+router.use("/governance/compliance", requireModule('governance'), contextGuard(), ComplianceRoutes);
 
 export const v1Routes = router;
