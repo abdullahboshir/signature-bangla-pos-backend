@@ -1,5 +1,6 @@
 import { Schema, model } from "mongoose";
-import type { IAttributeGroupDocument, IAttributeGroupModel } from "./attribute-group.interface.ts";
+import type { IAttributeGroupDocument, IAttributeGroupModel } from "./attribute-group.interface.js";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 
 const AttributeFieldSchema = new Schema({
@@ -26,10 +27,18 @@ const AttributeGroupSchema = new Schema<IAttributeGroupDocument, IAttributeGroup
         index: true
     },
     fields: [AttributeFieldSchema],
-    isActive: { type: Boolean, default: true }
+    isActive: { type: Boolean, default: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true }
 }, {
     timestamps: true,
     versionKey: false
 });
 
 export const AttributeGroup = model<IAttributeGroupDocument, IAttributeGroupModel>("AttributeGroup", AttributeGroupSchema);
+
+// Apply Context-Aware Data Isolation
+AttributeGroupSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

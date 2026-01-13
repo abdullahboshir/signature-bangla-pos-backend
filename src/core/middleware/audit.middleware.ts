@@ -114,81 +114,79 @@ const SENSITIVE_READ_RESOURCES = [
 ];
 
 export const auditMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-    ContextService.run(() => {
-        const method = req.method.toUpperCase();
-        const resource = extractResource(req.path); // Extract early to check sensitivity
+    const method = req.method.toUpperCase();
+    const resource = extractResource(req.path); // Extract early to check sensitivity
 
-        // Determine if we should log this request
-        const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
-        const isSensitiveRead = method === 'GET' && SENSITIVE_READ_RESOURCES.includes(resource);
+    // Determine if we should log this request
+    const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+    const isSensitiveRead = method === 'GET' && SENSITIVE_READ_RESOURCES.includes(resource);
 
-        if (!isMutating && !isSensitiveRead) {
-            return next();
+    if (!isMutating && !isSensitiveRead) {
+        return next();
+    }
+
+    // Skip certain routes (health checks, assets, etc.)
+    if (SKIP_ROUTES.some(route => req.path.includes(route))) {
+        return next();
+    }
+
+    const startTime = Date.now();
+
+    res.on('finish', () => {
+        const duration = Date.now() - startTime;
+        const responseStatus = res.statusCode;
+
+        const user = (req as any).user;
+        if (!user || !user.userId) {
+            // For sensitive reads, we might want to log unauthenticated attempts too, 
+            // but for now let's stick to authenticated users to avoid noise.
+            // console.log('⚠️ [AuditMiddleware] Skipped: No authenticated user');
+            return;
         }
 
-        // Skip certain routes (health checks, assets, etc.)
-        if (SKIP_ROUTES.some(route => req.path.includes(route))) {
-            return next();
-        }
+        const action = `${METHOD_ACTION_MAP[method] || 'UNKNOWN'}_${resource}`;
+        const resourceId = extractResourceId(req.path, req.body as Record<string, unknown>);
+        const module = inferModule(req.path);
 
-        const startTime = Date.now();
+        const businessUnitId = (req.headers['x-business-unit-id'] as string) ||
+            (req as any).businessUnitId ||
+            user.primaryBusinessUnit?.toString() ||
+            'GLOBAL';
 
-        res.on('finish', () => {
-            const duration = Date.now() - startTime;
-            const responseStatus = res.statusCode;
+        const changes = ContextService.getDiffs();
+        const errors = ContextService.getErrors();
 
-            const user = (req as any).user;
-            if (!user || !user.userId) {
-                // For sensitive reads, we might want to log unauthenticated attempts too, 
-                // but for now let's stick to authenticated users to avoid noise.
-                // console.log('⚠️ [AuditMiddleware] Skipped: No authenticated user');
-                return;
+        // Parse User Agent
+        const detector = new UAParser(req.headers['user-agent']);
+        const uaResult = detector.getResult();
+        const deviceName = `${uaResult.browser.name || 'Unknown'} on ${uaResult.os.name || 'Unknown'} (${uaResult.device.type || 'Desktop'})`;
+
+        AuditService.log({
+            action,
+            module,
+            actor: {
+                userId: user.userId.toString(),
+                role: Array.isArray(user.role) ? user.role.join(', ') : (user.role || user.roles?.[0]?.name || 'unknown'),
+                ip: req.ip || (req.headers['x-forwarded-for'] as string) || 'unknown'
+            },
+            target: {
+                resource,
+                resourceId
+            },
+            businessUnitId,
+            requestPayload: isSensitiveRead ? undefined : sanitizePayload(req.body), // Don't log payload for GET (usually empty/query params)
+            responseStatus,
+            duration,
+            changes: changes.length > 0 ? { diffs: changes } : {},
+            metadata: {
+                method: req.method,
+                path: req.path,
+                userAgent: req.headers['user-agent'], // Keep raw
+                device: deviceName, // Add parsed
+                errors: errors.length > 0 ? errors : undefined
             }
-
-            const action = `${METHOD_ACTION_MAP[method] || 'UNKNOWN'}_${resource}`;
-            const resourceId = extractResourceId(req.path, req.body as Record<string, unknown>);
-            const module = inferModule(req.path);
-
-            const businessUnitId = (req.headers['x-business-unit-id'] as string) ||
-                (req as any).businessUnitId ||
-                user.primaryBusinessUnit?.toString() ||
-                'GLOBAL';
-
-            const changes = ContextService.getDiffs();
-            const errors = ContextService.getErrors();
-
-            // Parse User Agent
-            const detector = new UAParser(req.headers['user-agent']);
-            const uaResult = detector.getResult();
-            const deviceName = `${uaResult.browser.name || 'Unknown'} on ${uaResult.os.name || 'Unknown'} (${uaResult.device.type || 'Desktop'})`;
-
-            AuditService.log({
-                action,
-                module,
-                actor: {
-                    userId: user.userId.toString(),
-                    role: Array.isArray(user.role) ? user.role.join(', ') : (user.role || user.roles?.[0]?.name || 'unknown'),
-                    ip: req.ip || (req.headers['x-forwarded-for'] as string) || 'unknown'
-                },
-                target: {
-                    resource,
-                    resourceId
-                },
-                businessUnitId,
-                requestPayload: isSensitiveRead ? undefined : sanitizePayload(req.body), // Don't log payload for GET (usually empty/query params)
-                responseStatus,
-                duration,
-                changes: changes.length > 0 ? { diffs: changes } : {},
-                metadata: {
-                    method: req.method,
-                    path: req.path,
-                    userAgent: req.headers['user-agent'], // Keep raw
-                    device: deviceName, // Add parsed
-                    errors: errors.length > 0 ? errors : undefined
-                }
-            });
         });
-
-        next();
     });
+
+    next();
 };

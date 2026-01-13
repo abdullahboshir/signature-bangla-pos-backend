@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export interface IMeeting {
     title: string;
@@ -14,6 +15,7 @@ export interface IMeeting {
     businessUnit: Schema.Types.ObjectId;
     status: 'scheduled' | 'cancelled' | 'completed';
     createdBy: Schema.Types.ObjectId;
+    company: Schema.Types.ObjectId;
 }
 
 const meetingSchema = new Schema<IMeeting>({
@@ -27,7 +29,8 @@ const meetingSchema = new Schema<IMeeting>({
         status: { type: String, enum: ['pending', 'accepted', 'declined', 'attended', 'absent'], default: 'pending' }
     }],
     minutes: { type: String }, // Can be filled later
-    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true },
+    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     status: { type: String, enum: ['scheduled', 'cancelled', 'completed'], default: 'scheduled' },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true }
 }, {
@@ -35,3 +38,9 @@ const meetingSchema = new Schema<IMeeting>({
 });
 
 export const Meeting = model<IMeeting>('Meeting', meetingSchema);
+
+// Apply Context-Aware Data Isolation
+meetingSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

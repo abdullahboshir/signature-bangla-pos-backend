@@ -1,4 +1,5 @@
 import { model, Schema, Types } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 import type { IRole } from "./role.interface.js";
 import { cachingMiddleware } from "@core/utils/cacheQuery.ts";
 
@@ -97,6 +98,12 @@ const RoleSchema = new Schema<IRole>(
         maxExpenseEntry: { type: Number, default: 0, min: 0 }
       }
     },
+    company: {
+      type: Schema.Types.ObjectId,
+      ref: 'Company',
+      default: null, // null for System Roles
+      index: true
+    },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
@@ -147,3 +154,9 @@ RoleSchema.pre('save', async function (next) {
 cachingMiddleware(RoleSchema);
 
 export const Role = model<IRole>('Role', RoleSchema);
+
+// Apply Context-Aware Data Isolation (Hybrid: System + Tenant)
+RoleSchema.plugin(contextScopePlugin, {
+  companyField: 'company',
+  includeGlobal: true
+});

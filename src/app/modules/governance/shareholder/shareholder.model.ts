@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export interface IShareholder {
     user: Schema.Types.ObjectId;  // Reference to User (Platform or Business User)
@@ -51,3 +52,10 @@ shareholderSchema.index({ user: 1, company: 1 }, { unique: true, sparse: true })
 shareholderSchema.index({ user: 1, outlet: 1 }, { unique: true, sparse: true });
 
 export const Shareholder = model<IShareholder>('Shareholder', shareholderSchema);
+
+// Apply Context-Aware Data Isolation
+shareholderSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit',
+    outletField: 'outlet'
+});

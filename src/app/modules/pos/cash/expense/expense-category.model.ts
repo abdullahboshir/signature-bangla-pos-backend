@@ -1,5 +1,6 @@
 import { Schema, model } from "mongoose";
-import type { IExpenseCategoryDocument } from "./expense-category.interface.ts";
+import type { IExpenseCategoryDocument } from "./expense-category.interface.js";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 const expenseCategorySchema = new Schema<IExpenseCategoryDocument>({
     name: { type: String, required: true },
@@ -16,7 +17,8 @@ const expenseCategorySchema = new Schema<IExpenseCategoryDocument>({
         index: true
     },
     isActive: { type: Boolean, default: true },
-    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit' },
+    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', index: true },
     description: { type: String }
 }, {
     timestamps: true
@@ -28,3 +30,9 @@ expenseCategorySchema.index({ businessUnit: 1 });
 expenseCategorySchema.index({ isActive: 1 });
 
 export const ExpenseCategory = model<IExpenseCategoryDocument>('ExpenseCategory', expenseCategorySchema);
+
+// Apply Context-Aware Data Isolation
+expenseCategorySchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

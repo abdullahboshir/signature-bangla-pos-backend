@@ -1,11 +1,12 @@
-import { Document, Types, Schema } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export interface IExpenseCategory {
     name: string;
     type: 'fixed' | 'variable';
     module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
     isActive: boolean;
-    businessUnit: Schema.Types.ObjectId; // If null, it's a global category
+    company: Types.ObjectId; // Reference to the company
+    businessUnit: Types.ObjectId; // If null, it's a global category
     description?: string;
 }
 

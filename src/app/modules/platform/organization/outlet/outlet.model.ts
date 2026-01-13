@@ -1,4 +1,5 @@
 import { Schema, model } from 'mongoose';
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 import { auditDiffPlugin } from '../../../../../core/plugins/mongoose-diff.plugin.js';
 import type { IOutlet, IOutletModel } from './outlet.interface.js';
 import { brandingSchema, contactSchema, locationSchema } from "../shared/common.schema.js";
@@ -25,6 +26,12 @@ const outletSchema = new Schema<IOutlet, IOutletModel>(
             ecommerce: { type: Boolean, default: false },
             crm: { type: Boolean, default: false },
             logistics: { type: Boolean, default: false }
+        },
+        company: {
+            type: Schema.Types.ObjectId,
+            ref: "Company",
+            required: true,
+            index: true
         },
         businessUnit: {
             type: Schema.Types.ObjectId,
@@ -75,4 +82,10 @@ outletSchema.statics['isCodeTaken'] = async function (code: string, businessUnit
 // Apply Audit Diff Plugin
 (outletSchema as any).plugin(auditDiffPlugin);
 
-export const Outlet = model<IOutlet, OutletModel>('Outlet', outletSchema);
+export const Outlet = model<IOutlet, IOutletModel>('Outlet', outletSchema);
+
+// Apply Context-Aware Data Isolation
+outletSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

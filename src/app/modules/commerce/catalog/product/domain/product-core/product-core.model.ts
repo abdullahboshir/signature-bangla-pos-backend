@@ -1,12 +1,19 @@
 import { Schema, Types, model } from "mongoose";
 import type { IProductDocument, IProductModel } from "./product-core.interface.js";
 import { BundleProductSchema, DeliveryOptionsSchema, ProductAttributesSchema, ProductStatusSchema, RatingSummarySchema, SEOSchema, TaxConfigurationSchema } from "../../product-shared/product-shared.model.js";
+import { contextScopePlugin } from '@core/plugins/context-scope.plugin.js';
 
 
 
 const productSchema = new Schema<IProductDocument, IProductModel>({
   name: { type: String, required: true, trim: true, index: true },
   nameBangla: { type: String, trim: true },
+  domain: {
+    type: String,
+    enum: ["retail", "pharmacy", "grocery", "restaurant", "electronics", "fashion", "service", "construction", "automotive", "health", "hospitality", "other"],
+    default: "retail",
+    index: true
+  },
   slug: { type: String, required: true, unique: true },
   sku: { type: String, required: true, unique: true },
   barcode: { type: String, unique: true, sparse: true },
@@ -19,13 +26,14 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
   videos: [{ type: String, trim: true }],
   unit: { type: Schema.Types.ObjectId, ref: 'Unit' },
 
+  company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
   outlet: {
     type: Schema.Types.ObjectId,
     ref: "Outlet",
     required: false, // Updated to allow global products
     index: true,
   },
-  businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true },
+  businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
   vendor: {
     id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     name: { type: String, required: true },
@@ -348,9 +356,9 @@ productSchema.statics['getProductAnalytics'] = async function (_productId: strin
 
 // ==================== MIDDLEWARE ====================
 
-productSchema.pre(/^find/, function (next) {
+productSchema.pre(/^find/, function (this: any, next) {
   // Allow explicit querying for deleted documents if needed (e.g. Trash bin)
-  if ((this as any).getQuery().isDeleted === true) {
+  if (this.getQuery().isDeleted === true) {
     return next();
   }
   // Otherwise, filter them out
@@ -359,6 +367,13 @@ productSchema.pre(/^find/, function (next) {
 });
 
 export const Product = model<IProductDocument, IProductModel>('Product', productSchema);
+
+// Apply Context-Aware Data Isolation
+productSchema.plugin(contextScopePlugin, {
+  companyField: 'company',
+  businessUnitField: 'businessUnit',
+  outletField: 'outlet'
+});
 
 // Update Aggregations manually since middleware doesn't easily apply to them safely
 productSchema.statics['getCategoryStats'] = async function (categoryId: string | Types.ObjectId): Promise<any> {

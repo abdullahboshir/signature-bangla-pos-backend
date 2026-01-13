@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export interface ILeave {
     staff: Schema.Types.ObjectId;
@@ -10,6 +11,7 @@ export interface ILeave {
     status: 'pending' | 'approved' | 'rejected' | 'cancelled';
     approvedBy?: Schema.Types.ObjectId;
     rejectionReason?: string;
+    company: Schema.Types.ObjectId;
     businessUnit: Schema.Types.ObjectId;
 }
 
@@ -27,9 +29,16 @@ const leaveSchema = new Schema<ILeave>({
     },
     approvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     rejectionReason: { type: String },
-    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true }
+    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true }
 }, {
     timestamps: true
 });
 
 export const Leave = model<ILeave>('Leave', leaveSchema);
+
+// Apply Context-Aware Data Isolation
+leaveSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

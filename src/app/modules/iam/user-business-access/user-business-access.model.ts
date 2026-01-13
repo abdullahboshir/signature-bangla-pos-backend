@@ -1,4 +1,5 @@
 import { model, Schema, Types, Document } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export interface IUserBusinessAccess extends Document {
     user: Types.ObjectId;
@@ -92,3 +93,10 @@ UserBusinessAccessSchema.pre('save', function (next) {
 });
 
 export const UserBusinessAccess = model<IUserBusinessAccess>('UserBusinessAccess', UserBusinessAccessSchema);
+
+// Apply Context-Aware Data Isolation
+UserBusinessAccessSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit',
+    outletField: 'outlet'
+});

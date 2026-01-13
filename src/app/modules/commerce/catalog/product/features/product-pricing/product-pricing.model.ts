@@ -5,6 +5,12 @@ import { TaxConfigurationSchema } from "../../product-shared/product-shared.mode
 
 const productPricingSchema = new Schema<IProductPricingDocument>({
   product: { type: Schema.Types.ObjectId, ref: 'Product', required: true, unique: true },
+  domain: {
+    type: String,
+    enum: ["retail", "pharmacy", "grocery", "restaurant", "electronics", "fashion", "service", "construction", "automotive", "health", "hospitality", "other"],
+    default: "retail",
+    index: true
+  },
 
   // Base Pricing
   basePrice: { type: Number, required: true, min: 0 },
@@ -161,5 +167,6 @@ productPricingSchema.methods['isDiscountActive'] = function (): boolean {
 // productPricingSchema.index({ product: 1 }); // Covered by unique: true
 productPricingSchema.index({ 'discount.isActive': 1 });
 productPricingSchema.index({ 'flashSale.startDate': 1, 'flashSale.endDate': 1 });
+productPricingSchema.index({ domain: 1 });
 
 export const ProductPricing = model<IProductPricingDocument>('ProductPricing', productPricingSchema);

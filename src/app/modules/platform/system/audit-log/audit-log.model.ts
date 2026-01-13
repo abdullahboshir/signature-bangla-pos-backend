@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export interface IAuditLog {
     action: string; // e.g., 'CREATE_ORDER', 'LOGIN'
@@ -12,6 +13,7 @@ export interface IAuditLog {
         resource: string; // e.g., 'Order'
         resourceId: string;
     };
+    company?: Schema.Types.ObjectId;
     businessUnit?: Schema.Types.ObjectId; // Optional for platform-level actions
     scope: 'GLOBAL' | 'COMPANY' | 'BUSINESS' | 'OUTLET';
     requestPayload?: Record<string, any>; // Sanitized body
@@ -39,6 +41,7 @@ const auditLogSchema = new Schema<IAuditLog>({
         resource: { type: String, required: true },
         resourceId: { type: String, required: true }
     },
+    company: { type: Schema.Types.ObjectId, ref: 'Company', index: true },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: false }, // Optional for platform-level actions
     scope: { type: String, enum: ['GLOBAL', 'COMPANY', 'BUSINESS', 'OUTLET'], default: 'BUSINESS' },
     requestPayload: { type: Schema.Types.Mixed }, // Store sanitized payload
@@ -55,3 +58,9 @@ auditLogSchema.index({ module: 1, timestamp: -1 });
 auditLogSchema.index({ businessUnit: 1, module: 1 });
 
 export const AuditLog = model<IAuditLog>('AuditLog', auditLogSchema);
+
+// Apply Context-Aware Data Isolation
+auditLogSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

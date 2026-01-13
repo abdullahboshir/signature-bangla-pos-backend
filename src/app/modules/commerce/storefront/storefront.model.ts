@@ -1,10 +1,12 @@
 import { Schema, model, Types } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 // ============================================================================
 // Interfaces
 // ============================================================================
 
 export interface IStorefrontConfig {
+    company: Types.ObjectId;
     businessUnit: Types.ObjectId;
     theme: {
         primaryColor: string;
@@ -41,6 +43,7 @@ export interface IPageBlock {
 }
 
 export interface IStorePage {
+    company: Types.ObjectId;
     businessUnit: Types.ObjectId;
     slug: string; // 'home', 'about-us', 'contact'
     title: string;
@@ -59,6 +62,12 @@ export interface IStorePage {
 
 const StorefrontConfigSchema = new Schema<IStorefrontConfig>(
     {
+        company: {
+            type: Schema.Types.ObjectId,
+            ref: "Company",
+            required: true,
+            index: true
+        },
         businessUnit: {
             type: Schema.Types.ObjectId,
             ref: "BusinessUnit",
@@ -99,6 +108,12 @@ const StorefrontConfigSchema = new Schema<IStorefrontConfig>(
 
 const StorePageSchema = new Schema<IStorePage>(
     {
+        company: {
+            type: Schema.Types.ObjectId,
+            ref: "Company",
+            required: true,
+            index: true
+        },
         businessUnit: {
             type: Schema.Types.ObjectId,
             ref: "BusinessUnit",
@@ -141,3 +156,14 @@ StorePageSchema.index({ isPublished: 1 });
 
 export const StorefrontConfig = model<IStorefrontConfig>("StorefrontConfig", StorefrontConfigSchema);
 export const StorePage = model<IStorePage>("StorePage", StorePageSchema);
+
+// Apply Context-Aware Data Isolation
+StorefrontConfigSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});
+
+StorePageSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

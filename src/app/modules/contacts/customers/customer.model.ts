@@ -1,6 +1,7 @@
 import { model, Schema } from "mongoose";
 import validator from "validator";
 import type { ICustomer } from "./customer.interface.js";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 
 const AddressSchema = new Schema({
@@ -78,16 +79,23 @@ const CustomerSchema = new Schema<ICustomer>(
       ref: "User",
       required: [true, "User id is required"],
     },
+    company: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
+      index: true,
+    },
     businessUnit: {
       type: Schema.Types.ObjectId,
       ref: "BusinessUnit",
-      required: [true, "Business Unit is required"],
+      required: true,
       index: true,
     },
     outlet: {
       type: Schema.Types.ObjectId,
       ref: "Outlet",
-      default: null, // Optional
+      required: false,
+      index: true,
     },
     // Where this customer was acquired/created
     sourceModule: {
@@ -254,6 +262,13 @@ CustomerSchema.virtual("age").get(function () {
   return age;
 });
 
-const Customer = model<ICustomer>("Customer", CustomerSchema);
+export const Customer = model<ICustomer>("Customer", CustomerSchema);
+
+// Apply Context-Aware Data Isolation
+CustomerSchema.plugin(contextScopePlugin, {
+  companyField: 'company',
+  businessUnitField: 'businessUnit',
+  outletField: 'outlet'
+});
 
 export default Customer;

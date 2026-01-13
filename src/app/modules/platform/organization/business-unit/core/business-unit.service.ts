@@ -3,6 +3,7 @@
 // ============================================================================
 
 import { startSession, Types } from "mongoose";
+import httpStatus from "http-status";
 import { log } from "@core/utils/logger.ts";
 
 import { ULIDGenerator } from "@core/utils/generateULID.ts";
@@ -14,6 +15,7 @@ import { User } from "@app/modules/iam/index.js";
 import { USER_ROLE } from "@app/modules/iam/index.js";
 import { Role } from "@app/modules/iam/index.js";
 import BusinessUnit from "./business-unit.model.js";
+import { Company } from "../../company/company.model.js";
 import { QueryBuilder } from "../../../../../../core/database/QueryBuilder.js";
 import { CacheManager } from "../../../../../../core/utils/caching/cache-manager.js";
 import { BusinessUnitSettings } from "../settings/settings.model.ts";
@@ -33,6 +35,16 @@ export class BusinessUnitService {
     try {
 
       session.startTransaction();
+
+      // 🛡️ Hierarchy Validation: Ensure BU modules are a subset of Company modules
+      if (businessUnitData.activeModules) {
+        const parentCompany = await Company.findById(businessUnitData.company).session(session);
+        if (!parentCompany) {
+          throw new AppError(404, "Parent company not found", "BU_CREATE_004");
+        }
+        await this._validateModules(businessUnitData?.activeModules, parentCompany.activeModules as any, "Company");
+      }
+
       const slug = await this.generateUniqueSlug(
         businessUnitData?.branding?.name,
         session
@@ -277,6 +289,17 @@ export class BusinessUnitService {
 
       const flattenedData = flattenUpdateData(updateData);
 
+      // 🛡️ Hierarchy Validation on Update
+      if (updateData.activeModules) {
+        const existingBU = await BusinessUnit.findById(businessUnitId);
+        if (!existingBU) throw new AppError(404, "Business unit not found", "BU_UPDATE_001");
+
+        const parentCompany = await Company.findById(existingBU.company);
+        if (parentCompany) {
+          await this._validateModules(updateData.activeModules as any, parentCompany.activeModules as any, "Company");
+        }
+      }
+
       const updatedBusinessUnit = await BusinessUnit.findByIdAndUpdate(
         businessUnitId,
         flattenedData,
@@ -507,6 +530,30 @@ export class BusinessUnitService {
       // Don't throw 500 immediately to avoid crashing dashboard on partial failure?
       // Better to throw so frontend sees error state or handle gracefully.
       throw new AppError(500, "Failed to get dashboard stats", "BU_STATS_001");
+    }
+  }
+
+  private static async _validateModules(
+    activeModules: Record<string, any>,
+    parentModules: Record<string, any>,
+    parentType: string
+  ): Promise<void> {
+    for (const moduleKey in activeModules) {
+      const isEnabled = typeof activeModules[moduleKey] === 'boolean'
+        ? activeModules[moduleKey]
+        : activeModules[moduleKey]?.enabled;
+
+      const isParentEnabled = typeof parentModules[moduleKey] === 'boolean'
+        ? parentModules[moduleKey]
+        : parentModules[moduleKey]?.enabled;
+
+      if (isEnabled === true && isParentEnabled !== true) {
+        throw new AppError(
+          httpStatus.FORBIDDEN,
+          `Module '${moduleKey}' is not enabled in the parent ${parentType}.`,
+          "HIERARCHY_VAL_001"
+        );
+      }
     }
   }
 }

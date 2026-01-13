@@ -1,5 +1,6 @@
 import { Schema, model } from "mongoose";
-import type { IExpenseDocument } from "./expense.interface.ts";
+import type { IExpenseDocument } from "./expense.interface.js";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 
 const expenseSchema = new Schema<IExpenseDocument>({
@@ -21,8 +22,9 @@ const expenseSchema = new Schema<IExpenseDocument>({
     },
     reference: { type: String },
     remarks: { type: String },
-    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true },
-    outlet: { type: Schema.Types.ObjectId, ref: 'Outlet' },
+    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
+    outlet: { type: Schema.Types.ObjectId, ref: 'Outlet', index: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     status: {
         type: String,
@@ -43,3 +45,10 @@ expenseSchema.index({ status: 1 });
 expenseSchema.index({ paymentMethod: 1 });
 
 export const Expense = model<IExpenseDocument>('Expense', expenseSchema);
+
+// Apply Context-Aware Data Isolation
+expenseSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit',
+    outletField: 'outlet'
+});

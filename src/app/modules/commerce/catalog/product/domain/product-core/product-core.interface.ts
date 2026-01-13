@@ -12,6 +12,7 @@ import type {
 export interface IProductCore {
   name: string;
   nameBangla?: string;
+  domain: string;
   slug: string;
   sku: string;
   barcode?: string;
@@ -23,6 +24,7 @@ export interface IProductCore {
     value: string;
   }[];
   unit?: Types.ObjectId;
+  company: Types.ObjectId;
   outlet: Types.ObjectId;
   businessUnit: Types.ObjectId;
   vendor: {

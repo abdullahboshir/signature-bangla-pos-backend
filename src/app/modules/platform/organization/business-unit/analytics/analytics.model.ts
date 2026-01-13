@@ -1,6 +1,6 @@
-import { Schema, Types, model } from "mongoose";
+import { Schema, model } from "mongoose";
 import type { IBusinessUnitAnalyticsDocument, IBusinessUnitAnalyticsSummaryDocument, IBusinessUnitAnalyticsSummaryModel } from "./analytics.interface.js";
-
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 // ==================== BUSINESS UNIT ANALYTICS MODEL ====================
 const businessUnitAnalyticsSchema = new Schema<IBusinessUnitAnalyticsDocument>({
@@ -111,8 +111,6 @@ const businessUnitAnalyticsSchema = new Schema<IBusinessUnitAnalyticsDocument>({
 businessUnitAnalyticsSchema.index({ businessUnit: 1, date: 1, period: 1 }, { unique: true });
 businessUnitAnalyticsSchema.index({ date: -1 });
 businessUnitAnalyticsSchema.index({ period: 1 });
-businessUnitAnalyticsSchema.index({ "sales.revenue": -1 });
-businessUnitAnalyticsSchema.index({ "traffic.sessions": -1 });
 
 export const BusinessUnitAnalytics = model<IBusinessUnitAnalyticsDocument>('BusinessUnitAnalytics', businessUnitAnalyticsSchema);
 
@@ -194,139 +192,13 @@ const businessUnitAnalyticsSummarySchema = new Schema<IBusinessUnitAnalyticsSumm
 businessUnitAnalyticsSummarySchema.index({ outlet: 1, period: 1, startDate: 1 }, { unique: true });
 businessUnitAnalyticsSummarySchema.index({ period: 1, startDate: 1 });
 
-// Instance Methods
-businessUnitAnalyticsSummarySchema.methods['calculateGrowthMetrics'] = async function (this: IBusinessUnitAnalyticsSummaryDocument, previousPeriod: any): Promise<void> {
-  if (previousPeriod) {
-    this.growth.revenueGrowth = previousPeriod.performance.totalRevenue > 0
-      ? ((this.performance.totalRevenue - previousPeriod.performance.totalRevenue) / previousPeriod.performance.totalRevenue) * 100
-      : 0;
-
-    this.growth.orderGrowth = previousPeriod.performance.totalOrders > 0
-      ? ((this.performance.totalOrders - previousPeriod.performance.totalOrders) / previousPeriod.performance.totalOrders) * 100
-      : 0;
-
-    this.growth.customerGrowth = previousPeriod.performance.totalCustomers > 0
-      ? ((this.performance.totalCustomers - previousPeriod.performance.totalCustomers) / previousPeriod.performance.totalCustomers) * 100
-      : 0;
-  }
-  await this.save();
-};
-
-businessUnitAnalyticsSummarySchema.methods['generateBusinessInsights'] = async function (this: IBusinessUnitAnalyticsSummaryDocument): Promise<void> {
-  // This would analyze the data to generate business insights
-  // For now, we'll set some placeholder values
-  this.businessInsights.bestSellingTime = "14:00-16:00";
-  this.businessInsights.peakSalesDay = "Friday";
-  this.businessInsights.profitMargin = 25; // 25% profit margin
-
-  await this.save();
-};
-
-businessUnitAnalyticsSummarySchema.methods['getPerformanceScore'] = function (this: IBusinessUnitAnalyticsSummaryDocument): number {
-  const factors = {
-    conversionRate: this.performance.conversionRate * 0.3,
-    customerRetention: this.performance.customerRetentionRate * 0.25,
-    revenueGrowth: Math.max(0, this.growth.revenueGrowth) * 0.25,
-    orderGrowth: Math.max(0, this.growth.orderGrowth) * 0.2
-  };
-
-  return Object.values(factors).reduce((sum, score) => sum + score, 0);
-};
-
-// Static Methods
-businessUnitAnalyticsSummarySchema.statics['generateBusinessUnitReport'] = async function (
-  this: IBusinessUnitAnalyticsSummaryModel,
-  outletId: Types.ObjectId,
-  period: string
-): Promise<IBusinessUnitAnalyticsSummaryDocument> {
-  const endDate = new Date();
-  let startDate = new Date();
-
-  switch (period) {
-    case 'weekly':
-      startDate.setDate(endDate.getDate() - 7);
-      break;
-    case 'monthly':
-      startDate.setMonth(endDate.getMonth() - 1);
-      break;
-    case 'quarterly':
-      startDate.setMonth(endDate.getMonth() - 3);
-      break;
-    case 'yearly':
-      startDate.setFullYear(endDate.getFullYear() - 1);
-      break;
-  }
-
-  // Aggregate data from BusinessUnitAnalytics
-  const analyticsData = await BusinessUnitAnalytics.aggregate([
-    {
-      $match: {
-        businessUnit: outletId,
-        date: { $gte: startDate, $lte: endDate },
-        period: 'daily'
-      }
-    },
-    {
-      $group: {
-        _id: null,
-        totalRevenue: { $sum: '$sales.revenue' },
-        totalOrders: { $sum: '$sales.orders' },
-        totalCustomers: { $sum: '$customers.newCustomers' },
-        totalSessions: { $sum: '$traffic.sessions' },
-        averageConversion: { $avg: '$sales.conversionRate' }
-      }
-    }
-  ]);
-
-  const summaryData = analyticsData[0] || {
-    totalRevenue: 0,
-    totalOrders: 0,
-    totalCustomers: 0,
-    totalSessions: 0,
-    averageConversion: 0
-  };
-
-  const summary = await this.findOneAndUpdate(
-    { outlet: outletId, period, startDate },
-    {
-      outlet: outletId,
-      period,
-      startDate,
-      endDate,
-      performance: {
-        totalRevenue: summaryData.totalRevenue,
-        totalOrders: summaryData.totalOrders,
-        totalCustomers: summaryData.totalCustomers,
-        averageOrderValue: summaryData.totalOrders > 0 ? summaryData.totalRevenue / summaryData.totalOrders : 0,
-        conversionRate: summaryData.averageConversion,
-        customerRetentionRate: 70 // This would come from customer data
-      }
-    },
-    { upsert: true, new: true }
-  );
-
-  if (!summary) {
-    throw new Error("Failed to generate or retrieve business unit analytics summary");
-  }
-
-  return summary;
-};
-
-businessUnitAnalyticsSummarySchema.statics['getBusinessUnitBenchmarks'] = async function (this: IBusinessUnitAnalyticsSummaryModel, outletId: Types.ObjectId): Promise<any> {
-  return this.aggregate([
-    {
-      $match: { outlet: outletId }
-    },
-    {
-      $group: {
-        _id: '$period',
-        avgRevenue: { $avg: '$performance.totalRevenue' },
-        avgOrders: { $avg: '$performance.totalOrders' },
-        avgConversion: { $avg: '$performance.conversionRate' },
-        performanceScores: { $push: { $multiply: ['$performance.conversionRate', '$performance.customerRetentionRate'] } }
-      }
-    }
-  ]);
-};
-
 export const BusinessUnitAnalyticsSummary = model<IBusinessUnitAnalyticsSummaryDocument, IBusinessUnitAnalyticsSummaryModel>('BusinessUnitAnalyticsSummary', businessUnitAnalyticsSummarySchema);
+
+// Apply Context-Aware Data Isolation
+businessUnitAnalyticsSchema.plugin(contextScopePlugin, {
+  businessUnitField: 'businessUnit'
+});
+
+businessUnitAnalyticsSummarySchema.plugin(contextScopePlugin, {
+  outletField: 'outlet'
+});

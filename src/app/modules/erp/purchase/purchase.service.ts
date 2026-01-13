@@ -4,6 +4,9 @@ import { Purchase } from './purchase.model.js';
 import type { IPurchase } from './purchase.interface.js';
 import { Product } from '../../commerce/catalog/product/domain/product-core/product-core.model.js';
 import { addLedgerEntryService } from "../inventory/ledger/ledger.service.js";
+import { Supplier } from "../suppliers/supplier/supplier.model.js";
+import { Outlet } from "../../platform/organization/outlet/outlet.model.js";
+import { ContextService } from "../../../../core/services/context.service.js";
 
 // Helper to update stock
 // Helper to update stock
@@ -59,6 +62,14 @@ export const createPurchaseService = async (data: IPurchase, user?: any) => {
         console.log('Purchase Data:', data);
         if (!data.id) {
             data.id = `PUR-${Date.now()}`;
+        }
+
+        // 0. Referential Integrity Check (Phase 8)
+        if (data.supplier) {
+            await ContextService.validateReferentialIntegrity(Supplier, data.supplier);
+        }
+        if (data.outlet) {
+            await ContextService.validateReferentialIntegrity(Outlet, data.outlet);
         }
 
         if (user && user._id) {

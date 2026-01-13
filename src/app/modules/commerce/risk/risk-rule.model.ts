@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export interface IRiskRule {
     name: string;
@@ -39,5 +40,10 @@ const riskRuleSchema = new Schema<IRiskRule>({
 riskRuleSchema.index({ businessUnit: 1 });
 riskRuleSchema.index({ isActive: 1 });
 riskRuleSchema.index({ priority: 1 });
+
+// Apply Context-Aware Data Isolation
+riskRuleSchema.plugin(contextScopePlugin, {
+    businessUnitField: 'businessUnit'
+});
 
 export const RiskRule = model<IRiskRule>("RiskRule", riskRuleSchema);

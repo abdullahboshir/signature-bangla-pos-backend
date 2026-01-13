@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export interface IDriver {
     user: Schema.Types.ObjectId; // Link to User/Staff
@@ -11,6 +12,7 @@ export interface IDriver {
     // Module: 'logistics' (Heavy Duty) vs 'pos' (Delivery Boy)
     module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
 
+    company: Schema.Types.ObjectId;
     businessUnit: Schema.Types.ObjectId;
     isActive: boolean;
 }
@@ -29,7 +31,8 @@ const driverSchema = new Schema<IDriver>({
         required: true,
         index: true
     },
-    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true },
+    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     isActive: { type: Boolean, default: true }
 }, {
     timestamps: true
@@ -40,3 +43,9 @@ driverSchema.index({ licenseNumber: 1 });
 driverSchema.index({ module: 1 });
 
 export const Driver = model<IDriver>('Driver', driverSchema);
+
+// Apply Context-Aware Data Isolation
+driverSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

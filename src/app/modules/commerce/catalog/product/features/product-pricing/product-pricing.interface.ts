@@ -4,6 +4,7 @@ import type { TaxConfiguration } from "../../product-shared/product-shared.inter
 
 export interface IProductPricing {
   product: Types.ObjectId;
+  domain: string;
 
   // Base Pricing
   basePrice: number;

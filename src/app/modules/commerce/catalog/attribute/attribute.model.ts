@@ -1,5 +1,6 @@
 import { Schema, model } from "mongoose";
 import type { IAttributeDocument, IAttributeModel } from "./attribute.interface.ts";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 
 const attributeSchema = new Schema<IAttributeDocument, IAttributeModel>({
@@ -45,5 +46,10 @@ const attributeSchema = new Schema<IAttributeDocument, IAttributeModel>({
 attributeSchema.index({ businessUnit: 1 });
 attributeSchema.index({ status: 1 });
 attributeSchema.index({ name: 1, businessUnit: 1 }, { unique: true });
+
+// Apply Context-Aware Data Isolation
+attributeSchema.plugin(contextScopePlugin, {
+    businessUnitField: 'businessUnit'
+});
 
 export const Attribute = model<IAttributeDocument, IAttributeModel>("Attribute", attributeSchema);

@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export interface IComplianceDocument {
     title: string;
@@ -9,6 +10,7 @@ export interface IComplianceDocument {
     businessUnit: Schema.Types.ObjectId;
     uploadedBy: Schema.Types.ObjectId;
     status: 'active' | 'expired' | 'archived';
+    company: Schema.Types.ObjectId;
 }
 
 const complianceDocumentSchema = new Schema<IComplianceDocument>({
@@ -17,7 +19,8 @@ const complianceDocumentSchema = new Schema<IComplianceDocument>({
     type: { type: String, enum: ['license', 'deed', 'policy', 'certificate', 'tax', 'other'], required: true },
     fileUrl: { type: String, required: true },
     expiryDate: { type: Date },
-    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true },
+    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     uploadedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     status: { type: String, enum: ['active', 'expired', 'archived'], default: 'active' }
 }, {
@@ -25,3 +28,9 @@ const complianceDocumentSchema = new Schema<IComplianceDocument>({
 });
 
 export const ComplianceDocument = model<IComplianceDocument>('ComplianceDocument', complianceDocumentSchema);
+
+// Apply Context-Aware Data Isolation
+complianceDocumentSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

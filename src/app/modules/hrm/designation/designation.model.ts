@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export interface IDesignation {
     name: string;
@@ -8,6 +9,7 @@ export interface IDesignation {
     department: Schema.Types.ObjectId;
     // Designation level module access hint (e.g., this rank defaults to these modules)
     defaultAccess?: string[];
+    company: Schema.Types.ObjectId;
     businessUnit: Schema.Types.ObjectId;
     isActive: boolean;
 }
@@ -22,7 +24,8 @@ const designationSchema = new Schema<IDesignation>({
         type: String,
         enum: ['pos', 'erp', 'hrm', 'ecommerce', 'crm', 'logistics', 'system']
     }],
-    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true },
+    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     isActive: { type: Boolean, default: true }
 }, {
     timestamps: true
@@ -32,3 +35,9 @@ designationSchema.index({ businessUnit: 1, code: 1 }, { unique: true });
 designationSchema.index({ department: 1 });
 
 export const Designation = model<IDesignation>('Designation', designationSchema);
+
+// Apply Context-Aware Data Isolation
+designationSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

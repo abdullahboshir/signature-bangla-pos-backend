@@ -7,7 +7,7 @@ import { LicenseService } from './license.service.ts';
 
 const createLicense = catchAsync(async (req: Request, res: Response) => {
     // Assign creator
-    const creator = req.user?.['id'] || req.user?.['_id'];
+    const creator = req.user?.['_id'] || req.user?.['userId']; // Prioritize ObjectId or standard userId claim
     const payload = { ...req.body, createdBy: creator };
 
     const result = await LicenseService.createLicense(payload);
@@ -51,10 +51,20 @@ const updateLicense = catchAsync(async (req: Request, res: Response) => {
     ApiResponse.success(res, result, 'License updated successfully', httpStatus.OK);
 });
 
+const calculatePrice = catchAsync(async (req: Request, res: Response) => {
+    const { packageId, customModules, overriddenLimits } = req.body;
+    if (!packageId) {
+        throw new AppError(httpStatus.BAD_REQUEST, "packageId is required for pricing preview");
+    }
+    const result = await LicenseService.calculateLicensePricing(packageId, customModules, overriddenLimits);
+    ApiResponse.success(res, result, 'Price calculated successfully', httpStatus.OK);
+});
+
 export const LicenseController = {
     createLicense,
     getAllLicenses,
     validateLicense,
     revokeLicense,
-    updateLicense
+    updateLicense,
+    calculatePrice
 };

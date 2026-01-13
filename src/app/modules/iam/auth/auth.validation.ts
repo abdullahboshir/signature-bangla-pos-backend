@@ -13,3 +13,11 @@ export const setupPasswordZodSchema = z.object({
     password: z.string().min(8, "Password must be at least 8 characters"),
   })
 });
+
+export const resendSetupInvitationZodSchema = z.object({
+  body: z.object({
+    email: z.string().email("Invalid email address").min(1, "Email is required"),
+  })
+});
+
+

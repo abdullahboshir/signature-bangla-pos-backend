@@ -6,6 +6,7 @@ import {
   logoutService,
   refreshTokenAuthService,
   setupPasswordService,
+  resendSetupInvitationService,
 } from "./auth.service.js";
 import catchAsync from "@core/utils/catchAsync.ts";
 import { ApiResponse } from "@core/utils/api-response.ts";
@@ -98,4 +99,23 @@ export const setupPasswordController = catchAsync(async (req, res) => {
     "Password has been set successfully",
     status.OK
   );
+  ApiResponse.success(
+    res,
+    result,
+    "Password has been set successfully",
+    status.OK
+  );
 });
+
+export const resendSetupInvitationController = catchAsync(async (req, res) => {
+  const { email } = req.body;
+  const result = await resendSetupInvitationService(email);
+
+  ApiResponse.success(
+    res,
+    result,
+    "Invitation link has been resent successfully",
+    status.OK
+  );
+});
+

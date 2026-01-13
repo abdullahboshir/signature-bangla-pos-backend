@@ -1,6 +1,7 @@
 import { Outlet } from "./outlet.model.ts";
 import { Types, model, startSession } from "mongoose";
 import { OutletSettings } from "./settings/settings.model.js";
+import BusinessUnit from "../business-unit/core/business-unit.model.js";
 import { resolveBusinessUnitId } from "@core/utils/mutation-helper.ts";
 import { QueryBuilder } from "@core/database/QueryBuilder.ts";
 import AppError from "@shared/errors/app-error.ts";
@@ -17,6 +18,15 @@ const createOutlet = async (payload: any, user?: any): Promise<any> => {
     session.startTransaction();
 
     try {
+        // 🛡️ Hierarchy Validation: Ensure Outlet modules are a subset of BU modules
+        if (payload.activeModules) {
+            const parentBU = await BusinessUnit.findById(payload.businessUnit).session(session);
+            if (!parentBU) {
+                throw new AppError(404, "Parent Business Unit not found", "OUTLET_CREATE_004");
+            }
+            validateModuleInheritance(payload.activeModules, parentBU.activeModules as any, "Business Unit");
+        }
+
         // Check if code exists in the same business unit
         if (payload.code) {
             const isExist = await Outlet.isCodeTaken(payload.code, payload.businessUnit.toString(), session);
@@ -75,11 +85,17 @@ const getAllOutlets = async (businessUnitId: string, user?: any): Promise<any> =
 };
 
 const getOutletById = async (id: string): Promise<IOutlet | null> => {
+    if (id === 'new' || !Types.ObjectId.isValid(id)) {
+        return null;
+    }
     const result = await Outlet.findById(id).populate("manager", "name email");
     return result;
 };
 
 const updateOutlet = async (id: string, payload: Partial<IOutlet>): Promise<IOutlet | null> => {
+    if (id === 'new' || !Types.ObjectId.isValid(id)) {
+        throw new Error("Invalid Outlet ID for update");
+    }
     const isExist = await Outlet.findById(id);
     if (!isExist) {
         throw new Error("Outlet not found");
@@ -93,6 +109,14 @@ const updateOutlet = async (id: string, payload: Partial<IOutlet>): Promise<IOut
         }
     }
 
+    // 🛡️ Hierarchy Validation on Update
+    if (payload.activeModules) {
+        const parentBU = await BusinessUnit.findById(isExist.businessUnit);
+        if (parentBU) {
+            validateModuleInheritance(payload.activeModules, parentBU.activeModules as any, "Business Unit");
+        }
+    }
+
     const result = await Outlet.findByIdAndUpdate(id, payload, {
         new: true,
         runValidators: true
@@ -101,6 +125,9 @@ const updateOutlet = async (id: string, payload: Partial<IOutlet>): Promise<IOut
 };
 
 const deleteOutlet = async (id: string): Promise<IOutlet | null> => {
+    if (id === 'new' || !Types.ObjectId.isValid(id)) {
+        throw new Error("Invalid Outlet ID for deletion");
+    }
     const result = await Outlet.findByIdAndDelete(id);
     return result;
 };
@@ -195,4 +222,30 @@ export const OutletService = {
     updateOutlet,
     deleteOutlet,
     getOutletStats
+};
+
+/**
+ * 🛡️ Validate that child modules are a subset of parent modules
+ */
+const validateModuleInheritance = (
+    requestedModules: Record<string, boolean>,
+    allowedModules: Record<string, boolean>,
+    level: string
+) => {
+    if (!requestedModules || !allowedModules) return;
+
+    for (const [module, value] of Object.entries(requestedModules)) {
+        const isEnabled = typeof value === 'boolean' ? value : (value as any)?.enabled;
+        const isParentEnabled = typeof allowedModules[module] === 'boolean'
+            ? allowedModules[module]
+            : (allowedModules[module] as any)?.enabled;
+
+        if (isEnabled === true && isParentEnabled !== true) {
+            throw new AppError(
+                httpStatus.FORBIDDEN,
+                `Module '${module}' is not enabled at the ${level} level and cannot be enabled for this outlet.`,
+                "MODULE_HIERARCHY_VIOLATION"
+            );
+        }
+    }
 };

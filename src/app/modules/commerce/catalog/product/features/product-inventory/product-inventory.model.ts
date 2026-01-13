@@ -2,6 +2,7 @@ import { Schema, model } from "mongoose";
 
 import type { IProductInventoryDocument, IOutletStock } from "./product-inventory.interface.js";
 import { InventoryBaseSchema } from "../../product-shared/product-shared.model.js";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 
 const outletStockSchema = new Schema({
@@ -13,6 +14,15 @@ const outletStockSchema = new Schema({
 
 const productInventorySchema = new Schema<IProductInventoryDocument>({
   product: { type: Schema.Types.ObjectId, ref: 'Product', required: true, unique: true },
+  company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+  businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
+  domain: {
+    type: String,
+    enum: ["retail", "pharmacy", "grocery", "restaurant", "electronics", "fashion", "service", "construction", "automotive", "health", "hospitality", "other"],
+    default: "retail",
+    index: true
+  },
+  outlet: { type: Schema.Types.ObjectId, ref: 'Outlet', index: true },
 
   // Stock Management
   inventory: { type: InventoryBaseSchema, required: true },
@@ -197,3 +207,10 @@ productInventorySchema.index({ 'outletStock.outlet': 1 }); // Outlet Stock Queri
 productInventorySchema.index({ 'suppliers.supplier': 1 }); // Supplier Relations
 
 export const ProductInventory = model<IProductInventoryDocument>('ProductInventory', productInventorySchema);
+
+// Apply Context-Aware Data Isolation
+productInventorySchema.plugin(contextScopePlugin, {
+  companyField: 'company',
+  businessUnitField: 'businessUnit',
+  outletField: 'outlet'
+});

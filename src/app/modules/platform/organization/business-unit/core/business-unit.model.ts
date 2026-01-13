@@ -1,5 +1,6 @@
 
 import { model, Schema } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 import type { IBusinessUnitCoreDocument, IBusinessUnitCoreModel } from "./business-unit.interface.js";
 import { brandingSchema, contactSchema, locationSchema } from "../../shared/common.schema.js";
 
@@ -19,6 +20,12 @@ export const businessUnitCoreSchema = new Schema<
       required: true,
       trim: true,
       index: true,
+    },
+    domain: {
+      type: String,
+      enum: ["retail", "pharmacy", "grocery", "restaurant", "electronics", "fashion", "service", "construction", "automotive", "health", "hospitality", "other"],
+      default: "retail",
+      index: true
     },
 
     // ====== LOCALIZATION (Identity Defaults) ======
@@ -210,5 +217,10 @@ const BusinessUnit = model<IBusinessUnitCoreDocument, IBusinessUnitCoreModel>(
   "BusinessUnit",
   businessUnitCoreSchema
 );
+
+// Apply Context-Aware Data Isolation
+businessUnitCoreSchema.plugin(contextScopePlugin, {
+  companyField: 'company'
+});
 
 export default BusinessUnit

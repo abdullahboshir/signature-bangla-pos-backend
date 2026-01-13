@@ -8,7 +8,7 @@ import { User } from "./user.model.js";
 import { Role } from "../role/role.model.js";
 import { UserBusinessAccess } from "../user-business-access/user-business-access.model.js";
 import BusinessUnit from "../../platform/organization/business-unit/core/business-unit.model.ts";
-import { USER_ROLE } from "./user.constant.ts";
+import { USER_ROLE, USER_STATUS } from "./user.constant.ts";
 import appConfig from "@shared/config/app.config.ts";
 import { PermissionService } from "../permission/permission.service.js";
 import AppError from "@shared/errors/app-error.ts";
@@ -367,7 +367,7 @@ export const createStaffService = async (
         firstName: staffData.firstName,
         lastName: staffData.lastName
       },
-      directPermissions: staffData.directPermissions
+      directPermissions: staffData.directPermissions || []
     };
 
     const newUser = await User.create([userData], { session });
@@ -398,11 +398,54 @@ export const createStaffService = async (
     const newStaff = await Staff.create([staffPayload], { session });
     if (!newStaff || !newStaff.length) throw new AppError(500, "Failed to create staff profile");
 
+    // 400. Staff Created
+    // const newStaff = ... (already created above)
+
+    // 9. Send Invitation Email
+    // Generate Token
+    const crypto = await import("crypto");
+    const setupToken = crypto.default.randomBytes(32).toString('hex');
+    const setupExpires = new Date(Date.now() + 72 * 60 * 60 * 1000); // 72 hours
+
+    // Update User with Token
+    await User.findByIdAndUpdate(newUser[0]._id, {
+      setupPasswordToken: setupToken,
+      setupPasswordExpires: setupExpires
+    }).session(session);
+
+    try {
+      const { MailService } = await import("@shared/mail/mail.service.js");
+      const setupUrl = `${appConfig.frontend_url}/auth/setup-password?token=${setupToken}`;
+
+      await MailService.sendEmail(
+        email,
+        "Signature Bangla - Staff Account Invitation",
+        `
+            <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <h2 style="color: #0F172A; text-align: center;">You've been invited!</h2>
+                <p>Hello <strong>${staffData.firstName}</strong>,</p>
+                <p>You have been added as a staff member to <strong>Signature Bangla</strong>.</p>
+                <p>Please click the link below to set up your password and access your account.</p>
+                <div style="margin: 30px 0; text-align: center;">
+                <a href="${setupUrl}" style="background-color: #0F172A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Accept Invitation</a>
+                </div>
+                <p style="font-size: 14px; color: #666;">Or copy this link: <br/> <a href="${setupUrl}">${setupUrl}</a></p>
+                <p style="font-size: 14px; color: #666;">This link expires in 72 hours.</p>
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+                <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 Signature Bangla. All rights reserved.</p>
+            </div>
+            `
+      );
+    } catch (msgError) {
+      console.error("Failed to send staff invitation email", msgError);
+    }
+
     await session.commitTransaction();
     console.log(`✅ Staff created: ${email} (${newStaff[0]?._id})`);
 
     // Return with simplified population (UserBusinessAccess not populated here, purely Staff view)
     return await Staff.findById(newStaff[0]?._id).populate('user').populate('businessUnit');
+
 
   } catch (error: any) {
     if (session.inTransaction()) await session.abortTransaction();
@@ -643,20 +686,74 @@ export const createCompanyOwnerService = async (
   const isUserExists = await User.findOne({ email: companyData.contactEmail }).session(session);
 
   if (isUserExists) {
-    // If user exists, we might want to just assign them the role? 
-    // For now, simpler to throw error or maybe we can support linking existing user.
-    // Let's support linking if they exist (Industrial Standard: One user multiple companies?)
-    // But complexity increases. Let's throw error for now or generate unique email.
-    // Actually, user expects fresh company -> fresh owner.
-    // If Admin uses their own email, it might conflict.
-    // Default behavior: Create new user. If exists, maybe we skip creation and just assign access?
-    // Let's try to find if they have COMPANY_OWNER role?
+    // 1.1 Handle PENDING User (User exists but never set password)
+    if (isUserExists.status === USER_STATUS.PENDING) {
+      // Check/Regenerate Token
+      const crypto = await import("crypto");
+      const setupToken = crypto.default.randomBytes(32).toString('hex');
+      const setupExpires = new Date(Date.now() + 72 * 60 * 60 * 1000); // 72 hours
 
-    // DECISION: For 'Create Company' flow, if email matches, we PROCEED to link them as Owner.
-    // This allows one person to own multiple companies.
+      isUserExists.setupPasswordToken = setupToken;
+      isUserExists.setupPasswordExpires = setupExpires;
+      await isUserExists.save({ session });
 
-    // If user exists, we PROCEED to link them as Owner.
+      // Create Access & Merchant if missing (Logic shared with Active logic below)
+      // TO REDUCE DUPLICATION, we can extract Access/Merchant logic?
+      // For now, let's keep it inline but ensure we send the CORRECT email.
 
+      // Ensure Merchant/Access exists (Copying logic from below)
+      const ownerRole = await Role.findOne({ name: USER_ROLE.COMPANY_OWNER }).session(session);
+      if (!ownerRole) throw new AppError(500, "FATAL: COMPANY_OWNER role missing in system");
+
+      const existingMerchant = await Merchant.findOne({ user: isUserExists._id }).session(session);
+      if (!existingMerchant) {
+        await Merchant.create([{
+          user: isUserExists._id,
+          firstName: companyData.legalRepresentative?.name || companyData.name,
+          lastName: companyData.legalRepresentative?.name ? "" : "Owner",
+          phone: companyData.legalRepresentative?.contactPhone || companyData.contactPhone,
+          nidNumber: companyData.legalRepresentative?.nationalId,
+          isEmailVerified: true,
+          isActive: true
+        }], { session });
+      }
+
+      // Create Access
+      await UserBusinessAccess.create([{
+        user: isUserExists._id,
+        role: ownerRole._id,
+        scope: 'COMPANY',
+        company: companyId,
+        status: 'ACTIVE',
+        isPrimary: true
+      }], { session });
+
+      // Send SETUP Email
+      try {
+        const setupUrl = `${appConfig.frontend_url}/auth/setup-password?token=${setupToken}`;
+        await MailService.sendEmail(
+          companyData.contactEmail,
+          "Welcome to Signature Bangla - Set up your account",
+          `
+            <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+              <h2 style="color: #0F172A; text-align: center;">Welcome to Signature Bangla</h2>
+              <p>Hello <strong>${companyData.legalRepresentative?.name || 'Partner'}</strong>,</p>
+              <p>Your new company <strong>${companyData.name}</strong> has been provisioned.</p>
+              <p>We noticed your account was pending setup. Please set your password now.</p>
+              <div style="margin: 30px 0; text-align: center;">
+                <a href="${setupUrl}" style="background-color: #0F172A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Set Up Password</a>
+              </div>
+              <p style="font-size: 14px; color: #666;">Or copy this link: <br/> <a href="${setupUrl}">${setupUrl}</a></p>
+              <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+            </div>
+            `
+        );
+      } catch (e) { console.error("Failed to send setup email", e); }
+
+      return isUserExists;
+    }
+
+    // 1.2 Handle ACTIVE User (Existing logic)
     // Find COMPANY_OWNER role
     const ownerRole = await Role.findOne({ name: USER_ROLE.COMPANY_OWNER }).session(session);
     if (!ownerRole) throw new AppError(500, "FATAL: COMPANY_OWNER role missing in system");
@@ -709,6 +806,7 @@ export const createCompanyOwnerService = async (
 
     return isUserExists;
   }
+
 
   // 2. Create New User
   const ownerRole = await Role.findOne({ name: USER_ROLE.COMPANY_OWNER }).session(session);

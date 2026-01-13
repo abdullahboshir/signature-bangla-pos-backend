@@ -6,6 +6,7 @@ export interface IUnit {
     symbol: string; // e.g., "kg"
     status: 'active' | 'inactive';
     businessUnit: Types.ObjectId | null; // Reference to the business unit, null for global
+    company: Types.ObjectId | null; // Reference to the company, null for platform-global
     relatedBusinessTypes?: string[]; // e.g., ["Grocery", "Pharmacy"]
     module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
     createdBy: Types.ObjectId;

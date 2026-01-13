@@ -1,5 +1,6 @@
 import { Schema, model } from 'mongoose';
 import type { ITax } from './tax.interface.ts';
+import { contextScopePlugin } from '@core/plugins/context-scope.plugin.js';
 
 const taxSchema = new Schema<ITax>(
     {
@@ -59,6 +60,12 @@ taxSchema.index({ isDefault: 1 });
 taxSchema.pre(['find', 'findOne', 'findOneAndUpdate'], function (next) {
     this.find({ isDeleted: { $ne: true } });
     next();
+});
+
+// Apply Context-Aware Data Isolation
+taxSchema.plugin(contextScopePlugin, {
+    businessUnitField: 'businessUnit',
+    includeGlobal: true  // Tax rates can be global templates
 });
 
 export const Tax = model<ITax>('Tax', taxSchema);

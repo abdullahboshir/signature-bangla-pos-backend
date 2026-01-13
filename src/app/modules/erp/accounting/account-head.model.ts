@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export interface IAccountHead {
     name: string; // "Cash on Hand", "Bank Asia"
@@ -10,6 +11,7 @@ export interface IAccountHead {
     module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
 
     balance: number;
+    company: Schema.Types.ObjectId;
     businessUnit: Schema.Types.ObjectId;
     isActive: boolean;
 }
@@ -27,7 +29,8 @@ const accountHeadSchema = new Schema<IAccountHead>({
         index: true
     },
     balance: { type: Number, default: 0 },
-    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
     isActive: { type: Boolean, default: true }
 }, {
     timestamps: true
@@ -37,3 +40,9 @@ accountHeadSchema.index({ code: 1, businessUnit: 1 }, { unique: true });
 accountHeadSchema.index({ module: 1 });
 
 export const AccountHead = model<IAccountHead>('AccountHead', accountHeadSchema);
+
+// Apply Context-Aware Data Isolation
+accountHeadSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

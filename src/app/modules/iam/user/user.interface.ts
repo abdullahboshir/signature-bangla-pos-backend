@@ -27,6 +27,7 @@ export interface IUser {
   isPhoneVerified: boolean;
   status: TUserStatus;
   avatar?: string;
+  company?: Types.ObjectId;
   needsPasswordChange: boolean;
   passwordChangedAt?: Date;
   setupPasswordToken?: string;

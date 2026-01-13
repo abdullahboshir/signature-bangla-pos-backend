@@ -24,8 +24,10 @@ export interface IStaff extends Document {
     isActive: boolean;
     isDeleted: boolean;
     businessUnit: Types.ObjectId; // Primary Business Unit
-    assignedOutlets?: Types.ObjectId[]; // Outlets they can access
-    restrictions?: IRestrictions;
+    company: Types.ObjectId;
+    assignedOutlets: Types.ObjectId[]; // Outlets they can access
+    outlet?: Types.ObjectId;
+    restrictions: IRestrictions;
     createdAt: Date;
     updatedAt: Date;
 }

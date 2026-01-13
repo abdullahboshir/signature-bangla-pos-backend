@@ -1,4 +1,5 @@
 import { Schema, model, Types, Document } from 'mongoose';
+import { contextScopePlugin } from '@core/plugins/context-scope.plugin.js';
 
 export interface IAdjustmentItem {
     product: Types.ObjectId;
@@ -46,5 +47,10 @@ const inventoryAdjustmentSchema = new Schema<IInventoryAdjustment>({
 inventoryAdjustmentSchema.index({ outlet: 1, date: -1 });
 inventoryAdjustmentSchema.index({ status: 1 });
 inventoryAdjustmentSchema.index({ 'items.product': 1 });
+
+// Apply Context-Aware Data Isolation
+inventoryAdjustmentSchema.plugin(contextScopePlugin, {
+    outletField: 'outlet'
+});
 
 export const InventoryAdjustment = model<IInventoryAdjustment>('InventoryAdjustment', inventoryAdjustmentSchema);

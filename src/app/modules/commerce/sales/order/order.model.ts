@@ -1,5 +1,6 @@
 import { Schema, model } from "mongoose";
 import type { IOrder } from "./order.interface.js";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 
 const orderItemSchema = new Schema({
@@ -13,9 +14,10 @@ const orderItemSchema = new Schema({
 
 const orderSchema = new Schema<IOrder>({
     orderId: { type: String, required: true, unique: true },
-    customer: { type: Schema.Types.ObjectId, ref: "Customer" },
-    businessUnit: { type: Schema.Types.ObjectId, ref: "BusinessUnit", required: true },
-    outlet: { type: Schema.Types.ObjectId, ref: "Outlet", required: true },
+    customer: { type: Schema.Types.ObjectId, ref: 'User' },
+    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
+    outlet: { type: Schema.Types.ObjectId, ref: 'Outlet', required: true, index: true },
 
     // Origin of the order (POS vs Online)
     sourceModule: {
@@ -72,7 +74,8 @@ const orderSchema = new Schema<IOrder>({
     createdBy: { type: Schema.Types.ObjectId, ref: "User" }
 
 }, {
-    versionKey: false
+    versionKey: false,
+    timestamps: true
 });
 
 // Indexes for Scalability
@@ -83,3 +86,10 @@ orderSchema.index({ status: 1 }); // Admin Status Filters
 orderSchema.index({ createdBy: 1 }); // Staff Performance
 
 export const Order = model<IOrder>("Order", orderSchema);
+
+// Apply Context-Aware Data Isolation
+orderSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit',
+    outletField: 'outlet'
+});

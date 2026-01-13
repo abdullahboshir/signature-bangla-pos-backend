@@ -9,6 +9,7 @@ export interface IExpense extends Document {
     module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
     reference?: string;
     remarks?: string;
+    company: Types.ObjectId;
     businessUnit: Types.ObjectId;
     outlet?: Types.ObjectId;
     createdBy: Types.ObjectId;

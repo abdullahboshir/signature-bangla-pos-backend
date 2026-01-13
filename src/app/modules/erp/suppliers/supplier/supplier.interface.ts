@@ -16,6 +16,7 @@ export interface ISupplier {
     status: 'active' | 'inactive';
     module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
     businessUnits: string[]; // ObjectIds
+    company?: string;        // Tenant ID
     businessUnit?: string;   // For Payload Convenience
     createdAt?: Date;
     updatedAt?: Date;

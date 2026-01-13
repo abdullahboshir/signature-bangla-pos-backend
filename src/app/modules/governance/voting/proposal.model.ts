@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export interface IProposal {
     title: string;
@@ -20,6 +21,7 @@ export interface IProposal {
         comments?: string;
     }[];
     finalResult?: string; // Summary of result
+    company: Schema.Types.ObjectId;
 }
 
 const proposalSchema = new Schema<IProposal>({
@@ -33,7 +35,8 @@ const proposalSchema = new Schema<IProposal>({
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
     status: { type: String, enum: ['draft', 'active', 'closed', 'cancelled'], default: 'draft' },
-    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true },
+    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     votes: [{
         shareholder: { type: Schema.Types.ObjectId, ref: 'Shareholder' },
@@ -47,3 +50,9 @@ const proposalSchema = new Schema<IProposal>({
 });
 
 export const Proposal = model<IProposal>('Proposal', proposalSchema);
+
+// Apply Context-Aware Data Isolation
+proposalSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

@@ -1,4 +1,5 @@
 import { Schema, model } from 'mongoose';
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export interface IAdCampaign {
     name: string;
@@ -12,8 +13,9 @@ export interface IAdCampaign {
     ctr?: number;
     startDate?: Date;
     endDate?: Date;
-    businessUnit: Schema.Types.ObjectId;
     metaData?: Record<string, any>; // Store raw Meta response if needed
+    company: Schema.Types.ObjectId;
+    businessUnit: Schema.Types.ObjectId;
 }
 
 const adCampaignSchema = new Schema<IAdCampaign>({
@@ -32,7 +34,8 @@ const adCampaignSchema = new Schema<IAdCampaign>({
     ctr: { type: Number, default: 0 },
     startDate: { type: Date },
     endDate: { type: Date },
-    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
     metaData: { type: Map, of: Schema.Types.Mixed },
 }, {
     timestamps: true,
@@ -44,3 +47,9 @@ adCampaignSchema.index({ status: 1 });
 adCampaignSchema.index({ objective: 1 });
 
 export const AdCampaign = model<IAdCampaign>('AdCampaign', adCampaignSchema);
+
+// Apply Context-Aware Data Isolation
+adCampaignSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

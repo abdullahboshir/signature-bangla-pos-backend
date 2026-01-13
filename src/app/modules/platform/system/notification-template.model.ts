@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export interface INotificationTemplate {
     name: string;
@@ -9,6 +10,7 @@ export interface INotificationTemplate {
     content: string; // HTML or Text
     variables: string[]; // e.g. ['{{customerName}}', '{{orderId}}']
     isActive: boolean;
+    company?: Schema.Types.ObjectId;
     businessUnit?: Schema.Types.ObjectId; // Optional: specific to a BU, or global if null
 }
 
@@ -25,6 +27,7 @@ const notificationTemplateSchema = new Schema<INotificationTemplate>({
     content: { type: String, required: true },
     variables: [{ type: String }],
     isActive: { type: Boolean, default: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Company', index: true },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit' }
 }, {
     timestamps: true
@@ -34,3 +37,10 @@ notificationTemplateSchema.index({ code: 1, businessUnit: 1, type: 1 }, { unique
 notificationTemplateSchema.index({ module: 1 });
 
 export const NotificationTemplate = model<INotificationTemplate>('NotificationTemplate', notificationTemplateSchema);
+
+// Apply Context-Aware Data Isolation
+notificationTemplateSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit',
+    includeGlobal: true
+});

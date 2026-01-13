@@ -1,5 +1,6 @@
 import { Schema, model } from 'mongoose';
 import type { IPurchase } from './purchase.interface.ts';
+import { contextScopePlugin } from '@core/plugins/context-scope.plugin.js';
 
 const PurchaseItemSchema = new Schema({
     product: { type: Schema.Types.ObjectId as any, ref: 'Product', required: true },
@@ -16,6 +17,7 @@ const PurchaseSchema = new Schema<IPurchase>({
     referenceNo: { type: String },
     businessUnit: { type: Schema.Types.ObjectId as any, ref: 'BusinessUnit', required: true },
     outlet: { type: Schema.Types.ObjectId as any, ref: 'Outlet', required: true },
+    company: { type: Schema.Types.ObjectId as any, ref: 'Company', required: true, index: true },
     status: { type: String, enum: ['pending', 'ordered', 'received'], default: 'pending' },
     module: {
         type: String,
@@ -46,6 +48,13 @@ const PurchaseSchema = new Schema<IPurchase>({
             delete (ret as any).__v;
         }
     }
+});
+
+// Apply Context-Aware Data Isolation
+PurchaseSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit',
+    outletField: 'outlet'
 });
 
 // Indexes for Reports & Dashboards

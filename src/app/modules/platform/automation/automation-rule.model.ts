@@ -1,4 +1,5 @@
 import { Schema, model } from 'mongoose';
+import { contextScopePlugin } from '@core/plugins/context-scope.plugin.js';
 
 export type TriggerType = 'ORDER_CREATED' | 'ORDER_UPDATED' | 'USER_REGISTERED' | 'CART_ABANDONED' | 'INVENTORY_LOW';
 
@@ -59,5 +60,10 @@ const automationRuleSchema = new Schema<IAutomationRule>({
 
 automationRuleSchema.index({ businessUnit: 1, trigger: 1 });
 automationRuleSchema.index({ isActive: 1 });
+
+// Apply Context-Aware Data Isolation
+automationRuleSchema.plugin(contextScopePlugin, {
+    businessUnitField: 'businessUnit'
+});
 
 export const AutomationRule = model<IAutomationRule>('AutomationRule', automationRuleSchema);

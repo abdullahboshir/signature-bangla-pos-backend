@@ -1,6 +1,7 @@
 import { Schema, model } from "mongoose";
 import type { ICategories } from "./category.interface.js";
 import { makeSlug } from "@core/utils/utils.common.ts";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 
 const CategorySchema = new Schema<ICategories>(
@@ -11,6 +12,12 @@ const CategorySchema = new Schema<ICategories>(
       trim: true,
       index: true,
       maxlength: 50,
+    },
+    domain: {
+      type: String,
+      enum: ["retail", "pharmacy", "grocery", "restaurant", "electronics", "fashion", "service", "construction", "automotive", "health", "hospitality", "other"],
+      default: "retail",
+      index: true
     },
     availableModules: {
       type: [{
@@ -24,10 +31,17 @@ const CategorySchema = new Schema<ICategories>(
       type: String,
       index: true,
     },
+    company: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
+      index: true,
+    },
     businessUnit: {
       type: Schema.Types.ObjectId,
       ref: "BusinessUnit",
       required: false,
+      index: true,
     },
     parentId: {
       type: Schema.Types.ObjectId,
@@ -69,8 +83,9 @@ CategorySchema.index({ parentId: 1, businessUnit: 1 });
 CategorySchema.index({ level: 1 });
 
 CategorySchema.pre("save", function (next) {
-  if (this.isModified("name")) {
-    this.slug = makeSlug(this.name);
+  const doc = this as any;
+  if (doc.isModified("name")) {
+    doc.slug = makeSlug(doc.name);
   }
   next();
 });
@@ -80,3 +95,9 @@ CategorySchema.index({ name: 1, businessUnit: 1 }, { unique: true });
 CategorySchema.index({ slug: 1, businessUnit: 1 }, { unique: true });
 
 export const Category = model<ICategories>("Category", CategorySchema);
+
+// Apply Context-Aware Data Isolation
+CategorySchema.plugin(contextScopePlugin, {
+  companyField: 'company',
+  businessUnitField: 'businessUnit'
+});

@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { contextScopePlugin } from '@core/plugins/context-scope.plugin.js';
 
 export interface IAssetCategory {
     name: string;
@@ -32,5 +33,10 @@ const assetCategorySchema = new Schema<IAssetCategory>({
 
 assetCategorySchema.index({ code: 1, businessUnit: 1 }, { unique: true });
 assetCategorySchema.index({ module: 1 });
+
+// Apply Context-Aware Data Isolation
+assetCategorySchema.plugin(contextScopePlugin, {
+    businessUnitField: 'businessUnit'
+});
 
 export const AssetCategory = model<IAssetCategory>('AssetCategory', assetCategorySchema);

@@ -14,7 +14,7 @@ import mongoose from "mongoose";
 
 const validateOutletId = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const { outletId } = req.params;
-    if (outletId && !mongoose.Types.ObjectId.isValid(outletId)) {
+    if (outletId && outletId !== 'new' && !mongoose.Types.ObjectId.isValid(outletId)) {
         return res.status(400).json({
             success: false,
             message: `Invalid Outlet ID: ${outletId}`

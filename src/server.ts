@@ -5,12 +5,12 @@ import "colors";
 import app from "./app.js";
 import mongoose from "mongoose";
 import { connectDB } from "./core/database/mongoose/connection.ts";
-import { seedCategories } from "./core/database/mongoose/seeders/category.seeder.ts";
 import { runRolePermissionSeeder } from "./core/database/mongoose/seeders/auth/index.ts";
 import { runSettingsSeeder } from "./core/database/mongoose/seeders/settings/index.ts";
+import { seedPackages } from "./core/database/mongoose/seeders/package.seeder.ts";
 
 import appConfig from "./shared/config/app.config.ts";
-import { startCleanupJob } from "./app/jobs/cleanup.job.ts";
+import { JobManager } from "./app/jobs/manager.ts";
 import { WorkerService } from "./app/modules/platform/queue/worker.service.ts";
 
 let server: Server;
@@ -42,7 +42,7 @@ async function bootstrap() {
         // session.startTransaction();
 
         await runRolePermissionSeeder(); // Internally handles Roles, Groups, and Super Admin User
-        await seedCategories();
+        await seedPackages();
         await runSettingsSeeder(); // Atomic System & Platform Settings
 
         // await session.commitTransaction();
@@ -55,9 +55,8 @@ async function bootstrap() {
         // session.endSession();
       }
 
-      // 3. Start Global Cron Jobs (Only once or centralized)
-      console.log("⏰ Starting Maintenance Jobs...".blue);
-      startCleanupJob();
+      // 3. Start Global Cron Jobs (Centralized Orchestrator)
+      await JobManager.initAll();
 
       // 4. Fork Workers
       // NOTE: If using an external process manager like PM2 or Kubernetes (ReplicaSet),

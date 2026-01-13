@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export interface ICourier {
     name: string; // "Steadfast", "Pathao", "RedX"
@@ -8,6 +9,7 @@ export interface ICourier {
     baseUrl?: string;
     isActive: boolean;
     module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics';
+    company: Schema.Types.ObjectId;
     businessUnit: Schema.Types.ObjectId;
     config: Map<string, any>; // Extra config like "store_id"
 }
@@ -27,7 +29,8 @@ const courierSchema = new Schema<ICourier>({
         required: true,
         index: true
     },
-    businessUnit: { type: Schema.Types.ObjectId, ref: "BusinessUnit", required: true },
+    businessUnit: { type: Schema.Types.ObjectId, ref: "BusinessUnit", required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: "Company", required: true, index: true },
     config: { type: Map, of: Schema.Types.Mixed }
 }, {
     timestamps: true
@@ -38,3 +41,9 @@ courierSchema.index({ businessUnit: 1 });
 courierSchema.index({ isActive: 1 });
 
 export const Courier = model<ICourier>("Courier", courierSchema);
+
+// Apply Context-Aware Data Isolation
+courierSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

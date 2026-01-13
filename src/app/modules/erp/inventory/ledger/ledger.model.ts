@@ -1,4 +1,5 @@
 import { Schema, model, Types, Document } from 'mongoose';
+import { contextScopePlugin } from '@core/plugins/context-scope.plugin.js';
 
 export interface IStockLedger extends Document {
     date: Date;
@@ -44,5 +45,10 @@ stockLedgerSchema.index({ product: 1, date: -1 });
 stockLedgerSchema.index({ outlet: 1, date: -1 });
 stockLedgerSchema.index({ type: 1 });
 stockLedgerSchema.index({ reference: 1 });
+
+// Apply Context-Aware Data Isolation
+stockLedgerSchema.plugin(contextScopePlugin, {
+    outletField: 'outlet'
+});
 
 export const StockLedger = model<IStockLedger>('StockLedger', stockLedgerSchema);

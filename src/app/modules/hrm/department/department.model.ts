@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export interface IDepartment {
     name: string;
@@ -8,6 +9,7 @@ export interface IDepartment {
     businessUnit: Schema.Types.ObjectId;
     parentId?: Schema.Types.ObjectId;
     headOfDepartment?: Schema.Types.ObjectId; // Staff ID
+    company: Schema.Types.ObjectId;
     isActive: boolean;
 }
 
@@ -21,7 +23,8 @@ const departmentSchema = new Schema<IDepartment>({
         required: true,
         default: 'hrm'
     },
-    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true },
+    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     parentId: { type: Schema.Types.ObjectId, ref: 'Department' },
     headOfDepartment: { type: Schema.Types.ObjectId, ref: 'Staff' },
     isActive: { type: Boolean, default: true }
@@ -33,3 +36,9 @@ departmentSchema.index({ businessUnit: 1, code: 1 }, { unique: true });
 departmentSchema.index({ module: 1 });
 
 export const Department = model<IDepartment>('Department', departmentSchema);
+
+// Apply Context-Aware Data Isolation
+departmentSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

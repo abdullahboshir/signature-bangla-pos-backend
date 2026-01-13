@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export type PromotionType = 'PERCENTAGE' | 'FIXED_AMOUNT' | 'BUY_X_GET_Y' | 'FREE_SHIPPING';
 
@@ -16,6 +17,7 @@ export interface IPromotion {
     usageLimit?: number;
     usageCount: number;
     isActive: boolean;
+    company: Schema.Types.ObjectId;
     businessUnit: Schema.Types.ObjectId;
 }
 
@@ -42,7 +44,8 @@ const promotionSchema = new Schema<IPromotion>({
     usageLimit: { type: Number },
     usageCount: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
-    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true }
+    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true }
 }, {
     timestamps: true
 });
@@ -53,3 +56,9 @@ promotionSchema.index({ isActive: 1 });
 promotionSchema.index({ startDate: 1, endDate: 1 });
 
 export const Promotion = model<IPromotion>('Promotion', promotionSchema);
+
+// Apply Context-Aware Data Isolation
+promotionSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

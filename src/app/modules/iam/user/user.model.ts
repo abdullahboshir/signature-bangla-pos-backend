@@ -4,6 +4,7 @@ import type { IUser, UserStatic } from "./user.interface.js";
 import { USER_STATUS } from "./user.constant.js";
 import { auditDiffPlugin } from '../../../../core/plugins/mongoose-diff.plugin.js';
 import { cachingMiddleware } from "@core/utils/cacheQuery.ts";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 
 
@@ -165,6 +166,11 @@ const UserSchema = new Schema<IUser, UserStatic>({
     type: Schema.Types.ObjectId,
     ref: 'User',
     default: null
+  },
+  company: {
+    type: Schema.Types.ObjectId,
+    ref: 'Company',
+    index: true
   }
 }, {
   timestamps: true,
@@ -190,9 +196,9 @@ UserSchema.index({ createdAt: -1 });
 UserSchema.index({ 'name.firstName': 1, 'name.lastName': 1 });
 
 // Virtual for fullName
-UserSchema.virtual('fullName').get(function () {
-  if (this["name"]) {
-    return `${this["name"].firstName} ${this["name"].lastName}`.trim();
+UserSchema.virtual('fullName').get(function (this: IUser) {
+  if (this.name) {
+    return `${this.name.firstName} ${this.name.lastName}`.trim();
   }
   return '';
 });
@@ -219,9 +225,10 @@ UserSchema.pre('save', async function (next) {
 
 // Pre-save middleware for passwordChangedAt
 UserSchema.pre('save', function (next) {
-  if (!this["isModified"]('password') || this["isNew"]) return next();
+  const doc = this as any;
+  if (!doc.isModified('password') || doc.isNew) return next();
 
-  this["passwordChangedAt"] = new Date(Date.now() - 1000); // 1 second ago
+  doc.passwordChangedAt = new Date(Date.now() - 1000); // 1 second ago
   next();
 });
 
@@ -230,7 +237,9 @@ UserSchema.pre('save', function (next) {
 // Note: 'this' inside a static method refers to the Model.
 
 UserSchema.statics["isUserExists"] = async function (email: string): Promise<IUser> {
-  const user = await this["findOne"]({ email, isDeleted: false, isActive: true })
+  const query = this["findOne"]({ email, isDeleted: false, isActive: true });
+  (query as any)._bypassContext = true;
+  const user = await query
     .populate([
       {
         path: 'globalRoles',
@@ -299,8 +308,8 @@ UserSchema.statics["isJWTIssuedBeforePasswordChanged"] = function (
 };
 
 // Instance method: Check if password matches (alternative approach)
-UserSchema.methods["isPasswordMatched"] = async function (plainText: string): Promise<boolean> {
-  return await bcrypt.compare(plainText, this["password"]);
+UserSchema.methods["isPasswordMatched"] = async function (this: any, plainText: string): Promise<boolean> {
+  return await bcrypt.compare(plainText, this.password);
 };
 
 // Instance method: Check if user needs password change
@@ -415,5 +424,11 @@ cachingMiddleware(UserSchema);
 
 // Apply Audit Diff Plugin
 (UserSchema as any).plugin(auditDiffPlugin);
+
+// Apply Context-Aware Data Isolation
+UserSchema.plugin(contextScopePlugin, {
+  companyField: 'company',
+  includeGlobal: true
+});
 
 export const User = model<IUser, UserStatic>('User', UserSchema);

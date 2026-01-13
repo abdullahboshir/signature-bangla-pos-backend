@@ -1,6 +1,7 @@
 import { Schema, model } from "mongoose";
 import type { IBrand } from "./brand.interface.ts";
 import { makeSlug } from "@core/utils/utils.common.ts";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 const BrandSchema = new Schema<IBrand>(
     {
@@ -11,6 +12,12 @@ const BrandSchema = new Schema<IBrand>(
             unique: true,
             index: true,
             maxlength: 100,
+        },
+        domain: {
+            type: String,
+            enum: ["retail", "pharmacy", "grocery", "restaurant", "electronics", "fashion", "service", "construction", "automotive", "health", "hospitality", "other"],
+            default: "retail",
+            index: true
         },
         availableModules: {
             type: [{
@@ -42,10 +49,17 @@ const BrandSchema = new Schema<IBrand>(
             enum: ["active", "inactive"],
             default: "active",
         },
+        company: {
+            type: Schema.Types.ObjectId,
+            ref: "Company",
+            required: false,
+            index: true,
+        },
         businessUnit: {
             type: Schema.Types.ObjectId,
             ref: "BusinessUnit",
             required: false, // Can be global or BU specific
+            index: true,
         },
     },
     { timestamps: true }
@@ -62,3 +76,9 @@ BrandSchema.pre("save", function (next) {
 });
 
 export const Brand = model<IBrand>("Brand", BrandSchema);
+
+// Apply Context-Aware Data Isolation
+BrandSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

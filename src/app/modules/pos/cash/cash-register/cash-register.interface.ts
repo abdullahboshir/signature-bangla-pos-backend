@@ -2,6 +2,7 @@ import type { Document, Types } from "mongoose";
 
 export interface ICashRegister extends Document {
     registerId: string; // REG-OUTLET-DATE-SEQ
+    company: Types.ObjectId;
     businessUnit: Types.ObjectId;
     outlet: Types.ObjectId;
 

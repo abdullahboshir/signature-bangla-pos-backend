@@ -1,4 +1,4 @@
-import { Model, Document } from "mongoose";
+import { Model, Document, Types } from "mongoose";
 
 export interface IAttributeField {
     key: string;          // e.g. "expiryDate"
@@ -15,6 +15,8 @@ export interface IAttributeGroup {
     module: 'pos' | 'erp' | 'hrm' | 'ecommerce' | 'crm' | 'logistics' | 'system';
     fields: IAttributeField[];
     isActive: boolean;
+    company: Types.ObjectId;
+    businessUnit: Types.ObjectId;
 }
 
 export interface IAttributeGroupDocument extends IAttributeGroup, Document { }

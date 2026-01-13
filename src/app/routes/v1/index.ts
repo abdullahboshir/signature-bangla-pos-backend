@@ -23,6 +23,7 @@ import auth from "../../../core/middleware/auth.ts";
 import contextGuard from "@app/middlewares/contextGuard.ts";
 import queryContext from "@app/middlewares/queryContext.ts";
 import { auditMiddleware } from "../../../core/middleware/audit.middleware.ts";
+import contextMiddleware from "../../../core/middleware/context.middleware.ts";
 
 const router = Router();
 
@@ -35,11 +36,11 @@ router.use("/public", publicGroupRoutes);
 // ========================================================================
 // 🛡️ GLOBAL OPERATIONAL SECURITY LAYER (Centralized)
 // ========================================================================
-// Everything mounted below this line is "Default Secure".
-// It requires authentication and automatic query context injection.
-router.use(auth());
-router.use(queryContext());
-router.use(auditMiddleware); // 🔴 Automatic Audit Logging for all mutating requests
+// Initialize Context first, then Auth, then Audit.
+router.use(contextMiddleware); // 🟢 1. Initialize AsyncLocalStorage Context
+router.use(auth());            // 🔐 2. Populate Context with User & Scope
+router.use(queryContext());    // 🔍 3. Legacy Query Injection
+router.use(auditMiddleware);   // 🔴 4. Automatic Audit Logging
 
 router.use("/super-admin", adminGroupRoutes);
 router.use("/customer", customerGroupRoutes);

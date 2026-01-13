@@ -14,7 +14,10 @@ const permissionService = new PermissionService();
 
 export const loginService = async (email: string, pass: string) => {
 
-  const isUserExists = await User.findOne({ email })
+  const query = User.findOne({ email });
+  (query as any)._bypassContext = true;
+
+  const isUserExists = await query
     .select('+password email status isDeleted needsPasswordChange isSuperAdmin _id id globalRoles businessAccess')
     .populate([
       {
@@ -233,7 +236,10 @@ export const refreshTokenAuthService = async (token: string) => {
   const { userId, iat } = decoded
 
   // FIXED: find user by custom userId
-  const isUserExists = await User.findOne({ _id: userId }).populate([
+  const query = User.findOne({ _id: userId });
+  (query as any)._bypassContext = true;
+
+  const isUserExists = await query.populate([
     {
       path: 'globalRoles',
       select: 'name title isSystemRole'
@@ -312,7 +318,10 @@ export const authMeService = async (
   scope?: { businessUnitId?: string; outletId?: string }
 ) => {
 
-  const res = await User.findOne({ _id: userInfo.userId }).populate([
+  const query = User.findOne({ _id: userInfo.userId });
+  (query as any)._bypassContext = true;
+
+  const res = await query.populate([
     {
       path: 'globalRoles',
       select: 'name title isSystemRole' // No nested permissions needed
@@ -516,10 +525,13 @@ export const logoutService = async () => {
  */
 export const setupPasswordService = async (token: string, password: string) => {
   // 1. Find user by setup token
-  const user = await User.findOne({
+  const query = User.findOne({
     setupPasswordToken: token,
     setupPasswordExpires: { $gt: new Date() }
-  }).select('+setupPasswordToken +setupPasswordExpires');
+  });
+  (query as any)._bypassContext = true;
+
+  const user = await query.select('+setupPasswordToken +setupPasswordExpires');
 
   if (!user) {
     throw new AppError(status.BAD_REQUEST, 'Invalid or expired setup token. Please contact support for a new invitation.');
@@ -540,3 +552,81 @@ export const setupPasswordService = async (token: string, password: string) => {
     email: user.email
   };
 };
+
+/**
+ * Resend Setup Password Invitation
+ * Used when the original link expires or is lost.
+ * Only works for users pending password setup.
+ */
+export const resendSetupInvitationService = async (email: string) => {
+  // 1. Find user by email
+  const query = User.findOne({ email });
+  (query as any)._bypassContext = true;
+
+  const user = await query.select('+setupPasswordToken +setupPasswordExpires status');
+
+  if (!user) {
+    throw new AppError(status.NOT_FOUND, 'User not found.');
+  }
+
+  // 2. Validate Status
+  // If user is BLOCKED or DELETED, do not allow.
+  if (user.status === USER_STATUS.BLOCKED || user.isDeleted) {
+    throw new AppError(status.FORBIDDEN, 'Account is blocked or deleted. Contact support.');
+  }
+
+  // NOTE: Previously we blocked ACTIVE users. 
+  // However, users might get stuck in ACTIVE state if setup failed at the end or if they forgot the password immediately.
+  // Allowing ACTIVE users to "Resend Setup" effectively acts as a "Password Reset" via the setup flow, which is acceptable/safe here.
+
+  /* 
+  if (user.status === USER_STATUS.ACTIVE && !user.needsPasswordChange) {
+       // Optional: We could redirect them to 'Forgot Password', but strictly allowing this helps the specific 'stuck' case.
+       // We will proceed.
+  }
+  */
+
+
+  // 3. Generate New Token
+  const crypto = await import("crypto");
+  const setupToken = crypto.default.randomBytes(32).toString('hex');
+  const setupExpires = new Date(Date.now() + 72 * 60 * 60 * 1000); // 72 hours
+
+  user.setupPasswordToken = setupToken;
+  user.setupPasswordExpires = setupExpires;
+  await user.save();
+
+  // 4. Send Email
+  try {
+    const { MailService } = await import("@shared/mail/mail.service.js");
+    const setupUrl = `${appConfig.frontend_url}/auth/setup-password?token=${setupToken}`;
+
+    await MailService.sendEmail(
+      email,
+      "Setup your Signature Bangla Account (Link Resent)",
+      `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <h2 style="color: #0F172A; text-align: center;">Account Setup Invitation</h2>
+        <p>Hello,</p>
+        <p>You have requested a new link to set up your password for <strong>Signature Bangla</strong>.</p>
+        <div style="margin: 30px 0; text-align: center;">
+          <a href="${setupUrl}" style="background-color: #0F172A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Set Up Password</a>
+        </div>
+        <p style="font-size: 14px; color: #666;">Or copy this link: <br/> <a href="${setupUrl}">${setupUrl}</a></p>
+        <p style="font-size: 14px; color: #666;">This secure link is valid for 72 hours.</p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+        <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 Signature Bangla. All rights reserved.</p>
+      </div>
+      `
+    );
+  } catch (error) {
+    console.error("Failed to resend invitation email:", error);
+    throw new AppError(status.INTERNAL_SERVER_ERROR, 'Failed to send email. Please try again later.');
+  }
+
+  return {
+    message: 'Invitation link sent successfully. Please check your email.',
+    email: user.email
+  };
+};
+

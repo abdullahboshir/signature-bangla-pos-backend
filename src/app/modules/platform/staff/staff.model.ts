@@ -1,6 +1,7 @@
 import { Schema, model } from "mongoose";
 import type { IStaff } from "./staff.interface.js";
 import { cachingMiddleware } from "@core/utils/cacheQuery.ts";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 const WorkingHoursSchema = new Schema({
     start: {
@@ -85,10 +86,21 @@ const StaffSchema = new Schema<IStaff>({
         ref: 'BusinessUnit',
         required: true
     },
+    company: {
+        type: Schema.Types.ObjectId,
+        ref: 'Company',
+        required: true,
+        index: true
+    },
     assignedOutlets: [{
         type: Schema.Types.ObjectId,
         ref: 'Outlet'
     }],
+    outlet: {
+        type: Schema.Types.ObjectId,
+        ref: 'Outlet',
+        index: true
+    },
     restrictions: RestrictionsSchema
 }, {
     timestamps: true,
@@ -102,6 +114,10 @@ StaffSchema.index({ businessUnit: 1 });
 StaffSchema.index({ designation: 1 });
 StaffSchema.index({ isActive: 1 });
 StaffSchema.index({ isDeleted: 1 });
+StaffSchema.index({ company: 1 });
+StaffSchema.index({ businessUnit: 1, outlet: 1 });
+StaffSchema.index({ company: 1 });
+StaffSchema.index({ outlet: 1 }); // Index for the new 'outlet' field
 
 // Virtual for fullName
 StaffSchema.virtual('fullName').get(function () {
@@ -111,3 +127,10 @@ StaffSchema.virtual('fullName').get(function () {
 cachingMiddleware(StaffSchema);
 
 export const Staff = model<IStaff>('Staff', StaffSchema);
+
+// Apply Context-Aware Data Isolation
+StaffSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit',
+    outletField: 'outlet'
+});

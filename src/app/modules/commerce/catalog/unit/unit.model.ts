@@ -1,5 +1,6 @@
 import { Schema, model } from 'mongoose';
 import type { IUnit, UnitModel } from './unit.interface.ts';
+import { contextScopePlugin } from '@core/plugins/context-scope.plugin.js';
 
 const unitSchema = new Schema<IUnit, UnitModel>(
     {
@@ -20,11 +21,18 @@ const unitSchema = new Schema<IUnit, UnitModel>(
             enum: ['active', 'inactive'],
             default: 'active',
         },
+        company: {
+            type: Schema.Types.ObjectId,
+            ref: 'Company',
+            required: false,
+            index: true
+        },
         businessUnit: {
             type: Schema.Types.ObjectId,
             ref: 'BusinessUnit',
             required: false,
             default: null,
+            index: true
         },
         relatedBusinessTypes: {
             type: [String],
@@ -62,3 +70,9 @@ unitSchema.index({ status: 1 });
 unitSchema.index({ businessUnit: 1 });
 
 export const Unit = model<IUnit, UnitModel>('Unit', unitSchema);
+
+// Apply Context-Aware Data Isolation
+unitSchema.plugin(contextScopePlugin, {
+    companyField: 'company',
+    businessUnitField: 'businessUnit'
+});

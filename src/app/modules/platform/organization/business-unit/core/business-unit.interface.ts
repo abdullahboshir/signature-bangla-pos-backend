@@ -9,6 +9,7 @@ import type {
 export interface IBusinessUnitCore {
   name: string;
   id: string;
+  domain: string;
   company?: Types.ObjectId;
 
   // ====== SHARED STRUCTURES ======

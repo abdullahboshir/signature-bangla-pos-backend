@@ -16,6 +16,7 @@ export interface IOrderItem {
 export interface IOrder extends Document {
     orderId: string;
     customer?: Types.ObjectId; // Optional for walk-in customers
+    company: Types.ObjectId;
     businessUnit: Types.ObjectId;
     outlet: Types.ObjectId;
     sourceModule: 'pos' | 'ecommerce' | 'crm' | 'system';

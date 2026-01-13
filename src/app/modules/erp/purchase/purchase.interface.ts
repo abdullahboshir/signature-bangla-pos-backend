@@ -13,6 +13,7 @@ export interface IPurchase {
     referenceNo?: string;
     businessUnit: string; // ObjectId
     outlet: string; // ObjectId
+    company: string; // ObjectId
     status: 'pending' | 'ordered' | 'received';
     module: 'pos' | 'erp' | 'system';
     items: IPurchaseItem[];

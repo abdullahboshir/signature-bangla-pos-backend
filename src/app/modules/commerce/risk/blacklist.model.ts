@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 export interface IBlacklist {
     identifier: string; // Phone number or Email
@@ -31,5 +32,10 @@ blacklistSchema.index({ identifier: 1, businessUnit: 1 }, { unique: true });
 blacklistSchema.index({ businessUnit: 1 });
 blacklistSchema.index({ type: 1 });
 blacklistSchema.index({ isActive: 1 });
+
+// Apply Context-Aware Data Isolation
+blacklistSchema.plugin(contextScopePlugin, {
+    businessUnitField: 'businessUnit'
+});
 
 export const Blacklist = model<IBlacklist>("Blacklist", blacklistSchema);

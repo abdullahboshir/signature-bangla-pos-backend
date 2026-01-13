@@ -4,6 +4,9 @@ import { OrderRepository } from "./order.repository.js";
 import type { IOrder } from "./order.interface.js";
 import { Product } from "../../catalog/product/domain/product-core/product-core.model.js";
 import { ProductInventory as _ProductInventory } from '../../catalog/product/features/product-inventory/product-inventory.model.js';
+import { Customer } from "../../../contacts/customers/customer.model.js";
+import { Outlet } from "../../../platform/organization/outlet/outlet.model.js";
+import { ContextService } from "../../../../../core/services/context.service.js";
 
 const orderRepository = new OrderRepository();
 
@@ -21,6 +24,14 @@ export const createOrderService = async (payload: IOrder) => {
     session.startTransaction();
 
     try {
+        // 0. Referential Integrity Check (Phase 8)
+        if (payload.customer) {
+            await ContextService.validateReferentialIntegrity(Customer, payload.customer);
+        }
+        if (payload.outlet) {
+            await ContextService.validateReferentialIntegrity(Outlet, payload.outlet);
+        }
+
         // 1. Generate Order ID
         payload.orderId = await generateOrderId();
 
@@ -101,21 +112,17 @@ export const createOrderService = async (payload: IOrder) => {
 
 import { Order } from "./order.model.js";
 import { QueryBuilder } from "../../../../../core/database/QueryBuilder.js";
-const { resolveBusinessUnitQuery } = await import('../../../../../core/utils/query-helper.js');
 
 // ...
 
 export const getAllOrdersService = async (query: any) => {
-    // 1. Resolve Business Unit Logic
-    const finalQuery = await resolveBusinessUnitQuery(query);
-
-    // 2. Build Query
+    // 1. Build Query (Automatic Context Isolation via contextScopePlugin)
     const orderQuery = new QueryBuilder(
         Order.find()
             .populate("customer")
             .populate("outlet")
             .populate("businessUnit"),
-        finalQuery
+        query
     )
         .search(['orderId', 'customer.name', 'paymentMethod']) // Searchable fields (customer.name might not work if not via aggregate, but kept for now. OrderId is main)
         .filter()

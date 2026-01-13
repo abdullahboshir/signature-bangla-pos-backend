@@ -11,6 +11,10 @@ export interface IOutletStock {
 
 export interface IProductInventory {
   product: Types.ObjectId;
+  company: Types.ObjectId;
+  businessUnit: Types.ObjectId;
+  domain: string;
+  outlet?: Types.ObjectId;
 
   // Stock Management (using shared base)
   inventory: InventoryBase;
