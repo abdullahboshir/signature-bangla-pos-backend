@@ -1,16 +1,16 @@
 import "colors";
-import { Product } from "@app/modules/commerce/catalog/product/domain/product-core/product-core.model.ts";
-import { ProductInventory } from "@app/modules/commerce/catalog/product/features/product-inventory/product-inventory.model.ts";
+import { Stock } from "@app/modules/erp/inventory/stock/stock.model.ts";
 import BusinessUnit from "@app/modules/platform/organization/business-unit/core/business-unit.model.ts";
 import { QueueService } from "@app/modules/platform/queue/queue.service.ts";
 import { QUEUE_NAMES } from "@app/modules/platform/queue/queue.interface.ts";
 import { SystemSettingsService } from "@app/modules/platform/settings/system-settings/system-settings.service.ts";
-import { Category } from "@app/modules/commerce/catalog/category/category.model.ts";
-import { deleteProductService } from "@app/modules/commerce/catalog/product/domain/product-core/product-core.service.ts";
+import { Category } from "@app/modules/catalog/category/category.model.ts";
+
 import { Order } from "@app/modules/commerce/sales/order/order.model.ts";
 import { AuditLog } from "@app/modules/platform/system/audit-log/audit-log.model.ts";
 import { StockLedger } from "@app/modules/erp/inventory/ledger/ledger.model.ts";
 import { User } from "@app/modules/iam/user/user.model.ts";
+import { CatalogProductAdapter } from "@app/modules/catalog/index.ts";
 
 /**
  * MaintenanceService
@@ -23,7 +23,7 @@ export class MaintenanceService {
         console.log("🔍 Scanning for low stock items...".blue);
 
         try {
-            const lowStockInventories = await ProductInventory.find({
+            const lowStockInventories = await Stock.find({
                 $expr: { $lte: ["$inventory.stock", "$inventory.lowStockThreshold"] }
             }).populate('product').populate('businessUnit');
 
@@ -215,7 +215,7 @@ export class MaintenanceService {
         console.log("⚖️ Reconciling stock discrepancies...".blue);
 
         try {
-            const inventories = await ProductInventory.find().populate('product').limit(100);
+            const inventories = await Stock.find().populate('product').limit(100);
 
             for (const inv of inventories) {
                 try {
@@ -280,14 +280,11 @@ export class MaintenanceService {
             cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
             // 1. Cleanup Products
-            const productsToDelete = await Product.find({
-                isDeleted: true,
-                deletedAt: { $lt: cutoffDate }
-            });
+            const productsToDelete = await CatalogProductAdapter.getProductsForCleanup(cutoffDate);
 
             for (const product of productsToDelete) {
                 try {
-                    await deleteProductService(product?._id.toString(), true);
+                    await CatalogProductAdapter.deepDeleteProduct(product?._id.toString());
                 } catch (err: any) {
                     console.error(`   ⚠️ Failed to deep-delete product ${product._id}:`, err.message);
                 }

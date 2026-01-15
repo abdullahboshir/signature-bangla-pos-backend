@@ -1,7 +1,7 @@
 import { startSession } from 'mongoose';
 import { InventoryAdjustment } from './adjustment.model.js';
 import type { IInventoryAdjustment } from './adjustment.model.js';
-import { ProductInventory } from '../../../commerce/catalog/product/features/product-inventory/product-inventory.model.js';
+import { Stock } from "../stock/stock.model.ts";
 import { addLedgerEntryService } from '../ledger/ledger.service.js';
 import AppError from '../../../../../shared/errors/app-error.js';
 
@@ -21,7 +21,7 @@ export const createAdjustmentService = async (payload: Partial<IInventoryAdjustm
         // Process each item
         if (adjustment.items && adjustment.items.length > 0) {
             for (const item of adjustment.items) {
-                const inventory = await ProductInventory.findOne({ product: item.product }).session(session);
+                const inventory = await Stock.findOne({ product: item.product }).session(session);
                 if (!inventory) {
                     throw new AppError(404, `Inventory not found for product ${item.product}`);
                 }
@@ -30,8 +30,8 @@ export const createAdjustmentService = async (payload: Partial<IInventoryAdjustm
 
                 // Update Inventory
                 // We use the model's addStock method. If decrease, we pass negative? 
-                // ProductInventory.addStock supports adding. For decreasing, we might need a separate method or pass negative.
-                // Looking at ProductInventory model, stock is number.
+                // Stock.addStock supports adding. For decreasing, we might need a separate method or pass negative.
+                // Looking at Stock model, stock is number.
 
                 // Let's manually manipulate for precision control here
                 if (adjustment.outlet) {

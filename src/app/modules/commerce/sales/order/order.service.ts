@@ -2,11 +2,13 @@ import { startSession } from "mongoose";
 import AppError from '../../../../../shared/errors/app-error.js';
 import { OrderRepository } from "./order.repository.js";
 import type { IOrder } from "./order.interface.js";
-import { Product } from "../../catalog/product/domain/product-core/product-core.model.js";
-import { ProductInventory as _ProductInventory } from '../../catalog/product/features/product-inventory/product-inventory.model.js';
+import { Stock as _Stock } from '@app/modules/erp/inventory/stock/stock.model.ts';
 import { Customer } from "../../../contacts/customers/customer.model.js";
 import { Outlet } from "../../../platform/organization/outlet/outlet.model.js";
 import { ContextService } from "../../../../../core/services/context.service.js";
+
+import { CatalogProductAdapter } from "@app/modules/catalog/index.ts";
+import { inventoryAdapter } from "@app/modules/erp/index.ts";
 
 const orderRepository = new OrderRepository();
 
@@ -16,7 +18,7 @@ const generateOrderId = async () => {
     const year = date.getFullYear().toString().substr(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
 
-    return `ORD - ${year}${month} -${(count + 1).toString().padStart(4, '0')} `;
+    return `ORD-${year}${month}-${(count + 1).toString().padStart(4, '0')}`;
 };
 
 export const createOrderService = async (payload: IOrder) => {
@@ -24,7 +26,7 @@ export const createOrderService = async (payload: IOrder) => {
     session.startTransaction();
 
     try {
-        // 0. Referential Integrity Check (Phase 8)
+        // 0. Referential Integrity Check
         if (payload.customer) {
             await ContextService.validateReferentialIntegrity(Customer, payload.customer);
         }
@@ -32,63 +34,36 @@ export const createOrderService = async (payload: IOrder) => {
             await ContextService.validateReferentialIntegrity(Outlet, payload.outlet);
         }
 
+        const outletId = payload.outlet.toString();
+
         // 1. Generate Order ID
         payload.orderId = await generateOrderId();
 
-        // 2. Validate Items & Check Stock
-        let calculatedTotal = 0;
-
+        // 2. Validate Items & Check/Reserve Stock
         for (const item of payload.items) {
-            const product = await Product.findById(item.product).populate('inventory');
+            const productId = item.product.toString();
+            
+            // a. Get Product Info (External through Adapter)
+            const product = await CatalogProductAdapter.getProductById(productId);
             if (!product) {
-                throw new AppError(404, `Product not found: ${item.product} `);
+                throw new AppError(404, `Product not found: ${productId}`);
             }
 
-            // Check Stock
-            const inventoryDoc = product.inventory as any;
-
-            if (!inventoryDoc) {
-                throw new AppError(404, `Inventory not found / linked for product: ${product.name} `);
+            // b. Check & Reserve Stock (External through ERP Adapter)
+            const isAvailable = await inventoryAdapter.checkAvailability(productId, outletId, item.quantity);
+            if (!isAvailable) {
+                throw new AppError(400, `Insufficient stock for product: ${product.name} at the selected outlet.`);
             }
 
-            // Defensive check for nested inventory object
-            if (!inventoryDoc.inventory) {
-                throw new AppError(500, `Corrupted inventory data for product: ${product.name} (missing inventory structure)`);
+            const reserved = await inventoryAdapter.reserveStock(productId, outletId, item.quantity, session);
+            if (!reserved) {
+                throw new AppError(400, `Failed to reserve stock for product: ${product.name}`);
             }
-
-            const inventoryData = inventoryDoc.inventory;
-
-            if (!payload.outlet) {
-                throw new AppError(400, "Outlet ID is required for order creation");
-            }
-            const outletId = payload.outlet.toString();
-
-            if (inventoryData.trackQuantity) {
-                const canFulfill = inventoryDoc.canFulfillOrder(item.quantity, outletId);
-
-                if (!canFulfill) {
-                    throw new AppError(400, `Insufficient stock for product: ${product.name} at the selected outlet.`);
-                }
-            }
-
-            // Update Stock
-            if (inventoryData.trackQuantity) {
-                // reserveStock handles global and outlet-specific reservation and validity check again
-                const reserved = inventoryDoc.reserveStock(item.quantity, outletId);
-                if (!reserved) {
-                    throw new AppError(400, `Failed to reserve stock for product: ${product.name} `);
-                }
-                await inventoryDoc.save({ session });
-            }
-
-            calculatedTotal += item.total;
         }
 
         // 3. Create Order
-        // Calculate due amount
         payload.dueAmount = payload.totalAmount - (payload.paidAmount || 0);
 
-        // Set payment status
         if (payload.paidAmount >= payload.totalAmount) {
             payload.paymentStatus = "paid";
         } else if (payload.paidAmount > 0) {

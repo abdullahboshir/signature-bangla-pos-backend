@@ -21,12 +21,21 @@ export const businessUnitCoreSchema = new Schema<
       trim: true,
       index: true,
     },
+    slug: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+      unique: true,
+    },
     domain: {
       type: String,
       enum: ["retail", "pharmacy", "grocery", "restaurant", "electronics", "fashion", "service", "construction", "automotive", "health", "hospitality", "other"],
       default: "retail",
       index: true
     },
+    attributeGroup: { type: Schema.Types.ObjectId, ref: 'Category', index: true },
+    attributeGroups: [{ type: Schema.Types.ObjectId, ref: 'Category', index: true }],
 
     // ====== LOCALIZATION (Identity Defaults) ======
     localization: {

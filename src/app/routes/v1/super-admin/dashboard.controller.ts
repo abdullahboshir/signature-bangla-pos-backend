@@ -8,6 +8,10 @@ export const getDashboardStatsController = catchAsync(async (req, res) => {
     const BusinessUnit = mongoose.model("BusinessUnit");
     const User = mongoose.model("User");
     const UserBusinessAccess = mongoose.model("UserBusinessAccess");
+    const Order = mongoose.model("Order");
+    const Purchase = mongoose.model("Purchase");
+    const Expense = mongoose.model("Expense");
+    const Company = mongoose.model("Company");
 
     const user = req.user as any;
     const isSuperAdmin = user?.['roleName']?.includes("super-admin");
@@ -16,38 +20,78 @@ export const getDashboardStatsController = catchAsync(async (req, res) => {
     // Define filters based on role
     const buFilter: any = { isDeleted: false };
     const userFilter: any = { isDeleted: false };
+    const commerceFilter: any = {};
+    const companyFilter: any = {};
 
     if (!isSuperAdmin) {
-        buFilter.company = { $in: companyIds.map((id: string) => new mongoose.Types.ObjectId(id)) };
+        const objectCompanyIds = companyIds.map((id: string) => new mongoose.Types.ObjectId(id));
+        buFilter.company = { $in: objectCompanyIds };
+        commerceFilter.company = { $in: objectCompanyIds };
+        companyFilter._id = { $in: objectCompanyIds };
 
-        // For users, we filter those who have business access to the owner's companies
         const uniqueUserIds = await UserBusinessAccess.distinct("user", {
-            company: { $in: companyIds.map((id: string) => new mongoose.Types.ObjectId(id)) },
+            company: { $in: objectCompanyIds },
             status: "ACTIVE"
         });
         userFilter._id = { $in: uniqueUserIds };
     }
 
-    // Get total business units count
+    // 1. Counts
+    const totalCompanies = await Company.countDocuments(companyFilter);
+    const activeCompanies = await Company.countDocuments({ ...companyFilter, isActive: true });
+    
     const totalBusinessUnits = await BusinessUnit.countDocuments(buFilter);
-
-    // Get active business units count
     const activeBusinessUnits = await BusinessUnit.countDocuments({
         ...buFilter,
-        status: "published",
-        visibility: "public"
+        status: "published"
     });
-
-    // Get total users count
     const totalUsers = await User.countDocuments(userFilter);
-
-    // Get active users count
     const activeUsers = await User.countDocuments({
         ...userFilter,
         status: "active"
     });
 
+    // 2. Financial Aggregation (Platform-wide)
+    // Note: We use .aggregate() which might be intercepted by contextScopePlugin.
+    // If we are Super Admin, we want global view. 
+    // The plugin unshifts a $match to the pipeline based on ContextService.getContext().
+    // Since this is a global dashboard, we want it to reflect total platform wealth if Super Admin.
+
+    const salesAgg = await (Order as any).aggregate([
+        { $match: commerceFilter },
+        {
+            $group: {
+                _id: null,
+                total: { $sum: "$totalAmount" },
+                today: {
+                    $sum: {
+                        $cond: [
+                            { $gte: ["$createdAt", new Date(new Date().setHours(0, 0, 0, 0))] },
+                            "$totalAmount",
+                            0
+                        ]
+                    }
+                }
+            }
+        }
+    ]);
+
+    const purchaseAgg = await (Purchase as any).aggregate([
+        { $match: commerceFilter },
+        { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+    ]);
+
+    const expenseAgg = await (Expense as any).aggregate([
+        { $match: commerceFilter },
+        { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+
     const stats = {
+        companies: {
+            total: totalCompanies,
+            active: activeCompanies,
+            inactive: totalCompanies - activeCompanies
+        },
         businessUnits: {
             total: totalBusinessUnits,
             active: activeBusinessUnits,
@@ -59,19 +103,21 @@ export const getDashboardStatsController = catchAsync(async (req, res) => {
             inactive: totalUsers - activeUsers
         },
         revenue: {
-            total: 0, // Placeholder
+            total: salesAgg[0]?.total || 0,
             currency: "BDT"
         },
         sales: {
-            total: 0, // Placeholder
-            today: 0
-        }
+            total: salesAgg[0]?.total || 0,
+            today: salesAgg[0]?.today || 0
+        },
+        // Aggregated for platform overview
+        totalSales: salesAgg[0]?.total || 0,
+        totalPurchase: purchaseAgg[0]?.total || 0,
+        totalExpense: expenseAgg[0]?.total || 0,
+        activeCompanies: activeCompanies, // Legacy field support if needed
+        activeUnits: activeBusinessUnits, // Legacy field support if needed
+        totalUsers: totalUsers // Legacy field support if needed
     };
 
-    ApiResponse.success(res, {
-        success: true,
-        statusCode: status.OK,
-        message: "Dashboard stats retrieved successfully",
-        data: stats,
-    });
+    ApiResponse.success(res, stats, "Dashboard stats retrieved successfully", status.OK);
 });

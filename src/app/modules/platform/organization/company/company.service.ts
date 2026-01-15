@@ -8,7 +8,8 @@ import crypto from 'crypto';
 const companyRepository = new CompanyRepository();
 
 import { startSession } from "mongoose";
-
+import { makeSlug } from "@core/utils/utils.common.ts";
+import { Company } from "./company.model.ts";
 import { CompanySettings } from "./settings/settings.model.ts";
 import { UserBusinessAccess } from "@app/modules/iam/user-business-access/user-business-access.model.ts";
 
@@ -26,6 +27,10 @@ export class CompanyService {
             // Mongoose model requires root 'name' separate from 'branding.name'
             if (data.branding?.name && !data.name) {
                 data.name = data.branding.name;
+            }
+
+            if (data.name && !data.slug) {
+                data.slug = await this.generateUniqueSlug(data.name);
             }
 
             const company = await companyRepository.create(data, session);
@@ -179,5 +184,113 @@ export class CompanyService {
 
     async deleteCompany(id: string): Promise<ICompanyDocument | null> {
         return await companyRepository.delete(id);
+    }
+
+    /**
+     * Get Dashboard Stats for a Company (Aggregated across all Business Units)
+     */
+    async getCompanyDashboardStats(companyId: string) {
+        try {
+            const { Order } = await import("@app/modules/commerce/sales/order/order.model.ts");
+            const { User } = await import("@app/modules/iam/user/user.model.ts");
+            const { Purchase } = await import("@app/modules/erp/purchase/purchase.model.js");
+            const { Expense } = await import("@app/modules/pos/cash/expense/expense.model.js");
+            const mongoose = await import("mongoose");
+
+            // 1. Get all Business Units for this Company
+            const businessUnits = await BusinessUnit.find({ company: companyId }).select('_id');
+            const buIds = businessUnits.map(bu => bu._id);
+
+            if (buIds.length === 0) {
+                return {
+                    totalSales: 0, invoiceDue: 0, net: 0, totalSellReturn: 0,
+                    totalPurchase: 0, purchaseDue: 0, totalPurchaseReturn: 0, expense: 0,
+                    businessUnits: { active: 0 }, users: { total: 0 }
+                };
+            }
+
+            const matchStage = { businessUnit: { $in: buIds.map(id => new mongoose.Types.ObjectId(id.toString())) } };
+
+            // 2. Sales Stats
+            const salesStats = await Order.aggregate([
+                { $match: matchStage },
+                {
+                    $group: {
+                        _id: null,
+                        totalSales: { $sum: "$totalAmount" },
+                        dueAmount: { $sum: "$dueAmount" },
+                        totalReturns: {
+                            $sum: { $cond: [{ $eq: ["$status", "returned"] }, "$totalAmount", 0] }
+                        }
+                    }
+                }
+            ]);
+
+            // 3. Purchase Stats
+            const purchaseStats = await Purchase.aggregate([
+                { $match: matchStage },
+                {
+                    $group: {
+                        _id: null,
+                        totalPurchase: { $sum: "$grandTotal" }, // Use grandTotal from Purchase model
+                        dueAmount: { $sum: "$dueAmount" },
+                        totalReturns: {
+                            $sum: { $cond: [{ $eq: ["$status", "returned"] }, "$grandTotal", 0] }
+                        }
+                    }
+                }
+            ]);
+
+            // 4. Expense Stats
+            const expenseStats = await Expense.aggregate([
+                { $match: matchStage },
+                {
+                    $group: {
+                        _id: null,
+                        totalExpense: { $sum: "$amount" }
+                    }
+                }
+            ]);
+
+            // 5. Active Users
+            const activeUsers = await User.countDocuments({
+                businessUnits: { $in: buIds },
+                status: 'active'
+            });
+
+            return {
+                totalSales: salesStats[0]?.totalSales || 0,
+                net: (salesStats[0]?.totalSales || 0) - (salesStats[0]?.totalReturns || 0),
+                invoiceDue: salesStats[0]?.dueAmount || 0,
+                totalSellReturn: salesStats[0]?.totalReturns || 0,
+
+                totalPurchase: purchaseStats[0]?.totalPurchase || 0,
+                purchaseDue: purchaseStats[0]?.dueAmount || 0,
+                totalPurchaseReturn: purchaseStats[0]?.totalReturns || 0,
+
+                expense: expenseStats[0]?.totalExpense || 0,
+                businessUnits: { active: buIds.length },
+                users: { total: activeUsers }
+            };
+
+        } catch (error: any) {
+            console.error("Failed to get company dashboard stats", error.message);
+            throw new Error("Failed to get company dashboard stats");
+        }
+    }
+
+    private async generateUniqueSlug(name: string): Promise<string> {
+        const baseSlug = makeSlug(name);
+        let slug = baseSlug;
+        let counter = 1;
+
+        while (true) {
+            const existing = await Company.findOne({ slug });
+            if (!existing) break;
+            slug = `${baseSlug}-${counter}`;
+            counter++;
+        }
+
+        return slug;
     }
 }

@@ -3,7 +3,7 @@ import requireModule from "@core/middleware/license.middleware.ts";
 
 ;
 import orderRoutes from "../../../modules/commerce/sales/order/order.routes.js";
-import { productRoutes } from "@app/modules/commerce/catalog/product/domain/product-core/product-core-routes.js";
+import { productRoutes } from "@app/modules/catalog/product/domain/product-core/product.routes.ts";
 import { UploadRoutes } from "@app/modules/platform/common/upload/upload.routes.js";
 
 import { userRoutes } from "../../../modules/iam/user/user.routes.js";
@@ -17,18 +17,19 @@ import { PermissionGroupRoutes } from "../../../modules/iam/permission-group/per
 import { dashboardRoutes } from "./dashboard.routes.ts";
 
 // Catalog Imports
-import { categoryRoutes } from "@app/modules/commerce/catalog/category/category.routes.js";
-import { BrandRoutes } from "@app/modules/commerce/catalog/brand/brand.routes.js";
-import { UnitRoutes } from "@app/modules/commerce/catalog/unit/unit.routes.js";
-import { TaxRoutes } from "@app/modules/commerce/catalog/tax/tax.routes.ts";
-import { attributeRoutes } from "@app/modules/commerce/catalog/attribute/attribute.routes.js";
-import { AttributeGroupRoutes } from "@app/modules/commerce/catalog/attribute-group/attribute-group.routes.js";
+import { categoryRoutes } from "@app/modules/catalog/category/category.routes.ts";
+import { BrandRoutes } from "@app/modules/catalog/brand/brand.routes.ts";
+import { UnitRoutes } from "@app/modules/catalog/unit/unit.routes.ts";
+import { TaxRoutes } from "@app/modules/catalog/tax/tax.routes.ts";
+import { attributeRoutes } from "@app/modules/catalog/attribute/attribute.routes.ts";
+import { AttributeGroupRoutes } from "@app/modules/catalog/attribute-group/attribute-group.routes.ts";
+import { WarrantyRoutes } from "@app/modules/catalog/warranty/warranty.routes.ts";
 import { SystemSettingsRoutes } from "@app/modules/platform/settings/system-settings/system-settings.routes.js";
 import { PlatformSettingsRoutes } from "@app/modules/platform/settings/platform-settings/platform-settings.routes.js";
 import { BusinessUnitSettingsRoutes } from "@app/modules/platform/organization/business-unit/settings/settings.routes.js";
 import { storefrontRoutes } from "@app/modules/commerce/storefront/storefront.routes.ts";
-import { ProductReviewRoutes } from "@app/modules/commerce/catalog/product/features/product-reviews/product-reviews.routes.js";
-import { ProductQARoutes } from "@app/modules/commerce/catalog/product/features/product-questions/product-questions.routes.js";
+import { ProductReviewRoutes } from "@app/modules/commerce/storefront/product-feedback/product-reviews.routes.ts";
+import { ProductQARoutes } from "@app/modules/commerce/storefront/product-feedback/product-questions.routes.ts";
 
 // ... (existing imports) ...
 
@@ -123,6 +124,7 @@ superAdminRoutes.use("/units", moduleGuard('erp'), requireModule('erp'), UnitRou
 superAdminRoutes.use("/taxes", moduleGuard('erp'), requireModule('erp'), TaxRoutes);
 superAdminRoutes.use("/attributes", moduleGuard('erp'), requireModule('erp'), attributeRoutes);
 superAdminRoutes.use("/attribute-groups", moduleGuard('erp'), requireModule('erp'), AttributeGroupRoutes);
+superAdminRoutes.use("/warranties", moduleGuard('erp'), requireModule('erp'), WarrantyRoutes);
 superAdminRoutes.use("/suppliers", moduleGuard('erp'), requireModule('erp'), SupplierRoutes);
 superAdminRoutes.use("/purchases", moduleGuard('erp'), requireModule('erp'), PurchaseRoutes);
 superAdminRoutes.use("/inventory", moduleGuard('erp'), requireModule('erp'), InventoryRoutes);

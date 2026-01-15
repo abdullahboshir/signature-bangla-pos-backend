@@ -31,7 +31,7 @@ const moduleGuard = (requiredModule: string) => {
             // 2. Check Business Unit Specific Activation
             const businessUnitId = req.headers['x-business-unit-id'] as string || req.body?.businessUnit;
 
-            if (businessUnitId) {
+            if (businessUnitId && requiredModule !== 'erp') {
                 const isBUActive = await ModuleRegistryService.isModuleActive(requiredModule, businessUnitId);
                 if (!isBUActive) {
                     return ApiResponse.error(

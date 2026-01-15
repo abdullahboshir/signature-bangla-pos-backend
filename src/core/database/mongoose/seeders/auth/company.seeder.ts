@@ -21,6 +21,12 @@ export const getCompanyRoleConfigs = (get: (r: string) => Types.ObjectId | null)
             // Operational (For Business Unit Management)
             get(PermissionSourceObj.product),
             get(PermissionSourceObj.category),
+            get(PermissionSourceObj.brand),
+            get(PermissionSourceObj.attribute),
+            get(PermissionSourceObj.attributeGroup),
+            get(PermissionSourceObj.unit),
+            get(PermissionSourceObj.tax),
+            get(PermissionSourceObj.warranty),
             get(PermissionSourceObj.order),
             get(PermissionSourceObj.inventory),
             get(PermissionSourceObj.customer),

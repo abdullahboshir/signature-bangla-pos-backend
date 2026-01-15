@@ -3,8 +3,7 @@ import { StorefrontConfig, StorePage } from "./storefront.model.ts";
 import type { IStorefrontConfig, IStorePage } from "./storefront.model.ts";
 import AppError from "@shared/errors/app-error.ts";
 import BusinessUnit from "../../platform/organization/business-unit/core/business-unit.model.ts";
-import { Product } from "../catalog/product/domain/product-core/product-core.model.ts";
-
+import { CatalogProductAdapter } from "@app/modules/catalog/index.ts";
 
 export class StorefrontService {
 
@@ -16,22 +15,16 @@ export class StorefrontService {
 
         const filter: any = {
             businessUnit: businessUnitId,
-            status: 'active' // Only show active products
+            status: 'active'
         };
 
         if (query.categoryId) {
-            filter.category = new Types.ObjectId(query.categoryId as string);
+            filter.primaryCategory = new Types.ObjectId(query.categoryId as string);
         }
 
         const limit = query.limit ? parseInt(query.limit as string) : 10;
 
-        // Simple fetch for now. Can be expanded with pagination/sorting.
-        const products = await Product.find(filter)
-            .select('name price discountPrice images slug category brand')
-            .limit(limit)
-            .sort({ createdAt: -1 });
-
-        return products;
+        return await CatalogProductAdapter.searchProducts(filter, limit);
     }
 
     /**

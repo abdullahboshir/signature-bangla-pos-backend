@@ -1,6 +1,6 @@
 import type { IStockLedger } from './ledger.model.js';
 import { StockLedger } from './ledger.model.js';
-import { ProductInventory } from "../../../commerce/catalog/product/features/product-inventory/product-inventory.model.js";
+import { Stock } from "../stock/stock.model.ts";
 
 export const addLedgerEntryService = async (
     payload: Partial<IStockLedger>,
@@ -17,7 +17,7 @@ export const addLedgerEntryService = async (
 
     // We try to fetch current stock to calc balanceAfter if possible
     if (payload.product) {
-        const inventory = await ProductInventory.findOne({ product: payload.product }).session(session);
+        const inventory = await Stock.findOne({ product: payload.product }).session(session);
         if (inventory) {
             // Logic to find specific stock (global or outlet)
             if (payload.outlet) {

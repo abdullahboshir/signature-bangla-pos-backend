@@ -85,6 +85,7 @@ export const loginService = async (email: string, pass: string) => {
 
 
   const businessUnits = Array.from(buMap.values());
+  const companies = [...new Set((isUserExists.businessAccess || []).map((a: any) => a.company?._id?.toString() || a.company?.toString()).filter(Boolean))];
 
 
   // Calculate Context Information for Frontend Redirection
@@ -102,7 +103,7 @@ export const loginService = async (email: string, pass: string) => {
         businessAccessInfo.primary = {
           businessUnit: primaryAccess.businessUnit ? {
             _id: primaryAccess.businessUnit._id,
-            slug: primaryAccess.businessUnit.slug,
+            slug: primaryAccess.businessUnit.slug || primaryAccess.businessUnit.id || primaryAccess.businessUnit._id.toString(),
             id: primaryAccess.businessUnit.id
           } : null,
           company: primaryAccess.company ? {
@@ -130,7 +131,7 @@ export const loginService = async (email: string, pass: string) => {
           buMap.set(buId, {
             businessUnit: access.businessUnit ? {
               _id: access.businessUnit._id,
-              slug: access.businessUnit.slug,
+              slug: access.businessUnit.slug || access.businessUnit.id || access.businessUnit._id.toString(),
               id: access.businessUnit.id,
               name: access.businessUnit.name
             } : null,
@@ -193,6 +194,7 @@ export const loginService = async (email: string, pass: string) => {
     id: isUserExists?.id,
     email: isUserExists?.email,
     businessUnits,
+    companies,
     status: isUserExists?.status,
     role: allRoles, // Derived from businessAccess
     isSuperAdmin: isUserExists?.isSuperAdmin,
@@ -253,7 +255,8 @@ export const refreshTokenAuthService = async (token: string) => {
           select: 'name title isSystemRole'
         },
         { path: 'businessUnit', select: 'name id slug' },
-        { path: 'outlet', select: 'name' }
+        { path: 'outlet', select: 'name' },
+        { path: 'company', select: 'name id slug activeModules' }
       ]
     }
   ]).lean()
@@ -291,6 +294,8 @@ export const refreshTokenAuthService = async (token: string) => {
   const allRoles = [...new Set([...globalRoleNames, ...businessRoleNames])];
 
 
+  const companies = [...new Set(((isUserExists as any).businessAccess || []).map((a: any) => a.company?._id?.toString() || a.company?.toString()).filter(Boolean))];
+
   const jwtPayload: any = {
     userId: isUserExists?._id,
     id: isUserExists?.id,
@@ -298,7 +303,8 @@ export const refreshTokenAuthService = async (token: string) => {
     role: allRoles,
     status: isUserExists?.status,
     roleIds: allRoles,
-    isSuperAdmin: isUserExists.isSuperAdmin
+    companies,
+    isSuperAdmin: (isUserExists as any).isSuperAdmin
   };
 
 
@@ -419,13 +425,14 @@ export const authMeService = async (
           businessAccessInfo.primary = {
             businessUnit: primaryAccess.businessUnit ? {
               _id: primaryAccess.businessUnit._id,
-              slug: primaryAccess.businessUnit.slug,
+              slug: primaryAccess.businessUnit.slug || primaryAccess.businessUnit.id || primaryAccess.businessUnit._id.toString(),
               id: primaryAccess.businessUnit.id
             } : null,
             company: primaryAccess.company ? {
               _id: primaryAccess.company._id,
               name: primaryAccess.company.name,
-              slug: primaryAccess.company.slug
+              slug: primaryAccess.company.slug,
+              activeModules: primaryAccess.company.activeModules
             } : null,
             scope: primaryAccess.scope,
             outlet: primaryAccess.outlet ? {
@@ -446,14 +453,15 @@ export const authMeService = async (
             buMap.set(buId, {
               businessUnit: access.businessUnit ? {
                 _id: access.businessUnit._id,
-                slug: access.businessUnit.slug,
+                slug: access.businessUnit.slug || access.businessUnit.id || access.businessUnit._id.toString(),
                 id: access.businessUnit.id,
                 name: access.businessUnit.name
               } : null,
               company: access.company ? {
                 _id: access.company._id,
                 name: access.company.name,
-                slug: access.company.slug
+                slug: access.company.slug,
+                activeModules: access.company.activeModules
               } : null,
               scope: access.scope,
               outlets: [],
@@ -475,7 +483,13 @@ export const authMeService = async (
         businessAccessInfo.available = Array.from(buMap.values());
       }
       (res as any).context = businessAccessInfo;
+      (res as any).companies = [...new Set((res.businessAccess || []).map((a: any) => a.company?._id?.toString() || a.company?.toString() || a.company).filter(Boolean))];
       // -------------------------------------------
+
+      // Attach primary company modules at top level for easy frontend access
+      if (businessAccessInfo.primary?.company) {
+        (res as any).company = businessAccessInfo.primary.company;
+      }
 
       // CRITICAL OPTIMIZATION: Remove large populated arrays
       // The frontend generally uses 'effectivePermissions' for UI access.

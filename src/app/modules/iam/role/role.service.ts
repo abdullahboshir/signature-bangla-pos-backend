@@ -48,13 +48,59 @@ class RoleService {
       filter.roleScope = query.roleScope;
     }
 
-    // 🛡️ Hierarchy filtering: Only see roles at your level or below
-    // Note: In our system hierarchyLevel 100 is Super Admin (Most Power).
+    // 🛡️ ENFORCE SCOPING & HIERARCHY
     const authUser = user as any;
     if (authUser && !authUser.isSuperAdmin) {
-      const userHierarchy = authUser.hierarchyLevel || 0;
-      filter.hierarchyLevel = { $lte: userHierarchy };
+      const authorizedCompanies = authUser.companies || [];
+      const userLevel = authUser.hierarchyLevel || 0;
+      filter.hierarchyLevel = { $lte: userLevel };
+
+      const effectiveCompanyId = (query.companyId || query.company) as string;
+      if (effectiveCompanyId) {
+        // Only allow filtering by an authorized company
+        if (authorizedCompanies.includes(effectiveCompanyId.toString())) {
+          filter.$or = [
+            { company: effectiveCompanyId },
+            { company: { $exists: false } },
+            { company: null }
+          ];
+        } else {
+          // Access restricted: show only global roles
+          filter.$or = [
+            { company: { $exists: false } },
+            { company: null }
+          ];
+        }
+      } else {
+        // No specific companyId: show all authorized companies + global roles
+        filter.$or = [
+          { company: { $in: authorizedCompanies } },
+          { company: { $exists: false } },
+          { company: null }
+        ];
+      }
+    } else {
+      const effectiveCompanyId = (query.companyId || query.company) as string;
+      if (effectiveCompanyId) {
+        // Super Admin or no specific user context
+        filter.$or = [
+          { company: effectiveCompanyId },
+          { company: { $exists: false } },
+          { company: null }
+        ];
+      }
     }
+
+      // 🔍 Stricter Role Filtering: Non-platform users should NOT see GLOBAL roles
+      // Platform users usually have a hierarchyLevel > 90 or specific platform-admin roles.
+      // For safety, we check if they are NOT platform-level.
+      const isPlatformUser = authUser.roleName?.some((r: string) => 
+        ['super-admin', 'platform-admin', 'platform-support', 'platform-finance'].includes(r.toLowerCase())
+      );
+
+      if (!isPlatformUser) {
+        filter.roleScope = { $ne: RoleScope.GLOBAL };
+      }
 
     const roles = await Role.find(filter)
       .populate('permissions', 'id resource action description')

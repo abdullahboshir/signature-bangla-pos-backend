@@ -17,7 +17,7 @@ export class ModuleRegistryService {
         businessUnitId: string
     ): Promise<boolean> {
         // 1. Static validation (Always active infrastructure)
-        if (moduleId === 'iam' || moduleId === 'platform' || moduleId === 'saas') return true;
+        if (moduleId === 'iam' || moduleId === 'platform' || moduleId === 'saas' || moduleId === 'erp') return true;
 
         const moduleMeta = MODULE_REGISTRY[moduleId];
         if (!moduleMeta) return false;

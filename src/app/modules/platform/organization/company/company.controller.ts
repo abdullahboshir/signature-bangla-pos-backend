@@ -30,3 +30,12 @@ export const getCompanyById = catchAsync(async (req: Request, res: Response) => 
 
     ApiResponse.success(res, company, "Company retrieved successfully");
 });
+
+export const getCompanyDashboardStats = catchAsync(async (req: Request, res: Response) => {
+    const companyId = req.params["companyId"];
+    if (!companyId) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Company ID is required", "BAD_REQUEST");
+    }
+    const stats = await companyService.getCompanyDashboardStats(companyId);
+    ApiResponse.success(res, stats, "Company dashboard stats retrieved successfully");
+});

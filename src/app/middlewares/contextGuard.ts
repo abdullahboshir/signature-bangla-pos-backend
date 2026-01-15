@@ -22,24 +22,14 @@ export const contextGuard = () => {
             return next(new AppError(status.UNAUTHORIZED, "Authentication required for context validation"));
         }
 
-        // 🛡️ Super Admins bypass all context checks (Global access)
-        if (user.roleName?.includes('super-admin') || user.isSuperAdmin) {
+        // 🛡️ Super Admins & Company Owners bypass all context checks (Global access within their scope)
+        if (user.roleName?.includes('super-admin') || user.isSuperAdmin || user.roleName?.includes('company-owner')) {
             return next();
         }
 
         // --- 1. COLLECT CONTEXTS FROM REQUEST ---
-        // We look for any field that implies a BU or Outlet context
-        const businessUnitContext =
-            req.params?.['businessUnitId'] ||
-            req.params?.['businessUnit'] ||
-            req.body?.['businessUnit'] ||
-            req.body?.['businessUnitId'];
-
-        const outletContext =
-            req.params?.['outletId'] ||
-            req.params?.['outlet'] ||
-            req.body?.['outlet'] ||
-            req.body?.['outletId'];
+        // Context is already resolved by the global contextMiddleware
+        const { businessUnitId: businessUnitContext, outletId: outletContext } = (req as any).context || {};
 
         // --- 2. VALIDATE BUSINESS UNIT ACCESS ---
         if (businessUnitContext) {

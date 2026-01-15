@@ -174,11 +174,12 @@ export const createUserController = catchAsync(async (req, res) => {
                 const accessPayloads = userData.permissions.map((p: any) => ({
                     user: userId,
                     role: p.role,
+                    company: p.company || userData.company, // Include company
                     businessUnit: p.businessUnit,
                     outlet: p.outlet || null,
                     scope: p.outlet ? 'OUTLET' : 'BUSINESS',
                     status: 'ACTIVE',
-                    isPrimary: false // We can set first as primary later if needed
+                    isPrimary: p.isPrimary || false
                 }));
 
                 if (accessPayloads.length > 0) accessPayloads[0].isPrimary = true;

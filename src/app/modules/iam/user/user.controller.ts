@@ -63,7 +63,7 @@ export const deleteUserController = catchAsync(async (req: any, res) => {
 // });
 
 export const getUsersController = catchAsync(async (req: any, res) => {
-  const result = await getUsersService(req.query);
+  const result = await getUsersService(req.query, req.user);
 
   if (result && result.meta) {
     ApiResponse.paginated(

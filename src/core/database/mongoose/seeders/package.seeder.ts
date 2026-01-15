@@ -73,7 +73,7 @@ const packages: Partial<IPackage>[] = [
         ],
         moduleAccess: {
             pos: { enabled: true, monthlyPrice: 0 },
-            erp: { enabled: false, monthlyPrice: 500 },
+            erp: { enabled: true, monthlyPrice: 0 },
             hrm: { enabled: false, monthlyPrice: 500 },
             ecommerce: { enabled: false, monthlyPrice: 1000 },
             crm: { enabled: false, monthlyPrice: 300 },

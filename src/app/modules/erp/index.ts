@@ -3,10 +3,11 @@
  * Core back-office operations.
  */
 
-// Inventory - May not have these specific files, commenting for now
-// export * from './inventory/inventory.interface.js';
-// export * from './inventory/inventory.service.js';
-// export * from './inventory/inventory.model.js';
+// Inventory
+export * from './inventory/stock/stock.interface.ts';
+export * from './inventory/stock/stock.model.ts';
+export * from './inventory/stock/stock.service.ts';
+export * from './inventory/inventory.adapter.ts';
 
 // Purchase
 export * from './purchase/purchase.interface.js';

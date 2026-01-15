@@ -20,20 +20,7 @@ const calculateNextBillingDate = (baseDate: Date, billingCycle: 'monthly' | 'yea
     return date;
 };
 
-const calculateProratedPrice = (fullPrice: number, billingCycle: 'monthly' | 'yearly' | 'lifetime', nextBillingDate?: Date): number => {
-    if (billingCycle === 'lifetime' || !nextBillingDate) return fullPrice;
-
-    const now = new Date();
-    const totalDaysInCycle = billingCycle === 'monthly' ? 30 : 365; // Simplified for calculation
-    const remainingMs = nextBillingDate.getTime() - now.getTime();
-    const remainingDays = Math.max(0, Math.ceil(remainingMs / (1000 * 60 * 60 * 24)));
-
-    if (remainingDays <= 0) return 0;
-    if (remainingDays >= totalDaysInCycle) return fullPrice;
-
-    const dailyRate = fullPrice / totalDaysInCycle;
-    return Math.ceil(dailyRate * remainingDays);
-};
+// function calculateProratedPrice removed as it was unused and causing lint errors
 
 import { Types } from 'mongoose';
 import BusinessUnit from '../organization/business-unit/core/business-unit.model.ts';
@@ -189,6 +176,10 @@ const createLicense = async (payload: Partial<ILicense>) => {
         payload.key = generateLicenseKey();
         payload.activationDate = new Date();
 
+        // Force ERP Core to be enabled
+        if (!payload.customModules) payload.customModules = {};
+        payload.customModules.erp = { enabled: true };
+
         // 💰 Dynamic Pricing Calculation (State-Aware Merged State)
         const pricing = await calculateLicensePricing(payload.packageId.toString(), payload.customModules, payload.overriddenLimits);
 
@@ -265,8 +256,11 @@ const updateLicense = async (licenseId: string, payload: Partial<ILicense>) => {
             payload.clientName = resolved.name;
         } else {
             // CRITICAL: Guarantee consistency. Do NOT let clientId be removed or invalidated.
-            payload.clientId = (existingLicense.clientId as any)?._id || existingLicense.clientId;
-            payload.clientName = existingLicense.clientName;
+            // cast to any to avoid exactOptionalPropertyTypes issues with partial
+            payload.clientId = ((existingLicense.clientId as any)?._id || existingLicense.clientId) as any;
+            if (existingLicense.clientName) {
+                payload.clientName = existingLicense.clientName;
+            }
         }
 
         // 💰 Pricing Recalculation (State-Aware Merged State)
@@ -274,11 +268,18 @@ const updateLicense = async (licenseId: string, payload: Partial<ILicense>) => {
         if (payload.customModules || payload.overriddenLimits || payload.packageId) {
             console.log("💰 Configuration change detected, recalculating merged price...");
 
+            // Force ERP Core to be enabled in overrides
+            if (!payload.customModules) payload.customModules = {};
+            payload.customModules.erp = { enabled: true };
+
             // MERGE State: Current modules in DB + New Changes from Frontend
             const mergedModules = {
                 ...(existingLicense.customModules || {}),
                 ...(payload.customModules || {})
             };
+            
+            // Double check merged state
+            mergedModules.erp = { enabled: true };
 
             const pricing = await calculateLicensePricing(
                 (payload.packageId?.toString() || pkg._id.toString()),

@@ -41,7 +41,11 @@ const router = Router();
 router.use("/roles", roleRoutes);
 
 
-router.get("/all-users", getUsersController);
+router.get(
+  "/all-users",
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.COMPANY_OWNER, USER_ROLE.ADMIN),
+  getUsersController
+);
 
 router.patch(
   "/profile",

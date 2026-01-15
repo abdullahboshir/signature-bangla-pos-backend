@@ -57,6 +57,10 @@ app.use(express.json({ limit: appConfig.max_upload_size }));
 app.use(express.urlencoded({ extended: true, limit: appConfig.max_upload_size }));
 app.use(cookieParser(appConfig.cookie_secret));
 
+// 4.1 CONTEXT RESOLVER (Must be after body parsers to read req.body)
+import { contextMiddleware } from "./core/middleware/context.middleware.ts";
+app.use(contextMiddleware);
+
 // 5. LOGGING
 if (appConfig.NODE_ENV === "development") {
   app.use(morgan("dev")); // Detailed logs for development
@@ -79,7 +83,7 @@ app.use("/api", router);
 
 app.get("/", (_req, res) => {
   ApiResponse.success(res, {
-    message: "🚀 Welcome to Signature Bangla POS API",
+    message: "🚀 Welcome to Unified Solution API",
     status: "Running",
     version: "v1.0.0",
     documentation: "/api/v1/docs",

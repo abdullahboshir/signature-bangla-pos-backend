@@ -1,27 +1,12 @@
 import mongoose from "mongoose";
 import AppError from "@shared/errors/app-error.ts";
 
-/**
- * Resolves a Business Unit Identifier (ID or Slug) to a MongoDB ObjectId.
- * Useful for create/update operations where the UI might send a Slug or String ID.
- * 
- * @param identifier - The Business Unit ID or Slug (string or ObjectId)
- * @returns Promise<mongoose.Types.ObjectId>
- * @throws AppError if not found
- */
-/**
- * Resolves a Business Unit Identifier (ID or Slug) to a MongoDB ObjectId.
- * Includes ownership verification if a user object is provided.
- * 
- * @param identifier - The Business Unit ID or Slug
- * @param verifiedUser - (Optional) The authenticated user from req.user
- * @returns Promise<mongoose.Types.ObjectId>
- * @throws AppError 404 if not found, 403 if ownership fails
- */
+
 export const resolveBusinessUnitId = async (
     identifier: string | mongoose.Types.ObjectId | undefined | null,
     verifiedUser?: any
 ): Promise<mongoose.Types.ObjectId | undefined> => {
+    console.log("before       Verified User:", verifiedUser, identifier);
     if (!identifier) return undefined;
 
     const BusinessUnit = mongoose.models['BusinessUnit'] || mongoose.model("BusinessUnit");
@@ -49,8 +34,9 @@ export const resolveBusinessUnitId = async (
 
     if (!resolvedId) return undefined;
 
+    console.log("Verified User:", verifiedUser, identifier);
     // 🛡️ SECURITY LAYER: Ownership Verification
-    if (verifiedUser && !verifiedUser.roleName?.includes('super-admin') && !verifiedUser.isSuperAdmin) {
+    if (verifiedUser && !verifiedUser.roleName?.includes('super-admin') && !verifiedUser.isSuperAdmin && !verifiedUser.roleName?.includes('company-owner')) {
         const authorizedBUs = verifiedUser.businessUnits || [];
         const hasAccess = authorizedBUs.some((bu: any) => (bu._id?.toString() || bu.toString()) === resolvedId!.toString());
 

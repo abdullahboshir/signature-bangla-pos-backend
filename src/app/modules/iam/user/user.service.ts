@@ -29,32 +29,40 @@ import { Merchant } from "@app/modules/platform/merchant/merchant.model.ts";
 
 // ...
 
-export const getUsersService = async (query: Record<string, unknown>) => {
-  const { searchTerm, businessUnit, ...filterData } = query;
+export const getUsersService = async (query: Record<string, unknown>, user: any) => {
+  const { searchTerm, businessUnit, companyId, ...filterParams } = query;
+  const filterData = { ...filterParams };
+  const isSuperAdmin = user?.['roleName']?.includes("super-admin");
 
-  // Handle Business Unit Filter (Array Match)
-  // Handle Business Unit Filter (Via UserBusinessAccess)
+  // 1. Handle Context Scoping (Company or Business Unit)
+  let userIds: mongoose.Types.ObjectId[] | null = null;
+
   if (businessUnit) {
     let buId = businessUnit as string;
-
-    // Resolve Slug if needed
     if (!mongoose.Types.ObjectId.isValid(buId) && !/^[0-9a-fA-F]{24}$/.test(buId)) {
       const BusinessUnit = mongoose.model("BusinessUnit");
       const bu = await BusinessUnit.findOne({ slug: buId });
       if (bu) buId = bu._id.toString();
     }
 
-    // Find users who have access to this Business Unit
-    const userIds = await UserBusinessAccess.distinct('user', {
-      $or: [
-        { businessUnit: buId }, // Direct Business Scope
-        { scope: 'GLOBAL' }     // Global Admins (Optional: Do we want to show Globals when filtering by BU? Usually yes.)
-      ]
+    userIds = await UserBusinessAccess.distinct('user', {
+      $or: [{ businessUnit: buId }, { scope: 'GLOBAL' }]
     });
+  } else if (companyId) {
+    userIds = await UserBusinessAccess.distinct('user', { company: companyId });
+  } else if (!isSuperAdmin) {
+    // Implicit scoping for Company Owners
+    const authorizedCompanyIds = user?.companies || [];
+    if (authorizedCompanyIds.length > 0) {
+      userIds = await UserBusinessAccess.distinct('user', {
+        company: { $in: authorizedCompanyIds.map((id: string) => new mongoose.Types.ObjectId(id)) }
+      });
+    } else {
+      userIds = [];
+    }
+  }
 
-    // Merge into filter
-    // If existing _id filter, we must intersect? 
-    // Usually filterData doesn't have _id unless specific.
+  if (userIds !== null) {
     (filterData as any)._id = { $in: userIds };
   }
 
@@ -374,11 +382,14 @@ export const createStaffService = async (
     if (!newUser || !newUser.length || !newUser[0]) throw new AppError(500, "Failed to create user account");
 
     // 7. Create User Business Access (If Business Unit is provided)
+    const bu = await BusinessUnit.findById(businessUnitId).session(session);
     if (businessUnitId) {
+      console.log("businessUnitId", businessUnitId, bu);
       const accessPayload = {
         user: newUser[0]._id,
         role: roleId,
         scope: 'BUSINESS',
+        company: bu?.company || (staffData as any).company,
         businessUnit: businessUnitId,
         outlet: null,
         status: 'ACTIVE'
@@ -390,6 +401,7 @@ export const createStaffService = async (
     const staffPayload: Partial<IStaff> = {
       ...staffData,
       user: newUser[0]!._id,
+      company: bu?.company || (staffData as any).company,
       businessUnit: (businessUnitId as any)?._id || businessUnitId,
       isActive: true,
       isDeleted: false
@@ -419,12 +431,12 @@ export const createStaffService = async (
 
       await MailService.sendEmail(
         email,
-        "Signature Bangla - Staff Account Invitation",
+        "Unified Solution - Staff Account Invitation",
         `
             <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
                 <h2 style="color: #0F172A; text-align: center;">You've been invited!</h2>
                 <p>Hello <strong>${staffData.firstName}</strong>,</p>
-                <p>You have been added as a staff member to <strong>Signature Bangla</strong>.</p>
+                <p>You have been added as a staff member to <strong>Unified Solution</strong>.</p>
                 <p>Please click the link below to set up your password and access your account.</p>
                 <div style="margin: 30px 0; text-align: center;">
                 <a href="${setupUrl}" style="background-color: #0F172A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Accept Invitation</a>
@@ -432,7 +444,7 @@ export const createStaffService = async (
                 <p style="font-size: 14px; color: #666;">Or copy this link: <br/> <a href="${setupUrl}">${setupUrl}</a></p>
                 <p style="font-size: 14px; color: #666;">This link expires in 72 hours.</p>
                 <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-                <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 Signature Bangla. All rights reserved.</p>
+                <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 Unified Solution. All rights reserved.</p>
             </div>
             `
       );
@@ -733,10 +745,10 @@ export const createCompanyOwnerService = async (
         const setupUrl = `${appConfig.frontend_url}/auth/setup-password?token=${setupToken}`;
         await MailService.sendEmail(
           companyData.contactEmail,
-          "Welcome to Signature Bangla - Set up your account",
+          "Welcome to Unified Solution - Set up your account",
           `
             <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
-              <h2 style="color: #0F172A; text-align: center;">Welcome to Signature Bangla</h2>
+              <h2 style="color: #0F172A; text-align: center;">Welcome to Unified Solution</h2>
               <p>Hello <strong>${companyData.legalRepresentative?.name || 'Partner'}</strong>,</p>
               <p>Your new company <strong>${companyData.name}</strong> has been provisioned.</p>
               <p>We noticed your account was pending setup. Please set your password now.</p>
@@ -785,18 +797,18 @@ export const createCompanyOwnerService = async (
     try {
       await MailService.sendEmail(
         companyData.contactEmail,
-        "New Company Added - Signature Bangla",
+        "New Company Added - Unified Solution",
         `
         <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
           <h2 style="color: #0F172A; text-align: center;">New Company Added</h2>
           <p>Hello <strong>${isUserExists.name?.firstName || 'Partner'}</strong>,</p>
-          <p>A new company <strong>${companyData.name}</strong> has been successfully added to your Signature Bangla account.</p>
+          <p>A new company <strong>${companyData.name}</strong> has been successfully added to your Unified Solution account.</p>
           <p>You can now switch to this company from your dashboard.</p>
           <div style="margin: 30px 0; text-align: center;">
             <a href="${appConfig.frontend_url}/login" style="background-color: #0F172A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Login to Dashboard</a>
           </div>
           <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-          <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 Signature Bangla. All rights reserved.</p>
+          <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 Unified Solution. All rights reserved.</p>
         </div>
         `
       );
@@ -868,10 +880,10 @@ export const createCompanyOwnerService = async (
 
     await MailService.sendEmail(
       companyData.contactEmail,
-      "Welcome to Signature Bangla - Set up your account",
+      "Welcome to Unified Solution - Set up your account",
       `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
-        <h2 style="color: #0F172A; text-align: center;">Welcome to Signature Bangla</h2>
+        <h2 style="color: #0F172A; text-align: center;">Welcome to Unified Solution</h2>
         <p>Hello <strong>${companyData.legalRepresentative?.name || 'Partner'}</strong>,</p>
         <p>Your company <strong>${companyData.name}</strong> has been successfully provisioned in our system.</p>
         <p>Please utilize the link below to establish a secure password for your administrative account.</p>
@@ -881,7 +893,7 @@ export const createCompanyOwnerService = async (
         <p style="font-size: 14px; color: #666;">Or copy this link: <br/> <a href="${setupUrl}">${setupUrl}</a></p>
         <p style="font-size: 14px; color: #666;">This secure link is valid for 72 hours.</p>
         <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-        <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 Signature Bangla. All rights reserved.</p>
+        <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 Unified Solution. All rights reserved.</p>
       </div>
       `
     );

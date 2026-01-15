@@ -6,6 +6,7 @@ const companySchema = new Schema<ICompanyDocument, ICompanyModel>(
     {
         branding: { type: brandingSchema, required: true },
         name: { type: String, required: true, trim: true, index: true },
+        slug: { type: String, required: true, trim: true, index: true, unique: true },
         contact: { type: contactSchema, required: true },
         location: { type: locationSchema, required: true },
 
@@ -99,6 +100,7 @@ companySchema.virtual('settings', {
 });
 
 companySchema.index({ isActive: 1 });
+companySchema.index({ slug: 1 });
 companySchema.index({ "contact.email": 1 });
 companySchema.virtual('businessUnits', {
     ref: 'BusinessUnit',

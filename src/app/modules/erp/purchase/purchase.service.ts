@@ -2,13 +2,13 @@ import { startSession, isValidObjectId, Types } from 'mongoose';
 import AppError from '../../../../shared/errors/app-error.js';
 import { Purchase } from './purchase.model.js';
 import type { IPurchase } from './purchase.interface.js';
-import { Product } from '../../commerce/catalog/product/domain/product-core/product-core.model.js';
 import { addLedgerEntryService } from "../inventory/ledger/ledger.service.js";
 import { Supplier } from "../suppliers/supplier/supplier.model.js";
 import { Outlet } from "../../platform/organization/outlet/outlet.model.js";
 import { ContextService } from "../../../../core/services/context.service.js";
 
-// Helper to update stock
+import { inventoryAdapter } from "../index.ts";
+
 // Helper to update stock
 const updateStockForPurchase = async (purchase: any, session: any, action: 'add' | 'remove' = 'add') => {
     if (!purchase.outlet) {
@@ -19,39 +19,24 @@ const updateStockForPurchase = async (purchase: any, session: any, action: 'add'
         : purchase.outlet.toString();
 
     for (const item of purchase.items) {
-        const product = await Product.findById(item.product).populate('inventory').session(session);
-        if (product && product.inventory) {
-            const inventoryDoc = product.inventory as any;
+        const productId = item.product.toString();
+        const operation = action === 'add' ? 'increase' : 'decrease';
 
-            if (action === 'add') {
-                if (typeof inventoryDoc.addStock === 'function') {
-                    inventoryDoc.addStock(item.quantity, outletId);
-                } else {
-                    console.error(`addStock method missing on inventory for product ${product._id}`);
-                }
-            } else {
-                if (typeof inventoryDoc.removeStock === 'function') {
-                    inventoryDoc.removeStock(item.quantity, outletId);
-                } else {
-                    console.error(`removeStock method missing on inventory for product ${product._id}`);
-                }
-            }
+        // Update stock via Adapter (Decoupled)
+        await inventoryAdapter.updateStock(productId, outletId, item.quantity, operation, session);
 
-            await inventoryDoc.save({ session });
-
-            // Add to Ledger
-            await addLedgerEntryService({
-                product: item.product,
-                outlet: new Types.ObjectId(outletId),
-                type: 'purchase',
-                quantity: action === 'add' ? item.quantity : -item.quantity,
-                reference: purchase.referenceNo || purchase._id.toString(),
-                referenceType: 'Purchase',
-                remarks: action === 'add'
-                    ? `Received via Purchase ${purchase.referenceNo || ''}`
-                    : `Stock Reversal (Purchase Status Changed) - ${purchase.referenceNo || ''}`
-            }, session);
-        }
+        // Add to Ledger
+        await addLedgerEntryService({
+            product: item.product,
+            outlet: new Types.ObjectId(outletId),
+            type: 'purchase',
+            quantity: action === 'add' ? item.quantity : -item.quantity,
+            reference: purchase.referenceNo || purchase._id.toString(),
+            referenceType: 'Purchase',
+            remarks: action === 'add'
+                ? `Received via Purchase ${purchase.referenceNo || ''}`
+                : `Stock Reversal (Purchase Status Changed) - ${purchase.referenceNo || ''}`
+        }, session);
     }
 };
 

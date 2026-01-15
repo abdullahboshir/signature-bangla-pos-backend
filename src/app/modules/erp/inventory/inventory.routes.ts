@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { createAdjustmentController, getAdjustmentsController, getLedgerController } from './adjustment/adjustment.controller.js';
-import { getAllStockLevelsController } from '@app/modules/commerce/index.js';
+import { getAllStockLevelsController, getProductStockLevelController } from './stock/stock.controller.ts';
 // import { protect, restrictTo } from '../../auth/auth.middleware'; // Assuming auth middlewares exist
 
 const router = Router();
@@ -13,7 +13,7 @@ router.get('/adjustments', getAdjustmentsController);
 router.get('/ledger', getLedgerController);
 
 // Stock Levels
-
 router.get('/stock-levels', getAllStockLevelsController);
+router.get('/product/:productId', getProductStockLevelController);
 
 export const InventoryRoutes = router;

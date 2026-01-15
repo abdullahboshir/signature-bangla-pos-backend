@@ -123,13 +123,10 @@ const auth = (...requiredRoles: string[]) => {
     let outletId = req.headers['x-outlet-id'] as string;
     let effectiveRoleNames: string[] = [];
 
-    // Identify active company for scope inheritance
-    // Strategy: Use x-company-id header if present, otherwise derive from Business Unit
     let activeCompanyId: string | null = companyHeaderId || null;
 
     if (!activeCompanyId && businessUnitId && Array.isArray(isUserExists.businessAccess)) {
-      // Find ANY assignment that mentions this business unit to get its company context
-      // (This handles cases where the user has COMPANY or GLOBAL scope but is entering a specific BU)
+   
       const buFound = isUserExists.businessAccess.find((a: any) => {
         if (!a.businessUnit) return false;
         const b = a.businessUnit;
@@ -284,13 +281,17 @@ const auth = (...requiredRoles: string[]) => {
       (businessUnitId || activeCompanyId) ? { businessUnitId, companyId: activeCompanyId || undefined } : undefined
     );
 
+    console.log('isSupper Admin', isUserExists)
     // 3. Validate against Required Roles
     if (requiredRoles.length > 0) {
       if (!isUserExists.isSuperAdmin) {
         // Unique names
         effectiveRoleNames = [...new Set(effectiveRoleNames)];
 
-        const hasRequiredRole = requiredRoles.some(reqRole => effectiveRoleNames.includes(reqRole));
+        // 👑 COMPANY OWNER BYPASS: If user is a company owner, they have full access to their context
+        const isCompanyOwner = effectiveRoleNames.includes('company-owner');
+
+        const hasRequiredRole = isCompanyOwner || requiredRoles.some(reqRole => effectiveRoleNames.includes(reqRole));
         if (!hasRequiredRole) {
           // console.error("AUTH ERROR: Access Denied");
           // console.error("User ID:", isUserExists._id);

@@ -1,4 +1,4 @@
-import { categoryRoutes } from '@app/modules/commerce/catalog/category/category.routes.js';
+import { categoryRoutes } from '@app/modules/catalog/category/category.routes.ts';
 import { Router } from "express";
 
 const router = Router();

@@ -7,6 +7,7 @@ export interface ICompany {
   name: string;
   contact: ISharedContact;
   location: ISharedLocation;
+  slug: string;
 
   registrationNumber: string;
 

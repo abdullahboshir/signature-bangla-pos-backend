@@ -378,6 +378,25 @@ export class BusinessUnitService {
       // 1. Resolve Data Scoping (Now centrally handled by queryContext middleware)
       const filter: Record<string, any> = {};
 
+      const effectiveCompanyId = (query['companyId'] || query['company']) as string;
+      if (effectiveCompanyId) {
+        filter['company'] = effectiveCompanyId;
+      }
+
+      // 🛡️ ENFORCE SCOPING: Non-SuperAdmins only see authorized companies
+      if (user && !user.isSuperAdmin) {
+        const authorizedCompanies = user.companies || [];
+        if (filter['company']) {
+          // If they provided a companyId, verify access
+          if (!authorizedCompanies.includes(filter['company'].toString())) {
+            filter['company'] = { $in: [] }; // Access Denied
+          }
+        } else {
+          // Default to all authorized companies
+          filter['company'] = { $in: authorizedCompanies };
+        }
+      }
+
       // 2. Build Query
       const buQuery = new QueryBuilder(
         BusinessUnit.find(filter)
@@ -457,35 +476,31 @@ export class BusinessUnitService {
         {
           $group: {
             _id: null,
-            totalSales: { $sum: "$totalAmount" }, // Gross Sales
-            totalDue: { $sum: "$dueAmount" },     // Invoice Due
-            // Net = Total - Due? Or Total - Return?
-            // Usually Net = Sales - Return.
-            // Let's assume we filter out returned orders or subtract them.
-            // For now, let's keep it simple sum.
+            totalSales: { $sum: "$totalAmount" },
+            paidAmount: { $sum: "$paidAmount" },
+            dueAmount: { $sum: "$dueAmount" },
+            totalReturns: {
+              $sum: { $cond: [{ $eq: ["$status", "returned"] }, "$totalAmount", 0] }
+            }
           }
         }
       ]);
 
-      // Calculate Returns (If Order has isReturned flag or separate Return model)
-      // Assuming separate Return model is better, but maybe Order status 'returned'
-      // Checking Order Model is safer, but let's assume standard Order structure for now.
-      // If we don't have exact implementation details, we return 0 for now to avoid errors,
-      // but if User provided "Total Sell Return", likely implies a field exists.
-
-      // 2. Purchase Stats
       const purchaseStats = await Purchase.aggregate([
         { $match: matchStage },
         {
           $group: {
             _id: null,
-            totalPurchase: { $sum: "$totalAmount" },
-            totalDue: { $sum: "$dueAmount" }
+            totalPurchase: { $sum: "$grandTotal" }, // grandTotal in Purchase model
+            paidAmount: { $sum: "$paidAmount" },
+            dueAmount: { $sum: "$dueAmount" },
+            totalReturns: {
+              $sum: { $cond: [{ $eq: ["$status", "returned"] }, "$grandTotal", 0] }
+            }
           }
         }
       ]);
 
-      // 3. Expense Stats
       const expenseStats = await Expense.aggregate([
         { $match: matchStage },
         {
@@ -496,7 +511,6 @@ export class BusinessUnitService {
         }
       ]);
 
-      // 4. Active Users
       const activeUsers = await User.countDocuments({
         businessUnits: businessUnitId,
         status: 'active'
@@ -509,18 +523,15 @@ export class BusinessUnitService {
         users: {
           total: activeUsers || 0,
         },
-        businessUnits: {
-          active: 1 // Single BU context
-        },
-        // Flattened Financials for Dashboard
+        // Commerce Metrics (8 Cards)
         totalSales: salesStats[0]?.totalSales || 0,
-        invoiceDue: salesStats[0]?.totalDue || 0,
-        net: (salesStats[0]?.totalSales || 0) - (0), // Subtract returns if available
-        totalSellReturn: 0, // Placeholder
+        net: (salesStats[0]?.totalSales || 0) - (salesStats[0]?.totalReturns || 0),
+        invoiceDue: salesStats[0]?.dueAmount || 0,
+        totalSellReturn: salesStats[0]?.totalReturns || 0,
 
         totalPurchase: purchaseStats[0]?.totalPurchase || 0,
-        purchaseDue: purchaseStats[0]?.totalDue || 0,
-        totalPurchaseReturn: 0, // Placeholder
+        purchaseDue: purchaseStats[0]?.dueAmount || 0,
+        totalPurchaseReturn: purchaseStats[0]?.totalReturns || 0,
 
         expense: expenseStats[0]?.totalExpense || 0,
       };

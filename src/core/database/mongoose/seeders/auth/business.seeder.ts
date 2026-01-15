@@ -18,6 +18,7 @@ export const getBusinessRoleConfigs = (get: (r: string) => Types.ObjectId | null
             get(PermissionSourceObj.attributeGroup),
             get(PermissionSourceObj.unit),
             get(PermissionSourceObj.tax),
+            get(PermissionSourceObj.warranty),
             get(PermissionSourceObj.order),
             get(PermissionSourceObj.quotation),
             get(PermissionSourceObj.invoice),
@@ -108,6 +109,13 @@ export const getBusinessRoleConfigs = (get: (r: string) => Types.ObjectId | null
         name: USER_ROLE.MANAGER, // General Manager
         permissionGroups: [
             get(PermissionSourceObj.product),
+            get(PermissionSourceObj.category),
+            get(PermissionSourceObj.brand),
+            get(PermissionSourceObj.attribute),
+            get(PermissionSourceObj.attributeGroup),
+            get(PermissionSourceObj.unit),
+            get(PermissionSourceObj.tax),
+            get(PermissionSourceObj.warranty),
             get(PermissionSourceObj.order),
             get(PermissionSourceObj.inventory),
             get(PermissionSourceObj.customer),

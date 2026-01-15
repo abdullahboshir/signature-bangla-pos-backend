@@ -13,5 +13,6 @@ router.use('/:companyId/settings', CompanySettingsRoutes); // Nested Settings Ro
 router.post('/', auth('super-admin'), validateRequest(createCompanySchema), CompanyController.createCompany);
 router.get('/', auth(), CompanyController.getAllCompanies);
 router.get('/:id', auth(), CompanyController.getCompanyById);
+router.get('/:companyId/dashboard', auth(), CompanyController.getCompanyDashboardStats);
 
 export const CompanyRoutes = router;

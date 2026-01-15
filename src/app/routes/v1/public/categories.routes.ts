@@ -1,4 +1,4 @@
-import { categoryRoutes } from "../../../modules/commerce/catalog/category/category.routes.ts";
+import { categoryRoutes } from "../../../modules/catalog/category/category.routes.ts";
 import { Router } from "express";
 
 

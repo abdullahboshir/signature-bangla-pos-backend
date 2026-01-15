@@ -1,6 +1,6 @@
-import { Product } from "../../../commerce/catalog/product/domain/product-core/product-core.model.js";
+import { CatalogProductAdapter } from "@app/modules/catalog/index.ts";
 import { resolveBusinessUnitId } from "@core/utils/mutation-helper.js";
-import mongoose, { type PipelineStage } from "mongoose";
+import mongoose from "mongoose";
 import type { IStockReportFilters } from "./stock-report.interface.js";
 
 const getStockValuation = async (filters: IStockReportFilters) => {
@@ -34,24 +34,8 @@ const getStockValuation = async (filters: IStockReportFilters) => {
         matchStage.$expr = { $lte: ["$inventory.stock", "$inventory.alertQuantity"] };
     }
 
-    // 2. Aggregation Pipeline
-    const pipeline: PipelineStage[] = [
-        { $match: matchStage },
-        {
-            $project: {
-                name: 1,
-                sku: 1,
-                stock: "$inventory.stock",
-                costPrice: "$pricing.costPrice",
-                sellingPrice: "$pricing.sellingPrice",
-                totalCostValue: { $multiply: ["$inventory.stock", "$pricing.costPrice"] },
-                totalRetailValue: { $multiply: ["$inventory.stock", "$pricing.sellingPrice"] }
-            }
-        },
-        { $sort: { totalCostValue: -1 } }
-    ];
-
-    const stockItems = await Product.aggregate(pipeline);
+    // 2. Execute Aggregation via Catalog Adapter (Standardized)
+    const stockItems = await CatalogProductAdapter.getStockValuationData(matchStage);
 
     // 3. Calculate Summary
     const summary = stockItems.reduce((acc: any, item: any) => {
