@@ -22,7 +22,7 @@ router.post(
 router.get('/me', auth(...USER_ROLE_ARRAY), authMeController)
 router.post('/logout', logoutController)
 
-// Public endpoint for new Company Owners to set their initial password
+// Public endpoint for new Organization Owners to set their initial password
 router.post('/setup-password', validateRequest(setupPasswordZodSchema as unknown as AnyZodObject), setupPasswordController)
 
 // Re-send invitation if expired

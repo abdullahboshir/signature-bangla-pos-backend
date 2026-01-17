@@ -27,9 +27,9 @@ const outletSchema = new Schema<IOutlet, IOutletModel>(
             crm: { type: Boolean, default: false },
             logistics: { type: Boolean, default: false }
         },
-        company: {
+        organization: {
             type: Schema.Types.ObjectId,
-            ref: "Company",
+            ref: "Organization",
             required: true,
             index: true
         },
@@ -86,6 +86,6 @@ export const Outlet = model<IOutlet, IOutletModel>('Outlet', outletSchema);
 
 // Apply Context-Aware Data Isolation
 outletSchema.plugin(contextScopePlugin, {
-    companyField: 'company',
+    companyField: 'organization',
     businessUnitField: 'businessUnit'
 });

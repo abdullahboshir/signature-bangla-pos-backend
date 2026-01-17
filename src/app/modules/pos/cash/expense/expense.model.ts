@@ -22,7 +22,7 @@ const expenseSchema = new Schema<IExpenseDocument>({
     },
     reference: { type: String },
     remarks: { type: String },
-    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
     outlet: { type: Schema.Types.ObjectId, ref: 'Outlet', index: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },

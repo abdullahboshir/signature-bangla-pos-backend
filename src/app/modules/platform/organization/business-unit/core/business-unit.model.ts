@@ -13,7 +13,7 @@ export const businessUnitCoreSchema = new Schema<
     contact: { type: contactSchema, required: true },
     location: { type: locationSchema, required: true },
 
-    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    organization: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
 
     name: {
       type: String,
@@ -229,7 +229,7 @@ const BusinessUnit = model<IBusinessUnitCoreDocument, IBusinessUnitCoreModel>(
 
 // Apply Context-Aware Data Isolation
 businessUnitCoreSchema.plugin(contextScopePlugin, {
-  companyField: 'company'
+  companyField: 'organization'
 });
 
 export default BusinessUnit

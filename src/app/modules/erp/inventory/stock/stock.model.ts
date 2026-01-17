@@ -14,7 +14,7 @@ const outletStockSchema = new Schema({
 
 const stockSchema = new Schema<IStockDocument>({
   product: { type: Schema.Types.ObjectId, ref: 'Product', required: true, unique: true },
-  company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+  company: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
   businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
   domain: {
     type: String,

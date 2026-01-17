@@ -5,7 +5,7 @@
 
 export const MailTemplates = {
     /**
-     * Welcome Email for Company Owners
+     * Welcome Email for Organization Owners
      */
     getWelcomeEmail: (data: {
         ownerName: string;

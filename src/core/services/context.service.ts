@@ -6,18 +6,18 @@ import { SecurityAlert } from '../../app/modules/platform/security/security-aler
 // CONTEXT LEVELS & POLICY
 // ============================================
 
-export type ScopeLevel = 'PLATFORM' | 'COMPANY' | 'BUSINESS_UNIT' | 'OUTLET';
+export type ScopeLevel = 'PLATFORM' | 'ORGANIZATION' | 'BUSINESS_UNIT' | 'OUTLET';
 
 /**
  * Defines what data each scope level can access.
  * - PLATFORM (Super Admin): Can see all levels
- * - COMPANY (Company Owner): Can see company and below
+ * - ORGANIZATION (Organization Owner): Can see organization and below
  * - BUSINESS_UNIT (Business Admin): Can see BU and outlets
  * - OUTLET (Cashier/Store Manager): Can only see their outlet
  */
 export const CONTEXT_POLICY: Record<ScopeLevel, ScopeLevel[]> = {
-    PLATFORM: ['COMPANY', 'BUSINESS_UNIT', 'OUTLET'],
-    COMPANY: ['COMPANY', 'BUSINESS_UNIT', 'OUTLET'],
+    PLATFORM: ['ORGANIZATION', 'BUSINESS_UNIT', 'OUTLET'],
+    ORGANIZATION: ['ORGANIZATION', 'BUSINESS_UNIT', 'OUTLET'],
     BUSINESS_UNIT: ['BUSINESS_UNIT', 'OUTLET'],
     OUTLET: ['OUTLET'],
 };
@@ -28,7 +28,8 @@ export const CONTEXT_POLICY: Record<ScopeLevel, ScopeLevel[]> = {
 
 export interface IRequestContext {
     // Hierarchy IDs (populated based on request)
-    companyId?: Types.ObjectId | string;
+    organizationId?: Types.ObjectId | string;
+    companyId?: Types.ObjectId | string; // Backward compatibility
     businessUnitId?: Types.ObjectId | string;
     outletId?: Types.ObjectId | string;
     domain?: string;
@@ -39,6 +40,11 @@ export interface IRequestContext {
     // User info for audit/permission checks
     userId?: Types.ObjectId | string;
     roleType?: string;
+
+    // ====== TENANT CONTEXT (Hybrid Multi-Tenancy) ======
+    tenantDeploymentType?: 'shared' | 'dedicated';
+    tenantDatabaseUri?: string;
+    tenantIsProvisioned?: boolean;
 
     // Audit-specific data (backward compatible)
     diffs: Record<string, any>[];
@@ -121,8 +127,9 @@ export class ContextService {
         const allowedLevels = CONTEXT_POLICY[ctx.scopeLevel];
 
         // Apply filters based on scope policy
-        if (ctx.companyId && allowedLevels.includes('COMPANY')) {
-            filter['companyId'] = ctx.companyId;
+        const orgId = ctx.organizationId || ctx.companyId;
+        if (orgId && allowedLevels.includes('ORGANIZATION')) {
+            filter['organizationId'] = orgId;
         }
 
         if (ctx.businessUnitId && allowedLevels.includes('BUSINESS_UNIT')) {
@@ -156,7 +163,11 @@ export class ContextService {
         if (!ctx) return {};
 
         const stamp: Record<string, any> = {};
-        if (ctx.companyId) stamp['companyId'] = ctx.companyId;
+        const orgId = ctx.organizationId || ctx.companyId;
+        if (orgId) {
+            stamp['organizationId'] = orgId;
+            stamp['companyId'] = orgId; // Backward compatibility for field name
+        }
         if (ctx.businessUnitId) stamp['businessUnitId'] = ctx.businessUnitId;
         if (ctx.outletId) stamp['outletId'] = ctx.outletId;
         if (ctx['domain']) stamp['domain'] = ctx['domain'];
@@ -210,9 +221,14 @@ export class ContextService {
         const normalizedIds = Array.isArray(ids) ? ids : [ids];
         if (normalizedIds.length === 0) return;
 
+        const orgId = ctx.organizationId || ctx.companyId;
+
         const count = await model.countDocuments({
             [fieldName]: { $in: normalizedIds },
-            companyId: ctx.companyId // Must belong to same company
+            $or: [
+                { organizationId: orgId },
+                { companyId: orgId }
+            ]
         });
 
         if (count !== normalizedIds.length) {
@@ -222,7 +238,7 @@ export class ContextService {
                 action: 'REFERENTIAL_FAIL',
                 details: `Referential Integrity Failure in ${model.modelName}. Expected ${normalizedIds.length} records, found ${count} in context.`
             });
-            throw new Error(`[ContextService] Security Breach: One or more referenced records in ${model.modelName} do not belong to your company.`);
+            throw new Error(`[ContextService] Security Breach: One or more referenced records in ${model.modelName} do not belong to your organization.`);
         }
     }
 
@@ -250,7 +266,8 @@ export class ContextService {
                 details: options.details,
                 context: {
                     userId: ctx?.userId,
-                    companyId: ctx?.companyId,
+                    organizationId: ctx?.organizationId || ctx?.companyId,
+                    companyId: ctx?.companyId || ctx?.organizationId,
                     businessUnitId: ctx?.businessUnitId,
                     outletId: ctx?.outletId,
                     ip: req?.ip,

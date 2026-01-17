@@ -17,7 +17,7 @@ const PurchaseSchema = new Schema<IPurchase>({
     referenceNo: { type: String },
     businessUnit: { type: Schema.Types.ObjectId as any, ref: 'BusinessUnit', required: true },
     outlet: { type: Schema.Types.ObjectId as any, ref: 'Outlet', required: true },
-    company: { type: Schema.Types.ObjectId as any, ref: 'Company', required: true, index: true },
+    company: { type: Schema.Types.ObjectId as any, ref: 'Organization', required: true, index: true },
     status: { type: String, enum: ['pending', 'ordered', 'received'], default: 'pending' },
     module: {
         type: String,

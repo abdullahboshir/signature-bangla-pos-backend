@@ -204,12 +204,12 @@ export class PermissionService {
 
     let maxScopeLevel = 1; // Default 'own'
 
-    // 2. Identify active company for scope inheritance
-    // Use companyId from targetScope if provided, otherwise derive it from Business Unit
-    let activeCompanyId: string | null = targetScope?.companyId?.toString() || null;
+    // 2. Identify active organization for scope inheritance
+    // Use organizationId/companyId from targetScope if provided, otherwise derive it from Business Unit
+    let activeOrganizationId: string | null = targetScope?.organizationId?.toString() || targetScope?.companyId?.toString() || null;
     const targetBuId = targetScope?.businessUnitId?.toString();
 
-    if (!activeCompanyId && targetBuId && Array.isArray(user.businessAccess)) {
+    if (!activeOrganizationId && targetBuId && Array.isArray(user.businessAccess)) {
       const buAccess = user.businessAccess.find((a: any) => {
         if (!a.businessUnit) return false;
         const b = a.businessUnit;
@@ -217,8 +217,8 @@ export class PermissionService {
         const bSlug = b.slug;
         return bId === targetBuId || bSlug === targetBuId;
       });
-      if (buAccess && buAccess.company) {
-        activeCompanyId = (buAccess.company._id || buAccess.company.id || buAccess.company).toString();
+      if (buAccess && (buAccess.organization || buAccess.company)) {
+        activeOrganizationId = (buAccess.organization?._id || buAccess.organization?.id || buAccess.company?._id || buAccess.company?.id || buAccess.company || buAccess.organization).toString();
       }
     }
 
@@ -251,9 +251,9 @@ export class PermissionService {
         const outletId = assignment.outlet
           ? ((assignment.outlet as any)._id || assignment.outlet).toString()
           : null;
-        const companyId = assignment.company
-          ? ((assignment.company as any)._id || assignment.company).toString()
-          : null;
+        const organizationId = assignment.organization
+          ? ((assignment.organization as any)._id || assignment.organization).toString()
+          : (assignment.company ? ((assignment.company as any)._id || assignment.company).toString() : null);
 
         const targetOutletId = targetScope?.outletId?.toString();
 
@@ -262,8 +262,8 @@ export class PermissionService {
         if (assignment.scope === 'GLOBAL') {
           includeRole = true;
         }
-        // 2. COMPANY Scope roles include if they match the active company
-        else if (assignment.scope === 'COMPANY' && activeCompanyId && companyId === activeCompanyId) {
+        // 2. ORGANIZATION or COMPANY Scope roles include if they match the active organization
+        else if ((assignment.scope === 'ORGANIZATION' || assignment.scope === 'COMPANY') && activeOrganizationId && organizationId === activeOrganizationId) {
           includeRole = true;
         }
         // 3. BUSINESS Scope roles include if they match the target BU

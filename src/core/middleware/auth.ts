@@ -119,13 +119,13 @@ const auth = (...requiredRoles: string[]) => {
     // ========================================================================
 
     let businessUnitId = req.headers['x-business-unit-id'] as string;
-    let companyHeaderId = req.headers['x-company-id'] as string;
+    let organizationHeaderId = (req.headers['x-organization-id'] || req.headers['x-company-id']) as string;
     let outletId = req.headers['x-outlet-id'] as string;
     let effectiveRoleNames: string[] = [];
 
-    let activeCompanyId: string | null = companyHeaderId || null;
+    let activeOrganizationId: string | null = organizationHeaderId || null;
 
-    if (!activeCompanyId && businessUnitId && Array.isArray(isUserExists.businessAccess)) {
+    if (!activeOrganizationId && businessUnitId && Array.isArray(isUserExists.businessAccess)) {
    
       const buFound = isUserExists.businessAccess.find((a: any) => {
         if (!a.businessUnit) return false;
@@ -135,13 +135,13 @@ const auth = (...requiredRoles: string[]) => {
         return bId === businessUnitId || bSlug === businessUnitId;
       });
 
-      if (buFound && buFound.company) {
-        activeCompanyId = (buFound.company._id || buFound.company.id || buFound.company).toString();
+      if (buFound && (buFound.organization || buFound.company)) {
+        activeOrganizationId = (buFound.organization?._id || buFound.organization?.id || buFound.company?._id || buFound.company?.id || buFound.company || buFound.organization).toString();
       }
     }
 
-    // Fallback: If still no company but we have a BU context, fetch BU from DB to find parent company
-    if (!activeCompanyId && businessUnitId) {
+    // Fallback: If still no organization but we have a BU context, fetch BU from DB to find parent organization
+    if (!activeOrganizationId && businessUnitId) {
       let bu;
       if (mongoose.Types.ObjectId.isValid(businessUnitId)) {
         bu = await BusinessUnit.findById(businessUnitId).lean();
@@ -149,55 +149,55 @@ const auth = (...requiredRoles: string[]) => {
         bu = await BusinessUnit.findOne({ slug: businessUnitId }).lean();
       }
 
-      if (bu && bu.company) {
-        activeCompanyId = bu.company.toString();
+      if (bu && (bu.organization || bu.organization)) {
+        activeOrganizationId = (bu.organization || bu.organization).toString();
       }
     }
 
     // Fallback: Resolve parents from Outlet if needed
-    if (outletId && outletId !== 'new' && mongoose.Types.ObjectId.isValid(outletId) && (!activeCompanyId || !businessUnitId)) {
+    if (outletId && outletId !== 'new' && mongoose.Types.ObjectId.isValid(outletId) && (!activeOrganizationId || !businessUnitId)) {
       const OutletModel = mongoose.models['Outlet'] || mongoose.model('Outlet');
       // Use any for safe populate access without direct type import
-      const outlet = await OutletModel.findById(outletId).populate('businessUnit').lean() as any;
+      const outlet = await OutletModel.findById(outletId).populate(['businessUnit', 'organization']).lean() as any;
 
       if (outlet) {
         if (outlet.businessUnit) {
           const bu = outlet.businessUnit;
           if (!businessUnitId) businessUnitId = (bu._id || bu.id).toString();
-          if (!activeCompanyId && bu.company) {
-            activeCompanyId = bu.company.toString();
+          if (!activeOrganizationId && (bu.organization || bu.company)) {
+            activeOrganizationId = (bu.organization || bu.company).toString();
           }
         }
       }
     }
 
-    // 🛡️ CONTEXT REVALIDATION: Backend never trusts UI (Phase 7, Item 16)
+    // 🛡️ CONTEXT REVALIDATION: Backend never trusts UI
     if (!isUserExists.isSuperAdmin) {
       const authorizedAccess = isUserExists.businessAccess || [];
 
-      if (activeCompanyId) {
-        const hasCompanyAccess = authorizedAccess.some((a: any) =>
-          a.company?._id?.toString() === activeCompanyId ||
-          a.company?.id === activeCompanyId ||
-          a.company?.toString() === activeCompanyId ||
+      if (activeOrganizationId) {
+        const hasOrganizationAccess = authorizedAccess.some((a: any) =>
+          a.organization?._id?.toString() === activeOrganizationId ||
+          a.company?._id?.toString() === activeOrganizationId ||
           a.scope === 'GLOBAL'
         );
-        if (!hasCompanyAccess) {
+        if (!hasOrganizationAccess) {
           ContextService.logSecurityAlert({
             type: 'CONTEXT_HIJACKING',
             severity: 'CRITICAL',
             action: 'ACCESS_REVALIDATION',
-            details: `Unauthorized attempt to access Company: ${activeCompanyId}`,
+            details: `Unauthorized attempt to access Organization: ${activeOrganizationId}`,
             request: req
           });
-          throw new AppError(status.FORBIDDEN, `Access Denied: You do not have access to company ${activeCompanyId}`);
+          throw new AppError(status.FORBIDDEN, `Access Denied: You do not have access to organization ${activeOrganizationId}`);
         }
       }
 
       if (businessUnitId) {
         const hasBUAccess = authorizedAccess.some((a: any) =>
           (a.businessUnit?._id?.toString() === businessUnitId || a.businessUnit?.slug === businessUnitId) ||
-          (a.scope === 'COMPANY' && activeCompanyId && (a.company?._id?.toString() === activeCompanyId || a.company?.toString() === activeCompanyId)) ||
+          (a.scope === 'ORGANIZATION' && activeOrganizationId && (a.organization?._id?.toString() === activeOrganizationId || a.organization?.toString() === activeOrganizationId)) ||
+          (a.scope === 'COMPANY' && activeOrganizationId && (a.company?._id?.toString() === activeOrganizationId || a.company?.toString() === activeOrganizationId)) ||
           a.scope === 'GLOBAL'
         );
         if (!hasBUAccess) {
@@ -217,7 +217,8 @@ const auth = (...requiredRoles: string[]) => {
         const hasOutletAccess = authorizedAccess.some((a: any) =>
           a.outlet?._id?.toString() === outletId ||
           (a.scope === 'BUSINESS' && businessUnitId && (a.businessUnit?._id?.toString() === businessUnitId)) ||
-          (a.scope === 'COMPANY' && activeCompanyId && (a.company?._id?.toString() === activeCompanyId)) ||
+          (a.scope === 'ORGANIZATION' && activeOrganizationId && (a.organization?._id?.toString() === activeOrganizationId)) ||
+          (a.scope === 'COMPANY' && activeOrganizationId && (a.company?._id?.toString() === activeOrganizationId)) ||
           a.scope === 'GLOBAL'
         );
         if (!hasOutletAccess) {
@@ -255,8 +256,10 @@ const auth = (...requiredRoles: string[]) => {
           // GLOBAL scope always applies
           if (a.scope === 'GLOBAL') include = true;
 
-          // COMPANY scope applies if it matches the active company (via header or BU inheritance)
-          if (a.scope === 'COMPANY' && activeCompanyId && (a.company?._id?.toString() === activeCompanyId || a.company?.id === activeCompanyId || a.company?.toString() === activeCompanyId)) {
+          // ORGANIZATION or COMPANY scope applies if it matches the active organization
+          if ((a.scope === 'ORGANIZATION' || a.scope === 'COMPANY') && activeOrganizationId && 
+              (a.organization?._id?.toString() === activeOrganizationId || a.organization?.id === activeOrganizationId || a.organization?.toString() === activeOrganizationId ||
+               a.company?._id?.toString() === activeOrganizationId || a.company?.id === activeOrganizationId || a.company?.toString() === activeOrganizationId)) {
             include = true;
           }
 
@@ -266,7 +269,7 @@ const auth = (...requiredRoles: string[]) => {
           }
 
           // Union Context Fallback: If no specific scope ID is provided (e.g., on /auth/me), include EVERYTHING for the user session.
-          if (!businessUnitId && !companyHeaderId) include = true;
+          if (!businessUnitId && !organizationHeaderId) include = true;
 
           if (include && a.role) {
             effectiveRoleNames.push(a.role.name);
@@ -278,28 +281,20 @@ const auth = (...requiredRoles: string[]) => {
     // Aggregate Permissions using PermissionService (Handles caching & hierarchy)
     const authContext = await permissionService.getAuthorizationContext(
       isUserExists as any,
-      (businessUnitId || activeCompanyId) ? { businessUnitId, companyId: activeCompanyId || undefined } : undefined
+      (businessUnitId || activeOrganizationId) ? { businessUnitId, organizationId: activeOrganizationId || undefined } : undefined
     );
 
-    console.log('isSupper Admin', isUserExists)
     // 3. Validate against Required Roles
     if (requiredRoles.length > 0) {
       if (!isUserExists.isSuperAdmin) {
         // Unique names
         effectiveRoleNames = [...new Set(effectiveRoleNames)];
 
-        // 👑 COMPANY OWNER BYPASS: If user is a company owner, they have full access to their context
-        const isCompanyOwner = effectiveRoleNames.includes('company-owner');
+        // 👑 ORGANIZATION OWNER BYPASS: If user is an organization owner, they have full access to their context
+        const isOrganizationOwner = effectiveRoleNames.includes('organization-owner') || effectiveRoleNames.includes('company-owner');
 
-        const hasRequiredRole = isCompanyOwner || requiredRoles.some(reqRole => effectiveRoleNames.includes(reqRole));
+        const hasRequiredRole = isOrganizationOwner || requiredRoles.some(reqRole => effectiveRoleNames.includes(reqRole));
         if (!hasRequiredRole) {
-          // console.error("AUTH ERROR: Access Denied");
-          // console.error("User ID:", isUserExists._id);
-          // console.error("Requested BU ID (Header):", businessUnitId);
-          // console.error("Effective Roles:", effectiveRoleNames);
-          // console.error("Required Roles:", requiredRoles);
-          // console.error("User Business Access:", JSON.stringify(isUserExists.businessAccess, null, 2));
-
           throw new AppError(status.FORBIDDEN, `Access Denied. You do not have permission for this context.`);
         }
       }
@@ -308,21 +303,21 @@ const auth = (...requiredRoles: string[]) => {
 
     // Attach user info to request
     const uniqueBusinessUnits = new Map();
-    const uniqueCompanies = new Map();
+    const uniqueOrganizations = new Map();
     const uniqueOutlets = new Map();
-    const companyModules = new Map();
+    const organizationModules = new Map();
 
     if (Array.isArray(isUserExists.businessAccess)) {
       isUserExists.businessAccess.forEach((a: any) => {
         if (a.businessUnit) uniqueBusinessUnits.set(a.businessUnit._id.toString(), a.businessUnit);
-        if (a.company) {
-          uniqueCompanies.set(a.company._id.toString(), a.company._id.toString()); // Store ID string
-          if (a.company.activeModules) {
-            companyModules.set(a.company._id.toString(), a.company.activeModules);
+        if (a.organization || a.company) {
+          const org = a.organization || a.company;
+          uniqueOrganizations.set(org._id.toString(), org._id.toString()); // Store ID string
+          if (org.activeModules) {
+            organizationModules.set(org._id.toString(), org.activeModules);
           }
         }
         if (a.outlet) uniqueOutlets.set(a.outlet._id.toString(), a.outlet._id.toString()); // Store outlet ID
-        // If Business Unit implies a Company, we should ideally fetch it too, but for strict ACL we rely on direct 'company' scope assignment or BU->Company link
       });
     }
 
@@ -338,9 +333,10 @@ const auth = (...requiredRoles: string[]) => {
       dataScope: authContext.dataScope,
       scopeRank: authContext.scopeRank,
       businessUnits: Array.from(uniqueBusinessUnits.values()),
-      companies: Array.from(uniqueCompanies.values()), // Added companies list
+      organizations: Array.from(uniqueOrganizations.values()), // Added organizations list
+      companies: Array.from(uniqueOrganizations.values()), // Backward compatibility
       outlets: Array.from(uniqueOutlets.values()), // Added outlets list
-      companyModules: Object.fromEntries(companyModules), // Injected Module Config
+      organizationModules: Object.fromEntries(organizationModules), // Injected Module Config
       ...(isUserExists.branches !== undefined && { branches: isUserExists.branches }),
       ...(isUserExists.vendorId !== undefined && { vendorId: isUserExists.vendorId }),
       ...(isUserExists.region !== undefined && { region: isUserExists.region }),
@@ -356,7 +352,7 @@ const auth = (...requiredRoles: string[]) => {
     if (!isUserExists.isSuperAdmin) {
       if (outletId) scopeLevel = 'OUTLET';
       else if (businessUnitId) scopeLevel = 'BUSINESS_UNIT';
-      else if (activeCompanyId) scopeLevel = 'COMPANY';
+      else if (activeOrganizationId) scopeLevel = 'ORGANIZATION';
 
       // 🧬 Resolve Domain for Business/Outlet context
       if (businessUnitId) {
@@ -376,7 +372,8 @@ const auth = (...requiredRoles: string[]) => {
     ContextService.setContext({
       userId: isUserExists._id?.toString(),
       roleType: effectiveRoleNames[0], // Primary role
-      companyId: activeCompanyId || undefined,
+      organizationId: activeOrganizationId || undefined,
+      companyId: activeOrganizationId || undefined, // Backward compatibility
       businessUnitId: businessUnitId || undefined,
       outletId: outletId || undefined,
       domain: activeDomain,

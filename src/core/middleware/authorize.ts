@@ -70,8 +70,11 @@ export const authorize = (resource: string, action: string) => {
             },
             {
               path: 'businessUnit',
-              select: 'name slug id activeModules company',
-              populate: { path: 'company', select: 'activeModules' }
+              select: 'name slug id activeModules organization company',
+              populate: [
+                { path: 'organization', select: 'activeModules' },
+                { path: 'company', select: 'activeModules' }
+              ]
             }
           ]
         })
@@ -84,7 +87,7 @@ export const authorize = (resource: string, action: string) => {
       }
 
       // --------------------------------------------------------------------------
-      // 🛡️ MODULE LEVEL GUARD (Tiered: System > Company > BU)
+      // 🛡️ MODULE LEVEL GUARD (Tiered: System > Organization > BU)
       // --------------------------------------------------------------------------
       const requiredModule = getModuleByResource(resource);
       if (requiredModule) {
@@ -104,11 +107,12 @@ export const authorize = (resource: string, action: string) => {
           );
 
           if (targetAccess?.businessUnit) {
-            // 2. Company Level Check (Organization License)
-            if (targetAccess.businessUnit.company?.activeModules) {
+            // 2. Organization Level Check (Organization License)
+            const org = targetAccess.businessUnit.organization || targetAccess.businessUnit.company;
+            if (org?.activeModules) {
               // @ts-ignore
-              const isCompanyActive = targetAccess.businessUnit.company.activeModules[requiredModule];
-              if (isCompanyActive === false) {
+              const isOrgActive = org.activeModules[requiredModule];
+              if (isOrgActive === false) {
                 throw new AppError(status.PAYMENT_REQUIRED, `Organization License does not include '${requiredModule.toUpperCase()}' module.`);
               }
             }

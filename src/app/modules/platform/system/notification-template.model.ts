@@ -27,7 +27,7 @@ const notificationTemplateSchema = new Schema<INotificationTemplate>({
     content: { type: String, required: true },
     variables: [{ type: String }],
     isActive: { type: Boolean, default: true },
-    company: { type: Schema.Types.ObjectId, ref: 'Company', index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Organization', index: true },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit' }
 }, {
     timestamps: true

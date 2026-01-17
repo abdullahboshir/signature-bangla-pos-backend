@@ -24,7 +24,7 @@ export const RESOURCE_SCOPE_MAP: Record<string, string> = {
     subscription: "global", // SaaS Level
     global: "global",
 
-    // 🏢 Company / Tenant Level (Shared across Business Units)
+    // 🏢 Organization / Tenant Level (Shared across Business Units)
     companySetting: "company",
     businessUnit: "company",
     businessSetting: "business",

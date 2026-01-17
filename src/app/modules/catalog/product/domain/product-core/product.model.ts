@@ -26,7 +26,7 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
   videos: [{ type: String, trim: true }],
   unit: { type: Schema.Types.ObjectId, ref: 'Unit' },
 
-  company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+  company: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
   outlet: {
     type: Schema.Types.ObjectId,
     ref: "Outlet",

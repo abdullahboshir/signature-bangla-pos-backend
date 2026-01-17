@@ -100,7 +100,7 @@ const RoleSchema = new Schema<IRole>(
     },
     company: {
       type: Schema.Types.ObjectId,
-      ref: 'Company',
+      ref: 'Organization',
       default: null, // null for System Roles
       index: true
     },

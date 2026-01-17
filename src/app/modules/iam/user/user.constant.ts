@@ -15,10 +15,10 @@ export const USER_ROLE = {
   SYSTEM_INTEGRATION: 'system-integration', // For API/Webhooks
 
   // ========================================================================
-  // 2. COMPANY LEVEL (Tenant/Group Scope)
-  // These roles manage the entire company/holding group across all business units.
+  // 2. ORGANIZATION LEVEL (Tenant/Group Scope)
+  // These roles manage the entire organization/holding group across all business units.
   // ========================================================================
-  COMPANY_OWNER: 'company-owner', // Group Chairman/MD - manages entire company
+  ORGANIZATION_OWNER: 'organization-owner', // Group Chairman/MD - manages entire organization
 
   // ========================================================================
   // 3. BUSINESS LEVEL (Business Unit Scope)

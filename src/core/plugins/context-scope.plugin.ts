@@ -26,9 +26,9 @@ export interface ContextScopePluginOptions {
     isGlobalModel?: boolean;
 
     /**
-     * Field name for company reference (default: 'companyId')
+     * Field name for organization reference (default: 'organizationId')
      */
-    companyField?: string;
+    organizationField?: string;
 
     /**
      * Field name for business unit reference (default: 'businessUnitId')
@@ -56,7 +56,7 @@ const DEFAULT_OPTIONS: ContextScopePluginOptions = {
     requireOutlet: false,
     requireBusinessUnit: false,
     isGlobalModel: false,
-    companyField: 'companyId',
+    organizationField: 'organizationId',
     businessUnitField: 'businessUnitId',
     outletField: 'outletId',
     domainField: 'domain',
@@ -129,9 +129,9 @@ export const contextScopePlugin = (schema: Schema<any, any, any, any, any>, opti
         // Apply filter with field name mapping
         const filter: Record<string, any> = {};
 
-        if (contextFilter['companyId']) {
-            const companyVal = contextFilter['companyId'];
-            filter[opts.companyField!] = opts.includeGlobal ? { $in: [companyVal, null] } : companyVal;
+        const orgId = contextFilter['organizationId'] || contextFilter['companyId'];
+        if (orgId) {
+            filter[opts.organizationField!] = opts.includeGlobal ? { $in: [orgId, null] } : orgId;
         }
         if (contextFilter['businessUnitId']) {
             const buVal = contextFilter['businessUnitId'];
@@ -195,7 +195,8 @@ export const contextScopePlugin = (schema: Schema<any, any, any, any, any>, opti
 
         // Apply field name mapping to filter
         const filter: Record<string, any> = {};
-        if (contextFilter['companyId']) filter[opts.companyField!] = contextFilter['companyId'];
+        const orgId = contextFilter['organizationId'] || contextFilter['companyId'];
+        if (orgId) filter[opts.organizationField!] = orgId;
         if (contextFilter['businessUnitId']) filter[opts.businessUnitField!] = contextFilter['businessUnitId'];
         if (contextFilter['outletId']) filter[opts.outletField!] = contextFilter['outletId'];
 
@@ -248,7 +249,7 @@ export const contextScopePlugin = (schema: Schema<any, any, any, any, any>, opti
             }
         };
 
-        enforceStamping('companyField', 'companyId');
+        enforceStamping('organizationField', 'organizationId');
         enforceStamping('businessUnitField', 'businessUnitId');
         enforceStamping('outletField', 'outletId');
         enforceStamping('domainField', 'domain');
@@ -267,7 +268,7 @@ export const contextScopePlugin = (schema: Schema<any, any, any, any, any>, opti
 
         // 3. GLOBAL PROTECTION: Prevent tenants from modifying platform records (Phase 8)
         if (!doc.isNew && ctx.scopeLevel !== 'PLATFORM') {
-            const isGlobal = !(doc as any)[opts.companyField!] && !(doc as any)[opts.businessUnitField!] && !(doc as any)[opts.outletField!];
+            const isGlobal = !(doc as any)[opts.organizationField!] && !(doc as any)[opts.businessUnitField!] && !(doc as any)[opts.outletField!];
             if (isGlobal) {
                 ContextService.logSecurityAlert({
                     type: 'UNAUTHORIZED_WRITE',
@@ -332,7 +333,7 @@ export const contextScopePlugin = (schema: Schema<any, any, any, any, any>, opti
                 }
             };
 
-            enforceBulkStamping('companyField', 'companyId');
+            enforceBulkStamping('organizationField', 'organizationId');
             enforceBulkStamping('businessUnitField', 'businessUnitId');
             enforceBulkStamping('outletField', 'outletId');
 
@@ -368,11 +369,14 @@ export const businessUnitScopedPlugin = (schema: Schema) => {
 };
 
 /**
- * Plugin preset for company-wide models (users, roles within company)
+ * Plugin preset for organization-wide models (users, roles within organization)
  */
-export const companyScopedPlugin = (schema: Schema) => {
+export const organizationScopedPlugin = (schema: Schema) => {
     contextScopePlugin(schema, { requireBusinessUnit: false, requireOutlet: false });
 };
+
+/** @deprecated Use organizationScopedPlugin */
+export const companyScopedPlugin = organizationScopedPlugin;
 
 /**
  * Marker for global/platform models that should never be filtered

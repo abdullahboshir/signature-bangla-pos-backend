@@ -30,7 +30,7 @@ const courierSchema = new Schema<ICourier>({
         index: true
     },
     businessUnit: { type: Schema.Types.ObjectId, ref: "BusinessUnit", required: true, index: true },
-    company: { type: Schema.Types.ObjectId, ref: "Company", required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
     config: { type: Map, of: Schema.Types.Mixed }
 }, {
     timestamps: true

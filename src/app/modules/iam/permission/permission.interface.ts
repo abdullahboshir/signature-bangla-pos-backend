@@ -13,7 +13,7 @@ import type {
 export interface ITargetScope {
   businessUnitId?: string | undefined;
   outletId?: string | undefined;
-  companyId?: string | undefined;
+  organizationId?: string | undefined;
 }
 
 export interface IPermissionCondition {
@@ -79,9 +79,9 @@ export interface IPermissionContext {
   user: {
     id: string;
     roles: string[];
-    companies?: string[]; // Added
+    organizations?: string[];
     businessUnits: string[];
-    outlets?: string[]; // Added for outlet-level scope
+    outlets?: string[];
     branches?: string[];
     vendorId?: string;
     region?: string;
@@ -89,9 +89,9 @@ export interface IPermissionContext {
   resource?: {
     id?: string;
     ownerId?: string;
-    companyId?: string; // Added
-    businessUnitId?: string; // Added for business scope
-    outletId?: string; // Added for outlet scope
+    organizationId?: string;
+    businessUnitId?: string;
+    outletId?: string;
     vendorId?: string;
     category?: string;
     region?: string;

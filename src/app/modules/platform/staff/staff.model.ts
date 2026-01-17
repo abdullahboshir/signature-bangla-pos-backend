@@ -86,9 +86,9 @@ const StaffSchema = new Schema<IStaff>({
         ref: 'BusinessUnit',
         required: true
     },
-    company: {
+    organization: {
         type: Schema.Types.ObjectId,
-        ref: 'Company',
+        ref: 'Organization',
         required: true,
         index: true
     },
@@ -114,9 +114,9 @@ StaffSchema.index({ businessUnit: 1 });
 StaffSchema.index({ designation: 1 });
 StaffSchema.index({ isActive: 1 });
 StaffSchema.index({ isDeleted: 1 });
-StaffSchema.index({ company: 1 });
+StaffSchema.index({ organization: 1 });
 StaffSchema.index({ businessUnit: 1, outlet: 1 });
-StaffSchema.index({ company: 1 });
+StaffSchema.index({ organization: 1 });
 StaffSchema.index({ outlet: 1 }); // Index for the new 'outlet' field
 
 // Virtual for fullName
@@ -130,7 +130,7 @@ export const Staff = model<IStaff>('Staff', StaffSchema);
 
 // Apply Context-Aware Data Isolation
 StaffSchema.plugin(contextScopePlugin, {
-    companyField: 'company',
+    companyField: 'organization',
     businessUnitField: 'businessUnit',
     outletField: 'outlet'
 });

@@ -30,7 +30,7 @@ const meetingSchema = new Schema<IMeeting>({
     }],
     minutes: { type: String }, // Can be filled later
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
-    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
     status: { type: String, enum: ['scheduled', 'cancelled', 'completed'], default: 'scheduled' },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true }
 }, {

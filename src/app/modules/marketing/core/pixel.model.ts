@@ -16,7 +16,7 @@ const pixelSchema = new Schema<IPixel>({
     pixelId: { type: String, required: true },
     accessToken: { type: String, select: false }, // Hide by default
     isActive: { type: Boolean, default: true },
-    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
     description: { type: String },
 }, {

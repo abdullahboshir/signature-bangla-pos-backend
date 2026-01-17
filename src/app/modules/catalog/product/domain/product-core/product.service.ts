@@ -69,7 +69,7 @@ export const createProductService = async (payload: any, user?: any) => {
       payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit, user);
     }
 
-    // 0.1 Auto-detect Company
+    // 0.1 Auto-detect Organization
     if (!payload.company) {
         // Strategy A: From Business Unit (Context Awareness)
         if (payload.businessUnit) {

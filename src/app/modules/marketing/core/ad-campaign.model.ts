@@ -34,7 +34,7 @@ const adCampaignSchema = new Schema<IAdCampaign>({
     ctr: { type: Number, default: 0 },
     startDate: { type: Date },
     endDate: { type: Date },
-    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
     metaData: { type: Map, of: Schema.Types.Mixed },
 }, {

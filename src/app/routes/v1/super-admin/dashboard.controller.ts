@@ -11,7 +11,7 @@ export const getDashboardStatsController = catchAsync(async (req, res) => {
     const Order = mongoose.model("Order");
     const Purchase = mongoose.model("Purchase");
     const Expense = mongoose.model("Expense");
-    const Company = mongoose.model("Company");
+    const Organization = mongoose.model("Organization");
 
     const user = req.user as any;
     const isSuperAdmin = user?.['roleName']?.includes("super-admin");
@@ -37,8 +37,8 @@ export const getDashboardStatsController = catchAsync(async (req, res) => {
     }
 
     // 1. Counts
-    const totalCompanies = await Company.countDocuments(companyFilter);
-    const activeCompanies = await Company.countDocuments({ ...companyFilter, isActive: true });
+    const totalCompanies = await Organization.countDocuments(companyFilter);
+    const activeCompanies = await Organization.countDocuments({ ...companyFilter, isActive: true });
     
     const totalBusinessUnits = await BusinessUnit.countDocuments(buFilter);
     const activeBusinessUnits = await BusinessUnit.countDocuments({

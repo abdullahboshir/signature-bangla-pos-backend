@@ -20,7 +20,7 @@ const complianceDocumentSchema = new Schema<IComplianceDocument>({
     fileUrl: { type: String, required: true },
     expiryDate: { type: Date },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
-    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
     uploadedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     status: { type: String, enum: ['active', 'expired', 'archived'], default: 'active' }
 }, {

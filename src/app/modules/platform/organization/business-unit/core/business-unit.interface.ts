@@ -10,7 +10,7 @@ export interface IBusinessUnitCore {
   name: string;
   id: string;
   domain: string;
-  company?: Types.ObjectId;
+  organization?: Types.ObjectId;
 
   // ====== SHARED STRUCTURES ======
   branding: ISharedBranding;

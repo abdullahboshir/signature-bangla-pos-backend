@@ -44,7 +44,7 @@ const promotionSchema = new Schema<IPromotion>({
     usageLimit: { type: Number },
     usageCount: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
-    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true }
 }, {
     timestamps: true

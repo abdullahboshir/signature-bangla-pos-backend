@@ -4,7 +4,7 @@ import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 
 const cashRegisterSchema = new Schema<ICashRegisterDocument>({
     registerId: { type: String, required: true, unique: true },
-    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
     outlet: { type: Schema.Types.ObjectId, ref: 'Outlet', required: true, index: true },
 

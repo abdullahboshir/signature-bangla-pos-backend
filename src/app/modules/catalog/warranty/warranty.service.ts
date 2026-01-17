@@ -10,7 +10,7 @@ const createWarranty = async (payload: any, user?: any) => {
     payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit as any);
   }
 
-  // 2. Auto-detect Company
+  // 2. Auto-detect Organization
   if (!payload.company) {
     if (payload.businessUnit) {
       const bu = await BusinessUnit.findById(payload.businessUnit).select('company');

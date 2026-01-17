@@ -21,7 +21,7 @@ const warrantySchema = new Schema<IWarrantyDocument>({
   termsConditions: { type: String, trim: true },
   availableModules: [{ type: String }],
   isActive: { type: Boolean, default: true },
-  company: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
+  company: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
   businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit' }
 }, {
   timestamps: true,

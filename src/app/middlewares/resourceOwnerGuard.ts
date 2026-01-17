@@ -8,7 +8,7 @@ import mongoose from "mongoose";
  * Centralized Object-Level Security (OLS)
  * 
  * Verifies if the SPECIFIC record being accessed (:id) belongs to the 
- * user's authorized context (Business Unit, Company, or Outlet).
+ * user's authorized context (Business Unit, Organization, or Outlet).
  * 
  * @param model - The Mongoose model to query
  * @param contextField - The field name on the model that stores context ('businessUnit' by default)

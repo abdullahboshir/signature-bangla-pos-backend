@@ -2,7 +2,7 @@ import type { Types } from "mongoose";
 
 /**
  * Industrial Standard Merchant Interface
- * Represents the profile of a Company Owner
+ * Represents the profile of a Organization Owner
  */
 export interface IMerchant {
     _id?: Types.ObjectId;

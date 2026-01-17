@@ -8,9 +8,11 @@
 ## Core Principles
 
 ### 1. The 20-Child Rule
+
 **If a folder has >20 direct children, consider breaking it down.**
 
 **Why 20?**
+
 - IDE performance
 - Mental model capacity
 - Navigation efficiency
@@ -22,6 +24,7 @@
 ### ✅ Compliant Modules
 
 #### `commerce/catalog/product/`
+
 ```
 product/
 ├── domain/              ✅
@@ -39,6 +42,7 @@ Direct children: 6 ✅
 ---
 
 #### `platform/organization/`
+
 ```
 organization/
 ├── business-unit/       ✅
@@ -53,6 +57,7 @@ Direct children: 3 ✅
 ---
 
 #### `commerce/catalog/product/features/`
+
 ```
 features/
 ├── product-analytics/
@@ -75,6 +80,7 @@ Direct children: 9 ✅
 ### ⚠️ Attention Needed
 
 #### `platform/system/`
+
 ```
 system/
 ├── api-key/
@@ -102,6 +108,7 @@ Direct children: 11 ✅ (Close to limit)
 ### Grouping Strategies
 
 #### By Feature
+
 ```
 module/
 ├── feature-a/
@@ -110,6 +117,7 @@ module/
 ```
 
 #### By Layer (Domain-Driven)
+
 ```
 module/
 ├── core/       (essential logic)
@@ -122,6 +130,7 @@ module/
 ---
 
 #### By Entity Type
+
 ```
 module/
 ├── models/
@@ -136,10 +145,12 @@ module/
 ### File Naming
 
 #### ✅ Good
+
 - `product-inventory.service.ts`
 - `user-business-access.model.ts`
 
 #### ❌ Bad
+
 - `productInventory.service.ts` (camelCase not kebab-case)
 - `user_business_access.model.ts` (snake_case not kebab-case)
 
@@ -148,6 +159,7 @@ module/
 ### When to Break Down
 
 #### Scenario 1: Too Many Files
+
 ```
 Before (23 children):
 analytics/
@@ -169,6 +181,7 @@ analytics/
 ---
 
 #### Scenario 2: Mixed Responsibilities
+
 ```
 Before:
 reports/
@@ -192,14 +205,17 @@ reports/
 ## Module-Specific Guidelines
 
 ### Commerce
+
 - **Product features:** Keep in `features/` subdirectory
 - **Catalog items:** Separate folders (category, brand, tax, unit)
 
 ### Platform
-- **Organization:** Company → BusinessUnit → Outlet hierarchy
+
+- **Organization:** Organization → BusinessUnit → Outlet hierarchy
 - **System:** Group by integration type when >15 children
 
 ### ERP
+
 - **Reports:** Each report type = separate folder
 - **Accounting:** Transactions vs. Accounts vs. Budgets
 
@@ -208,6 +224,7 @@ reports/
 ## Refactoring Checklist
 
 When reorganizing:
+
 - [ ] Document intent (why reorganizing)
 - [ ] Use `git mv` to preserve history
 - [ ] Update all imports
@@ -220,7 +237,9 @@ When reorganizing:
 ## Monitoring
 
 ### Regular Audits
+
 Run quarterly folder audit:
+
 ```bash
 find src/app/modules -mindepth 2 -maxdepth 2 -type d -exec sh -c 'echo "$(ls -1 {} | wc -l) {}"' \; | sort -nr
 ```
@@ -231,5 +250,6 @@ find src/app/modules -mindepth 2 -maxdepth 2 -type d -exec sh -c 'echo "$(ls -1 
 ---
 
 ## Related Documentation
+
 - [Module Contracts](./module-contracts.md)
 - [System Design](./system-design.md)

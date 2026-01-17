@@ -21,7 +21,7 @@ export interface IOutlet extends Document {
         logistics: boolean;
     };
 
-    company: Types.ObjectId;
+    organization: Types.ObjectId;
     businessUnit: Types.ObjectId;
     manager?: {
         name: string;

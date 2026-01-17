@@ -23,7 +23,7 @@ const unitSchema = new Schema<IUnit, UnitModel>(
         },
         company: {
             type: Schema.Types.ObjectId,
-            ref: 'Company',
+            ref: 'Organization',
             required: false,
             index: true
         },

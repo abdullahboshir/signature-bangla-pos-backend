@@ -51,40 +51,51 @@ class RoleService {
     // 🛡️ ENFORCE SCOPING & HIERARCHY
     const authUser = user as any;
     if (authUser && !authUser.isSuperAdmin) {
-      const authorizedCompanies = authUser.companies || [];
+      const authorizedOrganizations = authUser.organizations || authUser.companies || [];
       const userLevel = authUser.hierarchyLevel || 0;
       filter.hierarchyLevel = { $lte: userLevel };
 
-      const effectiveCompanyId = (query.companyId || query.company) as string;
-      if (effectiveCompanyId) {
-        // Only allow filtering by an authorized company
-        if (authorizedCompanies.includes(effectiveCompanyId.toString())) {
+      const effectiveOrganizationId = (query.organizationId || query.organization || query.companyId || query.company) as string;
+      if (effectiveOrganizationId) {
+        // Only allow filtering by an authorized organization
+        if (authorizedOrganizations.includes(effectiveOrganizationId.toString())) {
           filter.$or = [
-            { company: effectiveCompanyId },
+            { organization: effectiveOrganizationId },
+            { company: effectiveOrganizationId },
+            { organization: { $exists: false } },
+            { organization: null },
             { company: { $exists: false } },
             { company: null }
           ];
         } else {
           // Access restricted: show only global roles
           filter.$or = [
+            { organization: { $exists: false } },
+            { organization: null },
             { company: { $exists: false } },
             { company: null }
           ];
         }
       } else {
-        // No specific companyId: show all authorized companies + global roles
+        // No specific organizationId: show all authorized organizations + global roles
         filter.$or = [
-          { company: { $in: authorizedCompanies } },
+          { organization: { $in: authorizedOrganizations } },
+          { company: { $in: authorizedOrganizations } },
+          { organization: { $exists: false } },
+          { organization: null },
           { company: { $exists: false } },
           { company: null }
         ];
       }
     } else {
-      const effectiveCompanyId = (query.companyId || query.company) as string;
-      if (effectiveCompanyId) {
+      const effectiveOrganizationId = (query.organizationId || query.organization || query.companyId || query.company) as string;
+      if (effectiveOrganizationId) {
         // Super Admin or no specific user context
         filter.$or = [
-          { company: effectiveCompanyId },
+          { organization: effectiveOrganizationId },
+          { company: effectiveOrganizationId },
+          { organization: { $exists: false } },
+          { organization: null },
           { company: { $exists: false } },
           { company: null }
         ];

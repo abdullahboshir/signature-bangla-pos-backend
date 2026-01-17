@@ -76,7 +76,8 @@ export function buildContextFromRequest(req: any): IPermissionContext {
     user: {
       id: user?.id || user?.userId,
       roles: user?.roles || [],
-      companies: user?.companies || [], // Add companies to context
+      organizations: user?.organizations || user?.companies || [], // Add organizations/companies to context
+      companies: user?.companies || user?.organizations || [], // Maintain backward compatibility
       businessUnits: user?.businessUnits || [],
       outlets: user?.outlets || [], // Add outlets to context
       ...(user?.branches && { branches: user.branches }),
@@ -86,7 +87,8 @@ export function buildContextFromRequest(req: any): IPermissionContext {
     resource: {
       id: req.params.id || req.params.resourceId,
       ownerId: req.body?.ownerId || req.params.userId || req.params.ownerId,
-      companyId: req.body?.companyId || req.params.companyId || req.headers?.['x-company-id'], // Support Company context
+      organizationId: req.body?.organizationId || req.params.organizationId || req.headers?.['x-organization-id'] || req.body?.companyId || req.params.companyId || req.headers?.['x-company-id'], // Support Organization context
+      companyId: req.body?.companyId || req.params.companyId || req.headers?.['x-company-id'] || req.body?.organizationId || req.params.organizationId || req.headers?.['x-organization-id'], // Backward compatibility
       businessUnitId: req.body?.businessUnitId || req.params.businessUnitId || req.params['business-unit'], // Add businessUnitId
       outletId: req.body?.outletId || req.params.outletId || req.headers?.['x-outlet-id'], // Add outletId
       vendorId: req.body?.vendorId || req.params.vendorId || user?.vendorId,
@@ -148,10 +150,11 @@ export function matchesScope(
     case 'vendor':
       return context.user.vendorId === context.resource?.vendorId;
 
+    case 'organization':
     case 'company':
-      // Check if user has access to this company
-      return context.user.companies?.some(
-        (companyId: string) => companyId === context.resource?.companyId
+      // Check if user has access to this organization
+      return (context.user.organizations || context.user.companies)?.some(
+        (orgId: string) => orgId === context.resource?.organizationId || orgId === context.resource?.companyId
       ) ?? false;
 
     case 'business': // Fixed: matches PermissionScope constant

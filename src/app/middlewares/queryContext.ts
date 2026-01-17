@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 
 /**
  * queryContext
- * Centrally injects Business Unit and Company context into request filters.
+ * Centrally injects Business Unit and Organization context into request filters.
  * Ensures that even if a user doesn't pass a filter, the system only returns 
  * data they are authorized to see (Self-Filtering).
  * 

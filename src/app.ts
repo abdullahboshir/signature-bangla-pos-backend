@@ -30,7 +30,7 @@ app.use(
     origin: appConfig.cors_origin,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "x-business-unit-id", "x-outlet-id"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "x-business-unit-id", "x-outlet-id", "x-organization-id", "x-organization-slug"],
   })
 );
 app.use(compression());
@@ -60,6 +60,10 @@ app.use(cookieParser(appConfig.cookie_secret));
 // 4.1 CONTEXT RESOLVER (Must be after body parsers to read req.body)
 import { contextMiddleware } from "./core/middleware/context.middleware.ts";
 app.use(contextMiddleware);
+
+// 4.2 TENANT RESOLVER (Hybrid Multi-Tenancy)
+import { tenantMiddleware } from "./core/middleware/tenant.middleware.ts";
+app.use(tenantMiddleware);
 
 // 5. LOGGING
 if (appConfig.NODE_ENV === "development") {

@@ -29,7 +29,7 @@ const UserBusinessAccessSchema = new Schema({
         required: true
     },
 
-    company: { type: Schema.Types.ObjectId, ref: 'Company', default: null, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Organization', default: null, index: true },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', default: null },
     outlet: { type: Schema.Types.ObjectId, ref: 'Outlet', default: null },
 

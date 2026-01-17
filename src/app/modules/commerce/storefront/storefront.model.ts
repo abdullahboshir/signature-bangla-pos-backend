@@ -64,7 +64,7 @@ const StorefrontConfigSchema = new Schema<IStorefrontConfig>(
     {
         company: {
             type: Schema.Types.ObjectId,
-            ref: "Company",
+            ref: "Organization",
             required: true,
             index: true
         },
@@ -110,7 +110,7 @@ const StorePageSchema = new Schema<IStorePage>(
     {
         company: {
             type: Schema.Types.ObjectId,
-            ref: "Company",
+            ref: "Organization",
             required: true,
             index: true
         },

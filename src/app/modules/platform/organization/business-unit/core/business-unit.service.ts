@@ -15,10 +15,11 @@ import { User } from "@app/modules/iam/index.js";
 import { USER_ROLE } from "@app/modules/iam/index.js";
 import { Role } from "@app/modules/iam/index.js";
 import BusinessUnit from "./business-unit.model.js";
-import { Company } from "../../company/company.model.js";
+
 import { QueryBuilder } from "../../../../../../core/database/QueryBuilder.js";
 import { CacheManager } from "../../../../../../core/utils/caching/cache-manager.js";
 import { BusinessUnitSettings } from "../settings/settings.model.ts";
+import { Organization } from "../../organization.model.ts";
 
 
 /**
@@ -36,13 +37,13 @@ export class BusinessUnitService {
 
       session.startTransaction();
 
-      // 🛡️ Hierarchy Validation: Ensure BU modules are a subset of Company modules
+      // 🛡️ Hierarchy Validation: Ensure BU modules are a subset of Organization modules
       if (businessUnitData.activeModules) {
-        const parentCompany = await Company.findById(businessUnitData.company).session(session);
+        const parentCompany = await Organization.findById(businessUnitData.organization).session(session);
         if (!parentCompany) {
-          throw new AppError(404, "Parent company not found", "BU_CREATE_004");
+          throw new AppError(404, "Parent organization not found", "BU_CREATE_004");
         }
-        await this._validateModules(businessUnitData?.activeModules, parentCompany.activeModules as any, "Company");
+        await this._validateModules(businessUnitData?.activeModules, parentCompany.activeModules as any, "Organization");
       }
 
       const slug = await this.generateUniqueSlug(
@@ -294,9 +295,9 @@ export class BusinessUnitService {
         const existingBU = await BusinessUnit.findById(businessUnitId);
         if (!existingBU) throw new AppError(404, "Business unit not found", "BU_UPDATE_001");
 
-        const parentCompany = await Company.findById(existingBU.company);
+        const parentCompany = await Organization.findById(existingBU.organization);
         if (parentCompany) {
-          await this._validateModules(updateData.activeModules as any, parentCompany.activeModules as any, "Company");
+          await this._validateModules(updateData.activeModules as any, parentCompany.activeModules as any, "Organization");
         }
       }
 
@@ -378,22 +379,22 @@ export class BusinessUnitService {
       // 1. Resolve Data Scoping (Now centrally handled by queryContext middleware)
       const filter: Record<string, any> = {};
 
-      const effectiveCompanyId = (query['companyId'] || query['company']) as string;
+      const effectiveCompanyId = (query['organizationId'] || query['organization']) as string;
       if (effectiveCompanyId) {
-        filter['company'] = effectiveCompanyId;
+        filter['organization'] = effectiveCompanyId;
       }
 
       // 🛡️ ENFORCE SCOPING: Non-SuperAdmins only see authorized companies
       if (user && !user.isSuperAdmin) {
         const authorizedCompanies = user.companies || [];
-        if (filter['company']) {
-          // If they provided a companyId, verify access
-          if (!authorizedCompanies.includes(filter['company'].toString())) {
-            filter['company'] = { $in: [] }; // Access Denied
+        if (filter['organization']) {
+          // If they provided a organizationId, verify access
+          if (!authorizedCompanies.includes(filter['organization'].toString())) {
+            filter['organization'] = { $in: [] }; // Access Denied
           }
         } else {
           // Default to all authorized companies
-          filter['company'] = { $in: authorizedCompanies };
+          filter['organization'] = { $in: authorizedCompanies };
         }
       }
 
@@ -401,7 +402,7 @@ export class BusinessUnitService {
       const buQuery = new QueryBuilder(
         BusinessUnit.find(filter)
           .populate({ path: 'outlets', select: 'name branding code address phone email city' })
-          .populate({ path: 'company', select: 'name' }),
+          .populate({ path: 'organization', select: 'name' }),
         query
       )
         .search(['branding.name', 'slug'])

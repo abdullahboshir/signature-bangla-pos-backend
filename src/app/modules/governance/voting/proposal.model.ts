@@ -36,7 +36,7 @@ const proposalSchema = new Schema<IProposal>({
     endDate: { type: Date, required: true },
     status: { type: String, enum: ['draft', 'active', 'closed', 'cancelled'], default: 'draft' },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
-    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     votes: [{
         shareholder: { type: Schema.Types.ObjectId, ref: 'Shareholder' },

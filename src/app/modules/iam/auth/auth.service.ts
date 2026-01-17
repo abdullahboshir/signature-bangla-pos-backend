@@ -124,7 +124,7 @@ export const loginService = async (email: string, pass: string) => {
       const buMap = new Map();
 
       isUserExists.businessAccess.forEach((access: any) => {
-        // Business Context vs Company Context handling
+        // Business Context vs Organization Context handling
         const buId = access.businessUnit?._id.toString() || access.company?._id?.toString() || 'none';
 
         if (!buMap.has(buId)) {
@@ -535,7 +535,7 @@ export const logoutService = async () => {
 
 /**
  * Setup Password Service
- * Used for new Company Owners to set their initial password via email token
+ * Used for new Organization Owners to set their initial password via email token
  */
 export const setupPasswordService = async (token: string, password: string) => {
   // 1. Find user by setup token

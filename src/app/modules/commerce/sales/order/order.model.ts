@@ -15,7 +15,7 @@ const orderItemSchema = new Schema({
 const orderSchema = new Schema<IOrder>({
     orderId: { type: String, required: true, unique: true },
     customer: { type: Schema.Types.ObjectId, ref: 'User' },
-    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
     outlet: { type: Schema.Types.ObjectId, ref: 'Outlet', required: true, index: true },
 

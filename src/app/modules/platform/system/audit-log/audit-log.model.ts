@@ -41,7 +41,7 @@ const auditLogSchema = new Schema<IAuditLog>({
         resource: { type: String, required: true },
         resourceId: { type: String, required: true }
     },
-    company: { type: Schema.Types.ObjectId, ref: 'Company', index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Organization', index: true },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: false }, // Optional for platform-level actions
     scope: { type: String, enum: ['GLOBAL', 'COMPANY', 'BUSINESS', 'OUTLET'], default: 'BUSINESS' },
     requestPayload: { type: Schema.Types.Mixed }, // Store sanitized payload

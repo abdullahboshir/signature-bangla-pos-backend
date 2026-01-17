@@ -30,7 +30,7 @@ const leaveSchema = new Schema<ILeave>({
     approvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     rejectionReason: { type: String },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
-    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true }
+    company: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true }
 }, {
     timestamps: true
 });

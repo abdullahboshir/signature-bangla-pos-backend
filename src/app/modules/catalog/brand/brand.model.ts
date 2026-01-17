@@ -51,7 +51,7 @@ const BrandSchema = new Schema<IBrand>(
         },
         company: {
             type: Schema.Types.ObjectId,
-            ref: "Company",
+            ref: "Organization",
             required: false,
             index: true,
         },

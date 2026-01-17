@@ -24,7 +24,7 @@ const departmentSchema = new Schema<IDepartment>({
         default: 'hrm'
     },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
-    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
     parentId: { type: Schema.Types.ObjectId, ref: 'Department' },
     headOfDepartment: { type: Schema.Types.ObjectId, ref: 'Staff' },
     isActive: { type: Boolean, default: true }

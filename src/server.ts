@@ -4,7 +4,7 @@ import os from "os";
 import "colors";
 import app from "./app.js";
 import mongoose from "mongoose";
-import { connectDB } from "./core/database/mongoose/connection.ts";
+import { ConnectionManager } from "./core/database/mongoose/connection-manager.ts";
 import { runRolePermissionSeeder } from "./core/database/mongoose/seeders/auth/index.ts";
 import { runSettingsSeeder } from "./core/database/mongoose/seeders/settings/index.ts";
 import { seedPackages } from "./core/database/mongoose/seeders/package.seeder.ts";
@@ -22,8 +22,8 @@ async function bootstrap() {
     if (cluster.isPrimary) {
       console.log(`🌟 Primary Process ${process.pid} is running`.yellow.bold);
 
-      // 1. Connect DB for Primary (Needed for Seeders/Cron)
-      await connectDB();
+      // 1. Initialize Default DB Connection (ConnectionManager for Multi-Tenancy)
+      await ConnectionManager.initDefaultConnection();
 
       // 1.1 Pre-create collections & indexes (Critical for atomic seeding on fresh DB)
       // Index creation cannot run inside a transaction.
@@ -74,8 +74,8 @@ async function bootstrap() {
 
     } else {
       // WORKER PROCESS
-      // 1. Connect DB (Each worker needs its own connection pool)
-      await connectDB();
+      // 1. Initialize Default DB Connection (Each worker needs its own connection pool)
+      await ConnectionManager.initDefaultConnection();
 
       // 2. Initialize Queue Workers (Distributed processing)
       // Workers compete for jobs, which is good for scale.

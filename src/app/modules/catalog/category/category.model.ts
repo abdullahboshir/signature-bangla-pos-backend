@@ -33,7 +33,7 @@ const CategorySchema = new Schema<ICategories>(
     },
     company: {
       type: Schema.Types.ObjectId,
-      ref: "Company",
+      ref: "Organization",
       required: true,
       index: true,
     },

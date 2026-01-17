@@ -24,10 +24,11 @@ const calculateNextBillingDate = (baseDate: Date, billingCycle: 'monthly' | 'yea
 
 import { Types } from 'mongoose';
 import BusinessUnit from '../organization/business-unit/core/business-unit.model.ts';
-import { Company } from '../organization/company/company.model.ts';
+import { Organization } from '../organization/organization.model.ts';
 
 
-// --- Helper: Sync License Modules to Company/BusinessUnit (Zenith Sync) ---
+
+// --- Helper: Sync License Modules to Organization/BusinessUnit (Zenith Sync) ---
 const syncModulesToTarget = async (license: ILicense) => {
     try {
         const bu = await BusinessUnit.findById(license.clientId);
@@ -47,10 +48,10 @@ const syncModulesToTarget = async (license: ILicense) => {
         // 1. Update Business Unit
         await BusinessUnit.findByIdAndUpdate(license.clientId, { $set: { activeModules } });
 
-        // 2. Update Parent Company (The source of truth for auth middleware)
+        // 2. Update Parent Organization (The source of truth for auth middleware)
         if (bu.company) {
-            await Company.findByIdAndUpdate(bu.company, { $set: { activeModules } });
-            console.log(`✅ Modules synced to Company: ${bu.company}`);
+            await Organization.findByIdAndUpdate(bu.company, { $set: { activeModules } });
+            console.log(`✅ Modules synced to Organization: ${bu.company}`);
         }
 
     } catch (error) {
@@ -66,7 +67,7 @@ const resolveBusinessUnitId = async (rawId: any): Promise<{ id: Types.ObjectId, 
     // Catch null, undefined, or empty strings explicitly
     if (rawId === null || rawId === undefined || rawId === '') {
         console.error("❌ Resolution Failed: Input is null, undefined, or empty string.");
-        throw new AppError(httpStatus.BAD_REQUEST, "Target Client ID (Business Unit or Company ID) is required.");
+        throw new AppError(httpStatus.BAD_REQUEST, "Target Client ID (Business Unit or Organization ID) is required.");
     }
 
     // Advanced Resolution: Handle objects (Record, Select values, Populated docs)
@@ -78,7 +79,7 @@ const resolveBusinessUnitId = async (rawId: any): Promise<{ id: Types.ObjectId, 
     // Re-verify after extraction
     if (!target || target === '' || typeof target === 'object') {
         console.error("❌ Failed to resolve primitive ID from complex input:", rawId);
-        throw new AppError(httpStatus.BAD_REQUEST, "A valid Business Unit or Company ID must be provided. Could not extract ID from input.");
+        throw new AppError(httpStatus.BAD_REQUEST, "A valid Business Unit or Organization ID must be provided. Could not extract ID from input.");
     }
 
     const targetStr = target.toString().trim();
@@ -90,8 +91,8 @@ const resolveBusinessUnitId = async (rawId: any): Promise<{ id: Types.ObjectId, 
         const buId = new Types.ObjectId(targetStr);
         let bu = await BusinessUnit.findById(buId);
         if (!bu) {
-            console.log("🏢 ID is not a BusinessUnit, checking as Company ID...");
-            // Check if it's a Company ID, get primary BU
+            console.log("🏢 ID is not a BusinessUnit, checking as Organization ID...");
+            // Check if it's a Organization ID, get primary BU
             bu = await BusinessUnit.findOne({ company: buId }).sort({ createdAt: 1 });
         }
         if (bu) {
@@ -109,7 +110,7 @@ const resolveBusinessUnitId = async (rawId: any): Promise<{ id: Types.ObjectId, 
     }
 
     console.error("❌ Resolution Failed: Target not found for identity:", targetStr);
-    throw new AppError(httpStatus.NOT_FOUND, `Target Business Unit or Company not found for identity: ${targetStr}`);
+    throw new AppError(httpStatus.NOT_FOUND, `Target Business Unit or Organization not found for identity: ${targetStr}`);
 };
 
 /**
@@ -277,7 +278,7 @@ const updateLicense = async (licenseId: string, payload: Partial<ILicense>) => {
                 ...(existingLicense.customModules || {}),
                 ...(payload.customModules || {})
             };
-            
+
             // Double check merged state
             mergedModules.erp = { enabled: true };
 
@@ -329,7 +330,7 @@ const handleLicenseExpirations = async (): Promise<{ updated: number, emailed: n
         const gracePeriodExpiry = new Date(license.nextBillingDate!);
         gracePeriodExpiry.setDate(gracePeriodExpiry.getDate() + gracePeriodDays);
 
-        // Fetch Business Unit/Company contact for email
+        // Fetch Business Unit/Organization contact for email
         const bu = await BusinessUnit.findById(license.clientId).populate('company');
         const contactEmail = bu?.contact?.email || (bu?.company as any)?.contact?.email;
 

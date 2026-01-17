@@ -8,7 +8,7 @@ const createBrand = async (payload: IBrand, user?: any) => {
         payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit as any) as any;
     }
 
-    // 2. Auto-detect Company
+    // 2. Auto-detect Organization
     if (!payload.company) {
         // Strategy A: From Business Unit
         if (payload.businessUnit) {

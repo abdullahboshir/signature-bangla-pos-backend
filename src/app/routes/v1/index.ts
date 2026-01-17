@@ -8,7 +8,7 @@ import { customerGroupRoutes } from "./customer/index.js";
 import { publicGroupRoutes } from "./public/index.js";
 import { PackageRoutes } from "../../modules/platform/package/package.routes.ts";
 import { LicenseRoutes } from "../../modules/platform/license/license.routes.ts";
-import { CompanyRoutes } from "../../modules/platform/organization/company/company.routes.ts";
+import { OrganizationRoutes } from "../../modules/platform/organization/organization.routes.js";
 import { userRoutes } from "../../modules/iam/user/user.routes.ts";
 import { DepartmentRoutes } from "../../modules/hrm/department/department.routes.ts";
 import { AttendanceRoutes } from "../../modules/hrm/attendance/attendance.routes.ts";
@@ -47,7 +47,7 @@ router.use("/customer", customerGroupRoutes);
 router.use("/user", userRoutes); // Profile, Settings, etc.
 router.use("/platform/packages", PackageRoutes);
 router.use("/platform/licenses", LicenseRoutes);
-router.use("/platform/companies", CompanyRoutes);
+router.use("/platform/organizations", OrganizationRoutes);
 
 // HRM Module - Licensed & Context Guarded
 router.use("/hrm/departments", requireModule('hrm'), contextGuard(), DepartmentRoutes);

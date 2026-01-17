@@ -9,7 +9,7 @@ const create = async (payload: ITax, user?: any) => {
         payload.businessUnit = await resolveBusinessUnitId(payload.businessUnit as any) as any;
     }
 
-    // Auto-detect Company
+    // Auto-detect Organization
     if (!payload.company) {
         if (payload.businessUnit) {
              const BusinessUnit = (await import("../../platform/organization/business-unit/core/business-unit.model.ts")).default;

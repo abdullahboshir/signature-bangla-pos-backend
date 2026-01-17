@@ -33,7 +33,8 @@ const SecurityAlertSchema = new Schema<ISecurityAlert>({
     action: { type: String, required: true },
     context: {
         userId: { type: Schema.Types.ObjectId, ref: 'User' },
-        companyId: { type: Schema.Types.ObjectId, ref: 'Company' },
+        organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' }, // New Organization link
+        companyId: { type: Schema.Types.ObjectId, ref: 'Organization' }, // Backward compatibility link
         businessUnitId: { type: Schema.Types.ObjectId, ref: 'BusinessUnit' },
         outletId: { type: Schema.Types.ObjectId, ref: 'Outlet' },
         ip: { type: String },

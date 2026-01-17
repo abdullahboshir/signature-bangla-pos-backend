@@ -34,7 +34,7 @@ export const getUsersService = async (query: Record<string, unknown>, user: any)
   const filterData = { ...filterParams };
   const isSuperAdmin = user?.['roleName']?.includes("super-admin");
 
-  // 1. Handle Context Scoping (Company or Business Unit)
+  // 1. Handle Context Scoping (Organization or Business Unit)
   let userIds: mongoose.Types.ObjectId[] | null = null;
 
   if (businessUnit) {
@@ -51,11 +51,11 @@ export const getUsersService = async (query: Record<string, unknown>, user: any)
   } else if (companyId) {
     userIds = await UserBusinessAccess.distinct('user', { company: companyId });
   } else if (!isSuperAdmin) {
-    // Implicit scoping for Company Owners
-    const authorizedCompanyIds = user?.companies || [];
-    if (authorizedCompanyIds.length > 0) {
+    // Implicit scoping for Organization Owners
+    const authorizedOrganizationIds = user?.companies || [];
+    if (authorizedOrganizationIds.length > 0) {
       userIds = await UserBusinessAccess.distinct('user', {
-        company: { $in: authorizedCompanyIds.map((id: string) => new mongoose.Types.ObjectId(id)) }
+        company: { $in: authorizedOrganizationIds.map((id: string) => new mongoose.Types.ObjectId(id)) }
       });
     } else {
       userIds = [];
@@ -117,7 +117,7 @@ export const createCustomerService = async (
     }).session(session);
 
     if (isUserExists) {
-      console.log("dddddddddddd", customerData.phone);
+     
       throw new AppError(400, "User with this email already exists!");
     }
 
@@ -678,8 +678,8 @@ export const deleteUserService = async (userId: string) => {
   return result;
 };
 
-export const createCompanyOwnerService = async (
-  companyData: {
+export const createOrganizationOwnerService = async (
+  organizationData: {
     contactEmail: string;
     name: string;
     contactPhone: string;
@@ -691,11 +691,11 @@ export const createCompanyOwnerService = async (
       nationalId?: string;
     }
   },
-  companyId: string,
+  organizationId: string,
   session: any
 ) => {
   // 1. Check if user already exists
-  const isUserExists = await User.findOne({ email: companyData.contactEmail }).session(session);
+  const isUserExists = await User.findOne({ email: organizationData.contactEmail }).session(session);
 
   if (isUserExists) {
     // 1.1 Handle PENDING User (User exists but never set password)
@@ -714,17 +714,17 @@ export const createCompanyOwnerService = async (
       // For now, let's keep it inline but ensure we send the CORRECT email.
 
       // Ensure Merchant/Access exists (Copying logic from below)
-      const ownerRole = await Role.findOne({ name: USER_ROLE.COMPANY_OWNER }).session(session);
-      if (!ownerRole) throw new AppError(500, "FATAL: COMPANY_OWNER role missing in system");
+      const ownerRole = await Role.findOne({ name: USER_ROLE.ORGANIZATION_OWNER }).session(session);
+      if (!ownerRole) throw new AppError(500, "FATAL: ORGANIZATION_OWNER role missing in system");
 
       const existingMerchant = await Merchant.findOne({ user: isUserExists._id }).session(session);
       if (!existingMerchant) {
         await Merchant.create([{
           user: isUserExists._id,
-          firstName: companyData.legalRepresentative?.name || companyData.name,
-          lastName: companyData.legalRepresentative?.name ? "" : "Owner",
-          phone: companyData.legalRepresentative?.contactPhone || companyData.contactPhone,
-          nidNumber: companyData.legalRepresentative?.nationalId,
+          firstName: organizationData.legalRepresentative?.name || organizationData.name,
+          lastName: organizationData.legalRepresentative?.name ? "" : "Owner",
+          phone: organizationData.legalRepresentative?.contactPhone || organizationData.contactPhone,
+          nidNumber: organizationData.legalRepresentative?.nationalId,
           isEmailVerified: true,
           isActive: true
         }], { session });
@@ -734,8 +734,8 @@ export const createCompanyOwnerService = async (
       await UserBusinessAccess.create([{
         user: isUserExists._id,
         role: ownerRole._id,
-        scope: 'COMPANY',
-        company: companyId,
+        scope: 'ORGANIZATION',
+        company: organizationId,
         status: 'ACTIVE',
         isPrimary: true
       }], { session });
@@ -744,13 +744,13 @@ export const createCompanyOwnerService = async (
       try {
         const setupUrl = `${appConfig.frontend_url}/auth/setup-password?token=${setupToken}`;
         await MailService.sendEmail(
-          companyData.contactEmail,
+          organizationData.contactEmail,
           "Welcome to Unified Solution - Set up your account",
           `
             <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
               <h2 style="color: #0F172A; text-align: center;">Welcome to Unified Solution</h2>
-              <p>Hello <strong>${companyData.legalRepresentative?.name || 'Partner'}</strong>,</p>
-              <p>Your new company <strong>${companyData.name}</strong> has been provisioned.</p>
+              <p>Hello <strong>${organizationData.legalRepresentative?.name || 'Partner'}</strong>,</p>
+              <p>Your new organization <strong>${organizationData.name}</strong> has been provisioned.</p>
               <p>We noticed your account was pending setup. Please set your password now.</p>
               <div style="margin: 30px 0; text-align: center;">
                 <a href="${setupUrl}" style="background-color: #0F172A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Set Up Password</a>
@@ -766,19 +766,19 @@ export const createCompanyOwnerService = async (
     }
 
     // 1.2 Handle ACTIVE User (Existing logic)
-    // Find COMPANY_OWNER role
-    const ownerRole = await Role.findOne({ name: USER_ROLE.COMPANY_OWNER }).session(session);
-    if (!ownerRole) throw new AppError(500, "FATAL: COMPANY_OWNER role missing in system");
+    // Find ORGANIZATION_OWNER role
+    const ownerRole = await Role.findOne({ name: USER_ROLE.ORGANIZATION_OWNER }).session(session);
+    if (!ownerRole) throw new AppError(500, "FATAL: ORGANIZATION_OWNER role missing in system");
 
     // Check & Create Merchant Profile if missing
     const existingMerchant = await Merchant.findOne({ user: isUserExists._id }).session(session);
     if (!existingMerchant) {
       await Merchant.create([{
         user: isUserExists._id,
-        firstName: companyData.legalRepresentative?.name || companyData.name,
-        lastName: companyData.legalRepresentative?.name ? "" : "Owner",
-        phone: companyData.legalRepresentative?.contactPhone || companyData.contactPhone,
-        nidNumber: companyData.legalRepresentative?.nationalId,
+        firstName: organizationData.legalRepresentative?.name || organizationData.name,
+        lastName: organizationData.legalRepresentative?.name ? "" : "Owner",
+        phone: organizationData.legalRepresentative?.contactPhone || organizationData.contactPhone,
+        nidNumber: organizationData.legalRepresentative?.nationalId,
         isEmailVerified: true,
         isActive: true
       }], { session });
@@ -788,22 +788,22 @@ export const createCompanyOwnerService = async (
     await UserBusinessAccess.create([{
       user: isUserExists._id,
       role: ownerRole._id,
-      scope: 'COMPANY',
-      company: companyId,
+      scope: 'ORGANIZATION',
+      company: organizationId,
       status: 'ACTIVE',
       isPrimary: true
     }], { session });
 
     try {
       await MailService.sendEmail(
-        companyData.contactEmail,
-        "New Company Added - Unified Solution",
+        organizationData.contactEmail,
+        "New Organization Added - Unified Solution",
         `
         <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2 style="color: #0F172A; text-align: center;">New Company Added</h2>
+          <h2 style="color: #0F172A; text-align: center;">New Organization Added</h2>
           <p>Hello <strong>${isUserExists.name?.firstName || 'Partner'}</strong>,</p>
-          <p>A new company <strong>${companyData.name}</strong> has been successfully added to your Unified Solution account.</p>
-          <p>You can now switch to this company from your dashboard.</p>
+          <p>A new organization <strong>${organizationData.name}</strong> has been successfully added to your Unified Solution account.</p>
+          <p>You can now switch to this organization from your dashboard.</p>
           <div style="margin: 30px 0; text-align: center;">
             <a href="${appConfig.frontend_url}/login" style="background-color: #0F172A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Login to Dashboard</a>
           </div>
@@ -821,10 +821,10 @@ export const createCompanyOwnerService = async (
 
 
   // 2. Create New User
-  const ownerRole = await Role.findOne({ name: USER_ROLE.COMPANY_OWNER }).session(session);
-  if (!ownerRole) throw new AppError(500, "FATAL: COMPANY_OWNER role missing in system");
+  const ownerRole = await Role.findOne({ name: USER_ROLE.ORGANIZATION_OWNER }).session(session);
+  if (!ownerRole) throw new AppError(500, "FATAL: ORGANIZATION_OWNER role missing in system");
 
-  const userId = await genereteCustomerId(companyData.contactEmail, ownerRole._id.toString());
+  const userId = await genereteCustomerId(organizationData.contactEmail, ownerRole._id.toString());
 
   // 2.1 Generate Setup Token (Industrial Standard)
   const setupToken = crypto.randomBytes(32).toString('hex');
@@ -832,8 +832,8 @@ export const createCompanyOwnerService = async (
 
   const userData: Partial<IUser> = {
     id: userId,
-    email: companyData.contactEmail,
-    phone: companyData.contactPhone,
+    email: organizationData.contactEmail,
+    phone: organizationData.contactPhone,
     // Provide a random password to satisfy model requirement (will be reset by user via token)
     password: crypto.randomBytes(24).toString('hex'),
     status: "pending", // Pending until password setup
@@ -841,23 +841,23 @@ export const createCompanyOwnerService = async (
     setupPasswordToken: setupToken,
     setupPasswordExpires: setupExpires,
     name: {
-      firstName: companyData.legalRepresentative?.name?.split(" ")[0] || "Company",
-      lastName: companyData.legalRepresentative?.name?.split(" ").slice(1).join(" ") || "Admin"
+      firstName: organizationData.legalRepresentative?.name?.split(" ")[0] || "Organization",
+      lastName: organizationData.legalRepresentative?.name?.split(" ").slice(1).join(" ") || "Admin"
     },
     globalRoles: [],
     isEmailVerified: true
   };
 
   const newUser = await User.create([userData], { session });
-  if (!newUser || !newUser[0]) throw new AppError(500, "Failed to create Company Owner user");
+  if (!newUser || !newUser[0]) throw new AppError(500, "Failed to create Organization Owner user");
 
   // 2.2 Create Merchant Profile (Industrial Standard Consistency)
   const merchantData: any = {
     user: newUser[0]._id,
-    firstName: companyData.legalRepresentative?.name || companyData.name,
-    lastName: companyData.legalRepresentative?.name ? "" : "Owner",
-    phone: companyData.legalRepresentative?.contactPhone || companyData.contactPhone,
-    nidNumber: companyData.legalRepresentative?.nationalId,
+    firstName: organizationData.legalRepresentative?.name || organizationData.name,
+    lastName: organizationData.legalRepresentative?.name ? "" : "Owner",
+    phone: organizationData.legalRepresentative?.contactPhone || organizationData.contactPhone,
+    nidNumber: organizationData.legalRepresentative?.nationalId,
     isEmailVerified: true,
     isActive: true
   };
@@ -868,8 +868,8 @@ export const createCompanyOwnerService = async (
   await UserBusinessAccess.create([{
     user: newUser[0]._id,
     role: ownerRole._id,
-    scope: 'COMPANY',
-    company: companyId,
+    scope: 'ORGANIZATION',
+    company: organizationId,
     status: 'ACTIVE',
     isPrimary: true
   }], { session });
@@ -879,13 +879,13 @@ export const createCompanyOwnerService = async (
     const setupUrl = `${appConfig.frontend_url}/auth/setup-password?token=${setupToken}`;
 
     await MailService.sendEmail(
-      companyData.contactEmail,
+      organizationData.contactEmail,
       "Welcome to Unified Solution - Set up your account",
       `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
         <h2 style="color: #0F172A; text-align: center;">Welcome to Unified Solution</h2>
-        <p>Hello <strong>${companyData.legalRepresentative?.name || 'Partner'}</strong>,</p>
-        <p>Your company <strong>${companyData.name}</strong> has been successfully provisioned in our system.</p>
+        <p>Hello <strong>${organizationData.legalRepresentative?.name || 'Partner'}</strong>,</p>
+        <p>Your organization <strong>${organizationData.name}</strong> has been successfully provisioned in our system.</p>
         <p>Please utilize the link below to establish a secure password for your administrative account.</p>
         <div style="margin: 30px 0; text-align: center;">
           <a href="${setupUrl}" style="background-color: #0F172A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Set Up Password</a>

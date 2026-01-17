@@ -1,6 +1,6 @@
 export const RoleScope = {
     GLOBAL: 'GLOBAL',
-    COMPANY: 'COMPANY', // Tenant / Group Level
+    ORGANIZATION: 'ORGANIZATION', // Tenant / Group Level
     BUSINESS: 'BUSINESS',
     OUTLET: 'OUTLET',
     SELF: 'SELF'

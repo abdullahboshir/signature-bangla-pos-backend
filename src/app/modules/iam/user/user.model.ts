@@ -169,7 +169,7 @@ const UserSchema = new Schema<IUser, UserStatic>({
   },
   company: {
     type: Schema.Types.ObjectId,
-    ref: 'Company',
+    ref: 'Organization',
     index: true
   }
 }, {

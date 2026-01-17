@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { SYSTEM_USER_ID, DEFAULT_LIMITS } from "./data/constants.ts";
 import { syncPermissions, syncResourceGroups, auditResourceGroups } from "./group-manager.ts";
 import { getPlatformRoleConfigs } from "./platform.seeder.ts";
-import { getCompanyRoleConfigs } from "./company.seeder.ts";
+import { getOrganizationRoleConfigs } from "./organization.seeder.ts";
 import { getBusinessRoleConfigs } from "./business.seeder.ts";
 import { getOutletRoleConfigs } from "./outlet.seeder.ts";
 import { seedSuperAdminUser } from "./super-admin.user.ts";
@@ -43,7 +43,7 @@ export async function runRolePermissionSeeder({ clean = false, session }: { clea
 
     const roleConfigs = [
         ...getPlatformRoleConfigs(get, fullGroupId),
-        ...getCompanyRoleConfigs(get),
+        ...getOrganizationRoleConfigs(get),
         ...getBusinessRoleConfigs(get),
         ...getOutletRoleConfigs(get),
     ];

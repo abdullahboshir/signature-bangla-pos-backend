@@ -4,7 +4,7 @@ import { contextScopePlugin } from "@core/plugins/context-scope.plugin.js";
 export interface IShareholder {
     user: Schema.Types.ObjectId;  // Reference to User (Platform or Business User)
     businessUnit?: Schema.Types.ObjectId; // Specific Unit (Subsidiary)
-    company?: Schema.Types.ObjectId; // Global Company (Holding)
+    company?: Schema.Types.ObjectId; // Global Organization (Holding)
     outlet?: Schema.Types.ObjectId; // Specific Outlet (Branch)
     equityPercentage: number; // e.g. 25.5%
     numberOfShares: number; // e.g. 1000
@@ -17,9 +17,9 @@ export interface IShareholder {
 
 const shareholderSchema = new Schema<IShareholder>({
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    // A shareholder can be tied to a specific Business Unit, Outlet OR the Global Company
+    // A shareholder can be tied to a specific Business Unit, Outlet OR the Global Organization
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit' },
-    company: { type: Schema.Types.ObjectId, ref: 'Company' },
+    company: { type: Schema.Types.ObjectId, ref: 'Organization' },
     outlet: { type: Schema.Types.ObjectId, ref: 'Outlet' },
 
     equityPercentage: { type: Number, required: true },
@@ -40,7 +40,7 @@ const shareholderSchema = new Schema<IShareholder>({
 // Validation: Must have at least one allowed scope
 shareholderSchema.pre('validate', function (next) {
     if (!this.businessUnit && !this.company && !this.outlet) {
-        next(new Error('Shareholder must be linked to a Company, Business Unit, or Outlet.'));
+        next(new Error('Shareholder must be linked to a Organization, Business Unit, or Outlet.'));
     } else {
         next();
     }

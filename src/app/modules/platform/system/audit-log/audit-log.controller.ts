@@ -46,7 +46,7 @@ const getAllAuditLog = catchAsync(async (req: Request, res: Response, _next: Nex
     // If user is NOT Super Admin, restrict what logs they can see
     const user = (req as any).user;
     if (user && !user.isSuperAdmin) {
-        // Business Admin can only see logs for their Business Unit or Company
+        // Business Admin can only see logs for their Business Unit or Organization
         // We check the context from the header or user's active context
         const businessUnitId = req.headers['x-business-unit-id'] || user.primaryBusinessUnit;
 

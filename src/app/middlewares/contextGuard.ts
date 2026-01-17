@@ -22,7 +22,7 @@ export const contextGuard = () => {
             return next(new AppError(status.UNAUTHORIZED, "Authentication required for context validation"));
         }
 
-        // 🛡️ Super Admins & Company Owners bypass all context checks (Global access within their scope)
+        // 🛡️ Super Admins & Organization Owners bypass all context checks (Global access within their scope)
         if (user.roleName?.includes('super-admin') || user.isSuperAdmin || user.roleName?.includes('company-owner')) {
             return next();
         }

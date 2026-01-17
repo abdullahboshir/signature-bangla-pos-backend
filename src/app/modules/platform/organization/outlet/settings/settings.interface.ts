@@ -4,7 +4,7 @@ import type { ISharedOperatingHours, ISharedPaymentSettings, ISharedPOSHardware,
 
 /**
  * Outlet-specific configuration.
- * Overrides Company Settings where applicable (e.g. receipt footer).
+ * Overrides Organization Settings where applicable (e.g. receipt footer).
  */
 export interface IOutletSettings extends Document {
     outlet: IOutlet['_id'];

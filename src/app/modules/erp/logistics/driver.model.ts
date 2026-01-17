@@ -32,7 +32,7 @@ const driverSchema = new Schema<IDriver>({
         index: true
     },
     businessUnit: { type: Schema.Types.ObjectId, ref: 'BusinessUnit', required: true, index: true },
-    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    company: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
     isActive: { type: Boolean, default: true }
 }, {
     timestamps: true

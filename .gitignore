@@ -14,7 +14,7 @@ build_*.txt
 
 
 # Environment
-.env
+# .env
 .env.local
 .env.*.local
 

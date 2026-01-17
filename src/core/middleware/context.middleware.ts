@@ -25,12 +25,13 @@ export const contextMiddleware = (req: Request, res: Response, next: NextFunctio
     };
 
     // Resolve IDs
-    const companyId = extract(['companyId', 'company']);
+    const organizationId = extract(['organizationId', 'organization', 'companyId', 'company']);
     const businessUnitId = extract(['businessUnitId', 'businessUnit']);
     const outletId = extract(['outletId', 'outlet']);
 
     const context = {
-        companyId,
+        organizationId,
+        companyId: organizationId, // Backward compatibility
         businessUnitId,
         outletId,
         scopeLevel: 'PLATFORM' as ScopeLevel,
